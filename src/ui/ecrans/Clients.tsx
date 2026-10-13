@@ -24,7 +24,7 @@ export function Clients() {
   return (
     <section aria-labelledby="titre-clients">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
-        <h1 id="titre-clients" className="text-[26px] font-bold tracking-[-0.01em] text-encre [font-stretch:115%]">
+        <h1 id="titre-clients" className="titre text-[38px]">
           Clients du cabinet
         </h1>
         <p className="text-sm text-texte-2">
@@ -36,16 +36,16 @@ export function Clients() {
           )}
         </p>
       </div>
-      <div className="relative overflow-x-auto rounded-[5px] border border-trait bg-feuille">
+      <div className="relative overflow-x-auto border-t border-encre">
         <table className="w-full min-w-[760px] text-sm">
           <thead>
             <tr className={ENTETE_TABLEAU}>
-              <th className="py-2 pl-4 font-medium">Client</th>
+              <th className="py-2 pl-2 font-medium">Client</th>
               <th className="font-medium">Pièces reçues ce mois</th>
               <th className="font-medium">Dernier envoi</th>
               <th className="font-medium">Collaborateur</th>
               <th className="font-medium">Relance</th>
-              <th className="pr-4 font-medium">Situation</th>
+              <th className="pr-2 font-medium">Situation</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-trait">
@@ -57,7 +57,7 @@ export function Clients() {
                 onClick={() => ouvrir(client.id)}
                 onKeyDown={(e) => e.key === 'Enter' && ouvrir(client.id)}
               >
-                <td className="py-3 pl-4">
+                <td className="py-3 pl-2">
                   <div className="font-semibold">{client.raisonSociale}</div>
                   <div className="text-xs text-texte-2">
                     {client.secteur}, régime {client.regimeFiscal}
@@ -74,7 +74,7 @@ export function Clients() {
                 <td className="chiffres py-3 text-texte-2">{retard.dernierEnvoi ? formatDateHeure(retard.dernierEnvoi) : 'jamais'}</td>
                 <td className="py-3">{client.collaborateur}</td>
                 <td className="py-3 text-texte-2">{LIBELLES_STATUT_RELANCE[relance]}</td>
-                <td className="max-w-[300px] py-3 pr-4">
+                <td className="max-w-[300px] py-3 pr-2">
                   {retard.enRetard ? (
                     <span className="font-semibold text-critique">
                       <span aria-hidden>■ </span>En retard
@@ -241,7 +241,7 @@ export function FicheClient({ clientId }: { clientId: string }) {
           <span aria-hidden> / </span>
           <span>{client.raisonSociale}</span>
         </nav>
-        <h1 className="mt-1 text-[28px] font-bold leading-tight tracking-[-0.01em] text-encre [font-stretch:115%]">{client.raisonSociale}</h1>
+        <h1 className="mt-1 titre text-[38px]">{client.raisonSociale}</h1>
         <p className="mt-1 flex flex-wrap gap-x-4 text-sm text-texte-2">
           <span>{client.secteur}</span>
           <span>Régime {client.regimeFiscal}</span>
@@ -253,7 +253,7 @@ export function FicheClient({ clientId }: { clientId: string }) {
         {regles.length === 0 ? (
           <Vide>Aucune règle : elles se créent quand un collaborateur corrige le compte d’un fournisseur.</Vide>
         ) : (
-          <ul className="-my-3 divide-y divide-trait">
+          <ul className="-mt-3 divide-y divide-trait">
             {regles.map((r) => (
               <LigneRegle key={r.id} regle={r} />
             ))}
@@ -266,7 +266,7 @@ export function FicheClient({ clientId }: { clientId: string }) {
           {pieces.length === 0 ? (
             <Vide>Aucune pièce reçue.</Vide>
           ) : (
-            <ul className="-my-4 divide-y divide-trait text-sm">
+            <ul className="-mt-3 divide-y divide-trait text-sm">
               {pieces.map((p) => (
                 <li key={p.id} className="flex items-start gap-3 py-2.5">
                   <IconeCanal canal={p.canal} className="mt-0.5 h-4 w-4 shrink-0 text-texte-2" />
@@ -299,19 +299,19 @@ export function FicheClient({ clientId }: { clientId: string }) {
           {ecrituresValidees.length === 0 ? (
             <Vide>Aucune écriture validée.</Vide>
           ) : (
-            <div className="relative -mx-5 -my-4 overflow-x-auto">
+            <div className="relative overflow-x-auto">
               <table className="w-full min-w-[420px] text-sm">
                 <thead>
                   <tr className={ENTETE_TABLEAU}>
-                    <th className="py-1.5 pl-5 font-medium">Compte</th>
+                    <th className="py-1.5 pl-2 font-medium">Compte</th>
                     <th className="text-right font-medium">Débit</th>
-                    <th className="pr-5 text-right font-medium">Crédit</th>
+                    <th className="pr-2 text-right font-medium">Crédit</th>
                   </tr>
                 </thead>
                 {ecrituresValidees.map((e) => (
                   <tbody key={e.id} className="border-b border-trait last:border-b-0">
                     <tr>
-                      <th colSpan={3} className="bg-papier/60 py-1.5 pl-5 pr-5 text-left text-xs font-normal text-texte-2">
+                      <th colSpan={3} className="bg-encre-pale/70 py-1.5 pl-3 pr-3 text-left text-xs font-normal text-texte-2">
                         <span className="chiffres font-semibold text-texte">{formatDate(e.date)}</span>
                         <span className="ml-3">{LIBELLES_JOURNAL[e.journal]}</span>
                         <span className="chiffres ml-3">{e.numeroPiece}</span>
@@ -320,20 +320,20 @@ export function FicheClient({ clientId }: { clientId: string }) {
                     </tr>
                     {e.lignes.map((l, i) => (
                       <tr key={i}>
-                        <td className="py-1 pl-5">
+                        <td className="py-1 pl-2">
                           <span className="chiffres font-semibold text-encre">{l.compte}</span>
                           <span className="ml-2 text-xs text-texte-2">{(etat.plan && libelleCompte(etat.plan, l.compte)) ?? ''}</span>
                         </td>
                         <td className="chiffres py-1 text-right">{l.debit ? formatMontant(l.debit) : ''}</td>
-                        <td className="chiffres py-1 pr-5 text-right">{l.credit ? formatMontant(l.credit) : ''}</td>
+                        <td className="chiffres py-1 pr-2 text-right">{l.credit ? formatMontant(l.credit) : ''}</td>
                       </tr>
                     ))}
                     <tr className="text-xs">
-                      <td className="pb-2 pl-5 text-texte-2">Total</td>
+                      <td className="pb-2 pl-2 text-texte-2">Total</td>
                       <td className="pb-2 text-right">
                         <span className="chiffres double-trait inline-block font-semibold">{formatMontant(totaux(e.lignes).debit)}</span>
                       </td>
-                      <td className="pb-2 pr-5 text-right">
+                      <td className="pb-2 pr-2 text-right">
                         <span className="chiffres double-trait inline-block font-semibold">{formatMontant(totaux(e.lignes).credit)}</span>
                       </td>
                     </tr>

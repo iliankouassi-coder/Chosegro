@@ -1,5 +1,5 @@
 // Image de la pièce, avec zoom. Un PDF est rendu page par page avec pdf.js.
-// La pièce est posée sur le bureau comme une feuille ; le tampon (« Saisi », « Rejetée »…) s'applique sur la première page.
+// La pièce est posée sur la table ; le tampon (« Saisi », « Rejetée »…) s'applique sur la première page.
 import { useEffect, useState, type ReactNode } from 'react'
 import { useApp } from '../app/store'
 import { ouvrirPdf, pageEnImage } from '../infra/pdf'
@@ -40,24 +40,34 @@ export function ApercuPiece({ pieceId, tampon }: { pieceId: string; tampon?: Rea
   }, [pieceId, actions])
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[5px] border border-trait bg-bureau">
-      <div className="flex items-center gap-1 border-b border-trait bg-feuille/60 px-2 py-1.5 text-sm text-texte-2">
-        <Bouton variante="discret" className="!px-2.5 !py-1" onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} aria-label="Dézoomer">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-bureau">
+      <div className="flex items-center gap-1 px-3 pt-2 text-sm text-texte-2">
+        <Bouton
+          variante="discret"
+          className="!px-2.5 !py-1 !font-medium hover:!bg-white/70"
+          onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))}
+          aria-label="Dézoomer"
+        >
           {'−'}
         </Bouton>
         <span className="chiffres w-12 text-center">
           {Math.round(zoom * 100)}
           {' '}%
         </span>
-        <Bouton variante="discret" className="!px-2.5 !py-1" onClick={() => setZoom((z) => Math.min(4, z + 0.25))} aria-label="Zoomer">
+        <Bouton
+          variante="discret"
+          className="!px-2.5 !py-1 !font-medium hover:!bg-white/70"
+          onClick={() => setZoom((z) => Math.min(4, z + 0.25))}
+          aria-label="Zoomer"
+        >
           +
         </Bouton>
-        <Bouton variante="discret" className="!px-2.5 !py-1" onClick={() => setZoom(1)}>
+        <Bouton variante="discret" className="!px-2.5 !py-1 !font-medium hover:!bg-white/70" onClick={() => setZoom(1)}>
           Ajuster
         </Bouton>
         {images.length > 1 && <span className="ml-auto pr-2 text-xs">{images.length} pages</span>}
       </div>
-      <div className="min-h-0 flex-1 overflow-auto p-4 sm:p-6">
+      <div className="min-h-0 flex-1 overflow-auto px-5 pb-6 pt-3 sm:px-8">
         {erreur && <p className="text-sm text-critique">{erreur}</p>}
         {!erreur && images.length === 0 && <p className="text-sm text-texte-2">Chargement de la pièce…</p>}
         <div className="mx-auto grid gap-4" style={{ width: `${zoom * 100}%` }}>
@@ -66,7 +76,7 @@ export function ApercuPiece({ pieceId, tampon }: { pieceId: string; tampon?: Rea
               <img
                 src={src}
                 alt={`Page ${i + 1} de la pièce`}
-                className="w-full cursor-zoom-in bg-white shadow-[0_1px_2px_rgb(27_33_48/0.12),0_6px_18px_-6px_rgb(27_33_48/0.22)]"
+                className="w-full cursor-zoom-in bg-white shadow-[0_18px_40px_-18px_rgb(20_22_26/0.45)]"
                 onClick={() => setZoom((z) => (z === 1 ? 2 : 1))}
               />
               {i === 0 && tampon}

@@ -1,32 +1,34 @@
-@import "@fontsource-variable/archivo/wdth.css";
+@import "@fontsource-variable/instrument-sans/wdth.css";
 @import "tailwindcss";
 
 /*
-  Identité « registre » : encre bleue de tampon sur papier de registre.
-  Une seule famille (Archivo, axe de largeur) : titres élargis, texte normal, tableaux de chiffres resserrés.
+  Identité « surligneur » : page blanche, encre noire, et un seul accent, le trait de surligneur jaune
+  que les comptables passent sur ce qui demande l'œil (montant à passer, valeur à vérifier, pièce en cours).
+  Une seule famille (Instrument Sans, axe de largeur) : titres condensés, texte normal, chiffres tabulaires.
 */
 @theme {
-  --font-sans: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, sans-serif;
 
-  --color-papier: #f3f4ef; /* fond de l'application : papier de registre */
-  --color-feuille: #ffffff; /* surfaces : la feuille posée sur le bureau */
-  --color-bureau: #e6e8e0; /* sous la pièce à valider : le plateau du bureau */
-  --color-trait: #d9ded3; /* filets du registre */
-  --color-trait-fort: #b9c1b2;
-  --color-encre: #1e2b5c; /* encre bleue : action principale, titres forts */
-  --color-encre-pale: #e6e9f4; /* même encre, très diluée : sélection, piste des jauges */
-  --color-tampon: #2e3f9e; /* encre du tampon « Saisi » */
-  --color-texte: #1b2130;
-  --color-texte-2: #586070;
-  --color-texte-3: #6e7582;
+  --color-papier: #ffffff; /* fond de l'application */
+  --color-feuille: #ffffff; /* surfaces */
+  --color-bureau: #e8eaed; /* la table sous la pièce à valider */
+  --color-trait: #e3e5e9; /* filets */
+  --color-trait-fort: #c9cdd4; /* bords des champs et boutons secondaires */
+  --color-encre: #14161a; /* texte fort, action principale */
+  --color-encre-pale: #f1f2f4; /* survol, sélection, zones calmes */
+  --color-fluo: #ffe24a; /* le surligneur : seul accent de couleur */
+  --color-tampon: #157a4a; /* le tampon « Saisi » et ce qui est validé */
+  --color-texte: #14161a;
+  --color-texte-2: #5b6270;
+  --color-texte-3: #646a76;
 
-  /* États, réservés : toujours accompagnés d'un libellé ou d'une icône */
-  --color-bon: #2f6b3f;
-  --color-bon-pale: #e5f0e7;
-  --color-attention: #9a6200;
-  --color-attention-pale: #fbf0d9;
+  /* États, réservés : toujours accompagnés d'un libellé ou d'un signe */
+  --color-bon: #157a4a;
+  --color-bon-pale: #e3f1e9;
+  --color-attention: #8a5a00;
+  --color-attention-pale: #fff4c2;
   --color-critique: #b42318;
-  --color-critique-pale: #fbe4e1;
+  --color-critique-pale: #fbe6e3;
 }
 
 html {
@@ -37,23 +39,40 @@ body {
   color: var(--color-texte);
 }
 
-/* Chiffres alignés dans les colonnes uniquement */
+/* Chiffres alignés dans les colonnes */
 .chiffres {
   font-variant-numeric: tabular-nums;
-  font-stretch: 92%;
 }
 
-/* Totaux comptables : double soulignement, comme au registre */
+/* Titres : condensés, gras, serrés */
+.titre {
+  font-weight: 700;
+  font-stretch: 78%;
+  letter-spacing: -0.015em;
+  line-height: 1;
+}
+
+/* Le trait de surligneur : un peu irrégulier, comme un vrai feutre */
+.fluo {
+  background: linear-gradient(transparent 10%, var(--color-fluo) 10%, var(--color-fluo) 90%, transparent 90%);
+  border-radius: 3px 8px 4px 9px;
+  padding: 0 0.3em;
+  margin: 0 -0.3em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Totaux comptables : double soulignement */
 .double-trait {
   border-bottom: 3px double var(--color-texte);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-tampon);
+  outline: 2px solid var(--color-encre);
   outline-offset: 2px;
 }
 
-/* Le tampon « Saisi » : le seul mouvement de l'application, déclenché par la validation */
+/* Le tampon « Saisi » : la réponse visible à la validation */
 @keyframes tamponner {
   0% {
     opacity: 0;
@@ -98,4 +117,9 @@ body {
   .tampon-anime {
     animation: none;
   }
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--color-encre);
 }

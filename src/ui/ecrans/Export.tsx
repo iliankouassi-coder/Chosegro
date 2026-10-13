@@ -116,7 +116,7 @@ export function Export() {
           </label>
           <div className="grid grid-cols-1 gap-1">
             <span className="font-medium">Période</span>
-            <div className="inline-flex w-fit rounded-[5px] border border-trait-fort p-0.5">
+            <div className="inline-flex w-fit rounded-lg border border-trait-fort p-0.5">
               {[moisCourant, moisPrecedent(moisCourant)].map((m) => {
                 const b = bornesMois(m)
                 const choisi = periode.debut === b.debut && periode.fin === b.fin
@@ -126,7 +126,7 @@ export function Export() {
                     type="button"
                     aria-pressed={choisi}
                     onClick={() => setPeriode(b)}
-                    className={`rounded-[3px] px-3 py-1.5 first-letter:uppercase ${choisi ? 'bg-encre text-white' : 'text-texte-2 hover:bg-encre-pale hover:text-encre'}`}
+                    className={`rounded-md px-3 py-1.5 first-letter:uppercase ${choisi ? 'bg-encre text-white' : 'text-texte-2 hover:bg-encre-pale hover:text-encre'}`}
                   >
                     {nomMois(m)}
                   </button>
@@ -190,7 +190,7 @@ export function Export() {
         titre={
           <span>
             Aperçu{' '}
-            <span className="font-normal text-texte-2 [font-stretch:100%]">
+            <span className="font-normal text-texte-2">
               {client.raisonSociale}, du <span className="chiffres">{formatDate(periode.debut)}</span> au{' '}
               <span className="chiffres">{formatDate(periode.fin)}</span>
             </span>
@@ -212,7 +212,7 @@ export function Export() {
             <p className="font-semibold text-critique">
               <span aria-hidden>■ </span>Export bloqué :
             </p>
-            <ul className="list-disc pl-5">
+            <ul className="list-disc pl-2">
               {problemes.map((p) => (
                 <li key={p}>{p}</li>
               ))}
@@ -270,7 +270,7 @@ export function Export() {
       {derniers.length > 0 && (
         <div className="lg:col-start-2">
           <Carte titre="Derniers exports">
-            <ul className="-my-4 divide-y divide-trait text-sm">
+            <ul className="-mt-3 divide-y divide-trait text-sm">
               {derniers.map((x) => (
                 <li key={x.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-2.5">
                   <div className="min-w-0">

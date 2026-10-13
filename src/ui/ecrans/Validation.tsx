@@ -1,4 +1,4 @@
-// Écran 3 — Validation d'une pièce : la pièce posée sur le bureau à gauche, la feuille de saisie à droite.
+// Écran 3 — Validation d'une pièce : la file à gauche, la pièce posée sur la table, la saisie à droite.
 // Deux gestes pour une pièce sans correction : l'ouvrir, puis Entrée. Flèche droite : pièce suivante. C : corriger.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { allerA, lienVers } from '../../app/routeur'
@@ -6,7 +6,8 @@ import { useApp } from '../../app/store'
 import { formatDate, formatDateHeure, lireDate } from '../../domain/dates'
 import { texteEquilibre, totaux } from '../../domain/ecritures'
 import { LIBELLES_JOURNAL } from '../../domain/export'
-import { LIBELLES_CANAL, LIBELLES_STATUT, pieceSuivante, piecesAValider } from '../../domain/pieces'
+import { LIBELLES_CANAL, LIBELLES_STATUT, pieceSuivante } from '../../domain/pieces'
+import { fileDeValidation, type LignePiece } from '../../domain/tableaux'
 import { libelleCompte, rechercherComptes } from '../../domain/plan'
 import { formatMontant, lireMontant } from '../../domain/montants'
 import type { ChampLu, NaturePiece, Piece } from '../../domain/types'
@@ -63,7 +64,17 @@ function versCorrections(s: Saisie): { corrections: Corrections; erreurs: string
   }
 }
 
-/** Un champ lu : libellé au-dessus, valeur dessous ; la confiance n'apparaît que si elle n'est pas haute. */
+/** Marque une valeur dont la lecture n'est pas sûre : trait de surligneur et mot qui dit pourquoi. */
+function MarqueConfiance({ confiance }: { confiance: ChampLu<unknown>['confiance'] }) {
+  if (confiance === 'haut') return null
+  return (
+    <span className={`ml-2 whitespace-nowrap text-xs font-semibold ${confiance === 'bas' ? 'text-critique' : 'text-texte-2'}`}>
+      {confiance === 'bas' ? 'douteux' : 'à vérifier'}
+    </span>
+  )
+}
+
+/** Un champ lu : libellé au-dessus, valeur dessous ; surligné seulement s'il faut le vérifier. */
 function Champ<T extends string | number>({
   libelle,
   champ,
@@ -77,38 +88,36 @@ function Champ<T extends string | number>({
 }) {
   return (
     <div className={`min-w-0 ${className}`}>
-      <dt className="text-xs text-texte-2">{libelle}</dt>
-      <dd className="mt-0.5 flex flex-wrap items-baseline gap-x-2 text-sm font-medium text-texte">
+      <dt className="text-[13px] text-texte-2">{libelle}</dt>
+      <dd className="mt-0.5 text-[15px] font-medium leading-snug text-texte">
         {champ.valeur === null ? (
           <span className="font-normal text-texte-3">non lu</span>
-        ) : affichage ? (
-          affichage(champ.valeur)
         ) : (
-          String(champ.valeur)
+          <>
+            <span className={champ.confiance !== 'haut' ? 'fluo' : ''}>{affichage ? affichage(champ.valeur) : String(champ.valeur)}</span>
+            <MarqueConfiance confiance={champ.confiance} />
+          </>
         )}
-        {champ.valeur !== null && champ.confiance !== 'haut' && <PastilleConfiance confiance={champ.confiance} />}
       </dd>
     </div>
   )
 }
 
-/** Montant lu, aligné à droite comme sur un bordereau. */
+/** Montant lu, en grand ; le TTC, montant qui sera passé, porte toujours le trait de surligneur. */
 function MontantLu({ libelle, champ, fort = false }: { libelle: string; champ: ChampLu<number>; fort?: boolean }) {
   return (
-    <div className="min-w-0 text-right">
-      <dt className="text-xs text-texte-2">{libelle}</dt>
-      <dd className={`mt-0.5 ${fort ? 'text-base font-semibold' : 'text-sm font-medium'}`}>
+    <div className="min-w-0">
+      <dt className="text-[13px] text-texte-2">{libelle}</dt>
+      <dd className="titre mt-1 text-[26px] font-semibold">
         {champ.valeur === null ? (
-          <span className="font-normal text-texte-3">non lu</span>
+          <span className="text-base font-normal text-texte-3">non lu</span>
         ) : (
-          <span className="chiffres">{formatMontant(champ.valeur)}</span>
-        )}
-        {champ.valeur !== null && champ.confiance !== 'haut' && (
-          <span className="block">
-            <PastilleConfiance confiance={champ.confiance} />
-          </span>
+          <span className={`chiffres ${fort || champ.confiance !== 'haut' ? 'fluo' : ''}`}>{formatMontant(champ.valeur)}</span>
         )}
       </dd>
+      {champ.valeur !== null && champ.confiance !== 'haut' && (
+        <p className="mt-1 text-xs font-semibold text-texte-2">{champ.confiance === 'bas' ? 'douteux' : 'à vérifier'}</p>
+      )}
     </div>
   )
 }
@@ -125,7 +134,7 @@ function Tampon({ piece, anime }: { piece: Piece; anime: boolean }) {
   if (!t) return null
   return (
     <div className={`tampon ${t.classe} ${anime ? 'tampon-anime' : ''}`} aria-hidden>
-      <div className="text-[clamp(22px,3.2vw,40px)] font-extrabold uppercase leading-none tracking-[0.06em] [font-stretch:125%]">{t.texte}</div>
+      <div className="text-[clamp(22px,3vw,40px)] font-bold uppercase leading-none tracking-[0.08em]">{t.texte}</div>
       {piece.traiteeLe && (
         <div className="chiffres mt-1 text-[clamp(11px,1vw,14px)] font-semibold">{formatDateHeure(piece.traiteeLe).slice(0, 10)}</div>
       )}
@@ -133,24 +142,79 @@ function Tampon({ piece, anime }: { piece: Piece; anime: boolean }) {
   )
 }
 
+/** La file des pièces à valider, à gauche de l'écran : la pièce en cours est marquée, un clic ouvre une autre pièce. */
+function FileValidation({ lignes, courante }: { lignes: LignePiece[]; courante: string }) {
+  const refCourante = useRef<HTMLAnchorElement>(null)
+  useEffect(() => refCourante.current?.scrollIntoView?.({ block: 'nearest' }), [courante])
+  return (
+    <nav aria-label="Pièces à valider" className="hidden min-h-0 flex-col border-r border-trait xl:flex">
+      <div className="flex items-baseline justify-between px-5 pb-3 pt-6">
+        <h2 className="text-[15px] font-semibold">À valider</h2>
+        <span className="chiffres text-sm text-texte-2">{lignes.length}</span>
+      </div>
+      {lignes.length === 0 ? (
+        <p className="px-5 text-sm text-texte-2">Plus rien à valider.</p>
+      ) : (
+        <ol className="min-h-0 flex-1 overflow-y-auto pb-6">
+          {lignes.map((l) => {
+            const ici = l.piece.id === courante
+            return (
+              <li key={l.piece.id}>
+                <a
+                  ref={ici ? refCourante : undefined}
+                  href={lienVers({ ecran: 'validation', pieceId: l.piece.id })}
+                  aria-current={ici ? 'true' : undefined}
+                  className={`grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-l-[3px] py-2.5 pl-[17px] pr-5 ${
+                    ici ? 'border-encre bg-encre-pale' : 'border-transparent hover:bg-encre-pale/60'
+                  }`}
+                >
+                  <span className={`truncate text-sm ${ici ? 'font-semibold' : 'font-medium'}`}>{l.fournisseur ?? 'Fournisseur non lu'}</span>
+                  <span className="chiffres text-right text-sm">{l.ttc !== null ? formatMontant(l.ttc) : ''}</span>
+                  <span className="truncate text-xs text-texte-2">{l.client?.raisonSociale}</span>
+                  <span className="text-right text-xs text-texte-3">
+                    {l.confiance === 'moyen' || l.confiance === 'bas' ? (
+                      <PastilleConfiance confiance={l.confiance} />
+                    ) : (
+                      <span className="chiffres">{formatDateHeure(l.piece.recueLe).slice(-5)}</span>
+                    )}
+                  </span>
+                </a>
+              </li>
+            )
+          })}
+        </ol>
+      )}
+      <p className="border-t border-trait px-5 py-3 text-xs leading-relaxed text-texte-2">
+        <Touche>Entrée</Touche> valide, <Touche>{'\u2192'}</Touche> passe à la suivante, <Touche>C</Touche> corrige.
+      </p>
+    </nav>
+  )
+}
+
 const champSaisie = CHAMP
 
 export function Validation({ pieceId }: { pieceId: string | null }) {
   const { etat } = useApp()
-  const aValider = piecesAValider(etat.donnees.pieces)
+  const lignes = fileDeValidation(etat.donnees)
+  const aValider = lignes.map((l) => l.piece)
   const piece = pieceId ? etat.donnees.pieces.find((p) => p.id === pieceId) : undefined
 
   useEffect(() => {
     if (!pieceId && aValider[0]) allerA({ ecran: 'validation', pieceId: aValider[0].id })
   }, [pieceId, aValider])
 
-  if (!etat.plan) return <Vide>Chargement du plan comptable…</Vide>
-  if (!pieceId) return <Vide>Aucune pièce à valider. Recevez des pièces dans l’écran Réception.</Vide>
-  if (!piece) return <Vide>Pièce introuvable.</Vide>
-  return <ValidationPiece key={piece.id} piece={piece} file={aValider} />
+  const message = (texte: string) => (
+    <div className="mx-auto max-w-[1280px] px-4 py-9 sm:px-7">
+      <Vide>{texte}</Vide>
+    </div>
+  )
+  if (!etat.plan) return message('Chargement du plan comptable…')
+  if (!pieceId) return message('Aucune pièce à valider. Recevez des pièces dans l’écran Réception.')
+  if (!piece) return message('Pièce introuvable.')
+  return <ValidationPiece key={piece.id} piece={piece} file={aValider} lignes={lignes} />
 }
 
-function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
+function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[]; lignes: LignePiece[] }) {
   const { etat, actions } = useApp()
   const plan = etat.plan
   const client = etat.donnees.clients.find((c) => c.id === piece.clientId)
@@ -250,30 +314,34 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
     plan && saisie.compte.trim().length >= 2 && !/^\d{4,}$/.test(saisie.compte.trim()) ? rechercherComptes(plan, saisie.compte, { limite: 8 }) : []
   const t = p ? totaux(p.proposition.ecriture.lignes) : null
 
+  const lignesEcriture = p?.proposition.ecriture.lignes ?? []
+  const libelleUnique =
+    lignesEcriture.length > 0 && lignesEcriture.every((l) => l.libelle === lignesEcriture[0]?.libelle) ? lignesEcriture[0]?.libelle : null
+
   return (
-    <div className="grid grid-cols-1 gap-5 lg:h-[calc(100vh-3.5rem)] lg:min-h-[640px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:overflow-hidden">
-      <div className="h-[55vh] min-h-[360px] lg:h-auto">
+    <div className="grid grid-cols-1 lg:h-[calc(100vh-3.5rem)] lg:min-h-[640px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:overflow-hidden xl:grid-cols-[272px_minmax(0,1fr)_minmax(0,1.05fr)]">
+      <FileValidation lignes={lignes} courante={piece.id} />
+
+      <div className="h-[62vh] min-h-[380px] lg:h-auto lg:min-h-0">
         <ApercuPiece pieceId={piece.id} tampon={<Tampon piece={piece} anime={tamponAnime} />} />
       </div>
 
-      <div className="flex min-h-0 flex-col rounded-[5px] border border-trait bg-feuille lg:overflow-hidden">
-        <div className="min-h-0 flex-1 lg:overflow-y-auto">
+      <div className="flex min-h-0 flex-col bg-feuille lg:overflow-hidden">
+        <div className="min-h-0 flex-1 px-5 sm:px-8 lg:overflow-y-auto xl:px-10">
           {/* En-tête de la pièce */}
-          <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-trait px-5 pb-3 pt-4">
+          <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 pt-6">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-[22px] font-bold leading-tight tracking-[-0.01em] text-encre [font-stretch:115%]">{client?.raisonSociale}</h1>
-                {piece.demo && <BadgeDemo texte="pièce fictive" />}
-              </div>
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-texte-2">
+              <h1 className="titre text-[34px] leading-[0.95]">{client?.raisonSociale}</h1>
+              <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-texte-2">
                 <IconeCanal canal={piece.canal} />
                 Reçue par {LIBELLES_CANAL[piece.canal]} le <span className="chiffres">{formatDateHeure(piece.recueLe)}</span>
+                {piece.demo && <BadgeDemo texte="pièce fictive" />}
               </p>
             </div>
-            <div className="flex items-center gap-3 text-sm text-texte-2">
+            <div className="flex items-center gap-4 pt-1 text-sm text-texte-2 xl:hidden">
               {position >= 0 && (
                 <span>
-                  Pièce <span className="chiffres font-semibold text-texte">{position + 1}</span> sur <span className="chiffres">{file.length}</span>
+                  <span className="chiffres font-semibold text-texte">{position + 1}</span> sur <span className="chiffres">{file.length}</span>
                 </span>
               )}
               {suivante && (
@@ -281,15 +349,15 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
                   className="inline-flex items-center gap-1.5 font-medium text-encre hover:underline"
                   href={lienVers({ ecran: 'validation', pieceId: suivante.id })}
                 >
-                  Suivante <Touche>{'→'}</Touche>
+                  Suivante <Touche>{'\u2192'}</Touche>
                 </a>
               )}
             </div>
           </header>
 
           {piece.statut === 'a_lire' && (
-            <section className="grid grid-cols-1 gap-3 px-5 py-5">
-              <h2 className="text-[15px] font-semibold [font-stretch:112%]">Pièce pas encore lue</h2>
+            <section className="grid grid-cols-1 gap-3 py-6">
+              <h2 className="text-[17px] font-semibold">Pièce pas encore lue</h2>
               <p className="text-sm text-texte">{etat.lectures[piece.id] ?? 'En attente de lecture par Claude Code.'}</p>
               {piece.erreurLecture && <Erreur>{piece.erreurLecture}</Erreur>}
               {!etat.lectures[piece.id] && (
@@ -304,7 +372,7 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
           )}
 
           {preparation && !preparation.ok && piece.statut !== 'a_lire' && (
-            <div className="px-5 py-4">
+            <div className="py-5">
               <Erreur>{preparation.erreur.join(' ')}</Erreur>
             </div>
           )}
@@ -312,40 +380,41 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
           {p && t && (
             <>
               {/* Ce qui a été lu sur la pièce */}
-              <section aria-labelledby="titre-lu" className="border-b border-trait px-5 py-3">
+              <section aria-labelledby="titre-lu" className="pt-5">
                 <h2 id="titre-lu" className="sr-only">
                   Champs lus sur la pièce
                 </h2>
-                <dl className="grid grid-cols-2 gap-x-5 gap-y-3 xl:grid-cols-3">
-                  <Champ libelle="Fournisseur (émetteur)" champ={p.extraction.fournisseur} className="col-span-2 xl:col-span-1" />
-                  <Champ libelle="N° de facture" champ={p.extraction.numeroFacture} />
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+                  <Champ libelle="Fournisseur" champ={p.extraction.fournisseur} className="col-span-2 sm:col-span-1" />
+                  <Champ libelle="N° de facture" champ={p.extraction.numeroFacture} affichage={(v) => <span className="chiffres">{v}</span>} />
                   <Champ libelle="Date" champ={p.extraction.date} affichage={(v) => <span className="chiffres">{formatDate(v)}</span>} />
                   <Champ libelle="Destinataire" champ={p.extraction.destinataire} />
                   <div className="min-w-0">
-                    <dt className="text-xs text-texte-2">Type</dt>
-                    <dd className="mt-0.5 text-sm font-medium">{LIBELLES_TYPE[p.proposition.determination.type]}</dd>
+                    <dt className="text-[13px] text-texte-2">Type</dt>
+                    <dd className="mt-0.5 text-[15px] font-medium">{LIBELLES_TYPE[p.proposition.determination.type]}</dd>
                   </div>
-                  <Champ libelle="QR code de facture électronique" champ={p.extraction.qrFne} affichage={(v) => LIBELLES_QR[v]} />
+                  <Champ libelle="QR facture électronique" champ={p.extraction.qrFne} affichage={(v) => LIBELLES_QR[v]} />
                 </dl>
-                <p className="mt-2 text-xs leading-snug text-texte-2">{p.proposition.determination.raison}</p>
+                <p className="mt-2.5 text-[13px] leading-snug text-texte-2">{p.proposition.determination.raison}</p>
               </section>
 
               {/* Les montants et leur contrôle */}
-              <section aria-labelledby="titre-montants" className="border-b border-trait px-5 py-3">
+              <section aria-labelledby="titre-montants" className="mt-5 border-t border-trait pt-4">
                 <h2 id="titre-montants" className="sr-only">
                   Montants lus et contrôle
                 </h2>
-                <dl className="grid grid-cols-[minmax(0,1fr)_repeat(3,minmax(0,1fr))] items-end gap-x-5">
-                  <Champ libelle="Devise" champ={p.extraction.devise} affichage={(v) => (v === 'XOF' ? 'FCFA' : v)} />
+                <dl className="grid grid-cols-3 gap-x-6 gap-y-4 sm:grid-cols-[repeat(3,minmax(0,1fr))_auto]">
                   <MontantLu libelle="HT" champ={p.extraction.ht} />
                   <MontantLu libelle="TVA" champ={p.extraction.tva} />
                   <MontantLu libelle="TTC" champ={p.extraction.ttc} fort />
+                  <Champ
+                    libelle="Devise"
+                    champ={p.extraction.devise}
+                    affichage={(v) => (v === 'XOF' ? 'FCFA' : v)}
+                    className="col-span-3 sm:col-span-1 sm:text-right"
+                  />
                 </dl>
-                <p
-                  className={`mt-3 border-l-2 py-0.5 pl-3 text-sm font-medium ${
-                    p.controle.statut === 'conforme' ? 'border-bon text-bon' : 'border-attention text-attention'
-                  }`}
-                >
+                <p className={`mt-3 text-sm font-medium ${p.controle.statut === 'conforme' ? 'text-bon' : 'text-attention'}`}>
                   <span aria-hidden>{p.controle.statut === 'conforme' ? '✓ ' : '▲ '}</span>
                   {p.controle.texte}
                 </p>
@@ -364,56 +433,55 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
                 )}
               </section>
 
-              {/* L'écriture, présentée comme une page de journal */}
-              <section aria-labelledby="titre-ecriture" className="px-5 py-3">
-                <h2 id="titre-ecriture" className="flex flex-wrap items-baseline gap-x-2 text-[15px] font-semibold [font-stretch:112%]">
-                  Écriture proposée
-                  <span className="text-sm font-normal text-texte-2 [font-stretch:100%]">
-                    journal {LIBELLES_JOURNAL[p.proposition.ecriture.journal]}
-                  </span>
-                </h2>
-                <div className="relative mt-2 overflow-x-auto">
-                  <table className="w-full min-w-[440px] text-sm">
+              {/* L'écriture */}
+              <section aria-labelledby="titre-ecriture" className="mt-6 pb-6">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+                  <h2 id="titre-ecriture" className="text-[17px] font-semibold tracking-[-0.01em]">
+                    Écriture proposée
+                  </h2>
+                  <span className="text-sm text-texte-2">Journal : {LIBELLES_JOURNAL[p.proposition.ecriture.journal]}</span>
+                </div>
+                {libelleUnique && <p className="mt-1 text-sm text-texte-2">{libelleUnique}</p>}
+                <div className="relative mt-3 overflow-x-auto">
+                  <table className="w-full min-w-[380px] text-[15px]">
                     <thead>
-                      <tr className="border-b border-texte/70 text-left text-xs text-texte-2">
-                        <th className="w-[34%] py-1.5 pr-3 font-medium">Compte</th>
-                        <th className="pr-3 font-medium">Libellé</th>
-                        <th className="w-[14%] text-right font-medium">Débit</th>
-                        <th className="w-[14%] text-right font-medium">Crédit</th>
+                      <tr className="border-b border-encre text-left text-[13px] text-texte-2">
+                        <th className="py-1.5 pr-3 font-normal">Compte</th>
+                        {!libelleUnique && <th className="pr-3 font-normal">Libellé</th>}
+                        <th className="w-[20%] text-right font-normal">Débit</th>
+                        <th className="w-[20%] text-right font-normal">Crédit</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {p.proposition.ecriture.lignes.map((l, i) => (
+                      {lignesEcriture.map((l, i) => (
                         <tr key={i} className="border-b border-trait">
-                          <td className="py-1.5 pr-3 align-top">
+                          <td className="py-2 pr-3 align-top">
                             {l.compte === '' ? (
-                              <span className="font-semibold text-critique">
-                                <span aria-hidden>■ </span>à choisir
-                              </span>
+                              <span className="fluo font-semibold text-critique">à choisir</span>
                             ) : (
                               <>
-                                <span className="chiffres font-semibold text-encre">{l.compte}</span>
-                                <span className="block text-xs leading-snug text-texte-2">
+                                <span className="chiffres font-bold">{l.compte}</span>
+                                <span className="block text-[13px] leading-snug text-texte-2">
                                   {(plan && libelleCompte(plan, l.compte)) ?? 'absent du plan'}
                                 </span>
                               </>
                             )}
                           </td>
-                          <td className="py-1.5 pr-3 align-top text-[13px] leading-snug text-texte">{l.libelle}</td>
-                          <td className="chiffres py-1.5 text-right align-top">{l.debit ? formatMontant(l.debit) : ''}</td>
-                          <td className="chiffres py-1.5 text-right align-top">{l.credit ? formatMontant(l.credit) : ''}</td>
+                          {!libelleUnique && <td className="py-2.5 pr-3 align-top text-sm leading-snug">{l.libelle}</td>}
+                          <td className="chiffres py-2 text-right align-top">{l.debit ? formatMontant(l.debit) : ''}</td>
+                          <td className="chiffres py-2 text-right align-top">{l.credit ? formatMontant(l.credit) : ''}</td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="font-semibold">
-                        <td className="pt-2" colSpan={2}>
+                      <tr className="font-bold">
+                        <td className="pt-2.5" colSpan={libelleUnique ? 1 : 2}>
                           Totaux
                         </td>
-                        <td className="pt-2 text-right">
+                        <td className="pt-2.5 text-right">
                           <span className="chiffres double-trait inline-block pb-0.5">{formatMontant(t.debit)}</span>
                         </td>
-                        <td className="pt-2 text-right">
+                        <td className="pt-2.5 text-right">
                           <span className="chiffres double-trait inline-block pb-0.5">{formatMontant(t.credit)}</span>
                         </td>
                       </tr>
@@ -424,10 +492,10 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
                   <span aria-hidden>{t.equilibree ? '✓ ' : '■ '}</span>
                   {texteEquilibre(t)}
                 </p>
-                <p className="mt-3 rounded-[4px] bg-encre-pale/60 px-3 py-2 text-sm text-texte">
-                  <span className="font-semibold text-encre">Pourquoi : </span>
+                <p className="mt-4 text-sm leading-relaxed text-texte-2">
+                  <span className="font-semibold text-texte">Pourquoi : </span>
                   {p.proposition.ecriture.raison}
-                  <span className="text-texte-2">{p.proposition.ecriture.source === 'ia' ? ' (source : IA)' : ' (source : règle apprise)'}</span>
+                  {p.proposition.ecriture.source === 'ia' ? ' (source : IA)' : ' (source : règle apprise)'}
                 </p>
                 {p.proposition.avertissements.length > 0 && (
                   <ul className="mt-2 space-y-1 text-xs text-attention">
@@ -442,8 +510,8 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
               </section>
 
               {correction && modifiable && (
-                <section aria-labelledby="titre-corriger" className="border-t border-trait bg-papier/50 px-5 py-4">
-                  <h2 id="titre-corriger" className="mb-3 text-[15px] font-semibold [font-stretch:112%]">
+                <section aria-labelledby="titre-corriger" className="mb-6 border-t border-encre pt-4">
+                  <h2 id="titre-corriger" className="mb-3 text-[17px] font-semibold tracking-[-0.01em]">
                     Corriger
                   </h2>
                   <form
@@ -466,7 +534,7 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
                         onChange={(e) => setSaisie({ ...saisie, compte: e.target.value })}
                       />
                       {suggestions.length > 0 && (
-                        <ul className="max-h-48 overflow-y-auto rounded-[4px] border border-trait bg-feuille text-sm shadow-[0_4px_14px_-6px_rgb(27_33_48/0.25)]">
+                        <ul className="max-h-48 overflow-y-auto rounded-lg border border-trait bg-feuille text-sm shadow-[0_6px_18px_-8px_rgb(20_22_26/0.3)]">
                           {suggestions.map((c) => (
                             <li key={c.code}>
                               <button
@@ -474,7 +542,7 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
                                 className="flex w-full gap-3 px-3 py-1.5 text-left hover:bg-encre-pale"
                                 onClick={() => setSaisie({ ...saisie, compte: c.code })}
                               >
-                                <span className="chiffres font-semibold text-encre">{c.code}</span>
+                                <span className="chiffres font-bold">{c.code}</span>
                                 <span>{c.libelle}</span>
                                 {c.aVerifier && <span className="text-attention">(à vérifier)</span>}
                               </button>
@@ -560,7 +628,7 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
 
         {/* Barre d'action, toujours visible en bas de la feuille */}
         {p && (
-          <div className="sticky bottom-0 border-t border-trait bg-feuille px-5 py-3">
+          <div className="sticky bottom-0 border-t border-trait bg-feuille px-5 py-4 sm:px-8 xl:px-10">
             {(bloquants.length > 0 || erreurs.length > 0) && modifiable && (
               <div className="mb-3 border-l-2 border-critique bg-critique-pale px-3 py-2 text-sm text-texte">
                 <p className="font-semibold text-critique">
@@ -575,16 +643,27 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
             )}
             {modifiable ? (
               <div className="flex flex-wrap items-center gap-2">
-                <Bouton variante="principal" className="!px-5" disabled={occupe || bloquants.length > 0} onClick={valider}>
+                <Bouton variante="principal" className="!px-5 !py-3 !text-[15px]" disabled={occupe || bloquants.length > 0} onClick={valider}>
                   Valider <Touche sombre>Entrée</Touche>
                 </Bouton>
-                <Bouton onClick={() => (correction ? setCorrection(false) : ouvrirCorrection())} aria-expanded={correction}>
+                <Bouton
+                  className="!py-3 !text-[15px]"
+                  onClick={() => (correction ? setCorrection(false) : ouvrirCorrection())}
+                  aria-expanded={correction}
+                >
                   Corriger <Touche>C</Touche>
                 </Bouton>
-                <Bouton variante="danger" disabled={occupe} onClick={() => void executer(() => actions.rejeterIllisible(piece.id))}>
+                <Bouton
+                  variante="discret"
+                  className="!px-3 !py-3"
+                  disabled={occupe}
+                  onClick={() => void executer(() => actions.rejeterIllisible(piece.id))}
+                >
                   Rejeter (illisible)
                 </Bouton>
                 <Bouton
+                  variante="discret"
+                  className="!px-3 !py-3"
                   disabled={occupe || !p.doublon}
                   title={p.doublon ? p.doublon.raison : 'Aucune pièce identique trouvée'}
                   onClick={() => void executer(() => actions.marquerDoublon(piece.id))}

@@ -8,6 +8,7 @@ import { decoupageEnTacheDeFond, LIBELLES_CANAL, LIBELLES_STATUT } from '../../d
 import type { Canal, Piece } from '../../domain/types'
 import { genreFichier } from '../../infra/fichiers'
 import { BadgeDemo, Bouton, Erreur, IconeCanal, Raison, Vide } from '../composants'
+import { CHAMP } from '../styles'
 
 const CANAUX: Canal[] = ['whatsapp', 'email', 'papier']
 
@@ -63,20 +64,16 @@ export function Reception() {
       .sort((a, b) => (a.fichier.pages?.[0] ?? 0) - (b.fichier.pages?.[0] ?? 0))
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
-      <div className="grid grid-cols-1 content-start gap-6">
-        <section aria-labelledby="titre-recevoir" className="rounded-[5px] border border-trait bg-feuille">
-          <h1 id="titre-recevoir" className="border-b border-trait px-5 py-3 text-lg font-semibold [font-stretch:112%]">
+    <div className="grid grid-cols-1 gap-x-14 gap-y-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+      <div className="grid grid-cols-1 content-start gap-8">
+        <section aria-labelledby="titre-recevoir">
+          <h1 id="titre-recevoir" className="titre text-[38px]">
             Recevoir des pièces
           </h1>
-          <div className="grid grid-cols-1 gap-4 px-5 py-4">
+          <div className="mt-6 grid grid-cols-1 gap-5">
             <label className="grid grid-cols-1 gap-1 text-sm">
               <span className="font-medium">Client</span>
-              <select
-                className="rounded-[4px] border border-trait-fort bg-feuille px-3 py-2 hover:border-texte-3 focus:border-encre"
-                value={clientChoisi?.id ?? ''}
-                onChange={(e) => setClientId(e.target.value)}
-              >
+              <select className={CHAMP} value={clientChoisi?.id ?? ''} onChange={(e) => setClientId(e.target.value)}>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.raisonSociale}
@@ -86,14 +83,14 @@ export function Reception() {
             </label>
             <fieldset className="grid grid-cols-1 gap-1.5 text-sm">
               <legend className="mb-1 font-medium">Canal</legend>
-              <div className="inline-flex w-fit rounded-[5px] border border-trait-fort p-0.5">
+              <div className="inline-flex w-fit rounded-lg border border-trait-fort p-0.5">
                 {CANAUX.map((c) => (
                   <button
                     key={c}
                     type="button"
                     aria-pressed={canal === c}
                     onClick={() => setCanal(c)}
-                    className={`inline-flex items-center gap-1.5 rounded-[3px] px-3 py-1.5 ${
+                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
                       canal === c ? 'bg-encre text-white' : 'text-texte-2 hover:bg-encre-pale hover:text-encre'
                     }`}
                   >
@@ -115,8 +112,8 @@ export function Reception() {
               }}
               onDragLeave={() => setSurvol(false)}
               onDrop={surDepot}
-              className={`relative flex cursor-pointer flex-col items-center justify-center rounded-[5px] border-2 border-dashed px-6 py-10 text-center focus-within:outline-2 focus-within:outline-tampon ${
-                survol ? 'border-encre bg-encre-pale' : 'border-trait-fort bg-papier/60 hover:border-texte-3'
+              className={`relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-12 text-center focus-within:outline-2 focus-within:outline-tampon ${
+                survol ? 'border-encre bg-encre-pale' : 'border-trait-fort bg-encre-pale/50 hover:border-texte-3'
               }`}
             >
               <IconeCanal canal={canal} className="mb-2 h-7 w-7 text-encre" />
@@ -165,9 +162,9 @@ export function Reception() {
           </div>
         </section>
 
-        <section aria-labelledby="titre-boite-demo" className="rounded-[5px] border border-dashed border-attention/60 bg-attention-pale/30 px-5 py-4">
-          <h2 id="titre-boite-demo" className="flex items-center gap-2 text-[15px] font-semibold [font-stretch:112%]">
-            Boîte de réception démo <BadgeDemo />
+        <section aria-labelledby="titre-boite-demo" className="rounded-xl bg-encre-pale px-5 py-5">
+          <h2 id="titre-boite-demo" className="flex items-center gap-2 text-[17px] font-semibold">
+            Boîte de réception démo <BadgeDemo texte="fictive" />
           </h2>
           <p className="mt-1.5 text-sm text-texte-2">
             {SEED.boiteDeReception.length} envois fictifs déjà lus (dont une photo floue, la même photo envoyée deux fois, un avoir, un ticket
@@ -183,8 +180,8 @@ export function Reception() {
       </div>
 
       <section aria-labelledby="titre-recues">
-        <div className="mb-3 flex items-baseline justify-between gap-3">
-          <h2 id="titre-recues" className="text-lg font-semibold [font-stretch:112%]">
+        <div className="mb-3 flex min-h-[38px] items-end justify-between gap-3">
+          <h2 id="titre-recues" className="text-[17px] font-semibold">
             Dernières pièces reçues
           </h2>
           {recues.length > 0 && <span className="text-sm text-texte-2">les 40 plus récentes</span>}
@@ -192,7 +189,7 @@ export function Reception() {
         {recues.length === 0 ? (
           <Vide>Aucune pièce pour l’instant.</Vide>
         ) : (
-          <ul className="divide-y divide-trait rounded-[5px] border border-trait bg-feuille">
+          <ul className="divide-y divide-trait border-t border-encre">
             {recues.map((p) => {
               const client = clients.find((c) => c.id === p.clientId)
               const groupe = p.canal === 'papier' && p.fichier.pages ? groupesPapier(p) : []
@@ -200,7 +197,7 @@ export function Reception() {
               const modifiable = p.statut === 'a_lire' || p.statut === 'a_valider'
               const statut = STATUTS[p.statut]
               return (
-                <li key={p.id} className="flex items-start gap-3 px-4 py-3 text-sm">
+                <li key={p.id} className="flex items-start gap-3 px-1 py-3 text-sm">
                   <IconeCanal canal={p.canal} className="mt-0.5 h-4 w-4 shrink-0 text-texte-2" />
                   <div className="min-w-0 flex-1">
                     <a href={lienVers({ ecran: 'validation', pieceId: p.id })} className="font-semibold hover:text-encre hover:underline">
@@ -237,7 +234,7 @@ export function Reception() {
                       </div>
                     )}
                   </div>
-                  <span className={`shrink-0 whitespace-nowrap text-xs ${etat.lectures[p.id] ? 'text-tampon' : statut.classe}`}>
+                  <span className={`shrink-0 whitespace-nowrap text-xs ${etat.lectures[p.id] ? 'text-texte-2' : statut.classe}`}>
                     {etat.lectures[p.id] ?? (
                       <>
                         {statut.signe && <span aria-hidden>{statut.signe} </span>}

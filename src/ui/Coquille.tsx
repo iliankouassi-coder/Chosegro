@@ -1,4 +1,5 @@
-// Mise en page commune : colonne de navigation à gauche (barre en haut sur téléphone) et mention DÉMO sur chaque écran.
+// Mise en page commune : barre du haut (marque, onglets, mention DÉMO), puis l'écran.
+// L'écran Validation occupe toute la largeur sous la barre : file, pièce et saisie côte à côte.
 import type { ReactNode } from 'react'
 import { lienVers, type Route } from '../app/routeur'
 
@@ -18,15 +19,13 @@ function Onglet({ o, route, piecesAValider }: { o: (typeof ONGLETS)[number]; rou
     <a
       href={lienVers(o.route)}
       aria-current={actif ? 'page' : undefined}
-      className={`flex shrink-0 items-center justify-between gap-3 rounded-md px-3 py-2 text-sm ${
-        actif ? 'bg-encre text-white' : 'text-texte-2 hover:bg-encre-pale hover:text-encre'
+      className={`flex h-full shrink-0 items-center gap-1.5 border-b-2 text-sm ${
+        actif ? 'border-encre font-semibold text-encre' : 'border-transparent text-texte-2 hover:text-encre'
       }`}
     >
       {o.libelle}
       {o.route.ecran === 'validation' && piecesAValider > 0 && (
-        <span className={`chiffres rounded-sm px-1.5 text-xs font-semibold ${actif ? 'bg-white/20' : 'bg-encre-pale text-encre'}`}>
-          {piecesAValider}
-        </span>
+        <span className="chiffres fluo text-xs font-semibold text-encre">{piecesAValider}</span>
       )}
     </a>
   )
@@ -43,33 +42,34 @@ export function Coquille({
   piecesAValider: number
   children: ReactNode
 }) {
+  const pleineLargeur = route.ecran === 'validation'
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[232px_minmax(0,1fr)]">
-      <aside className="sticky top-0 z-20 border-b border-trait bg-feuille lg:h-screen lg:border-b-0 lg:border-r">
-        <div className="flex h-full flex-col gap-4 px-4 py-3 lg:px-4 lg:py-6">
-          <div className="flex items-baseline justify-between gap-3 lg:block">
-            <a href={lienVers({ ecran: 'accueil' })} className="block">
-              <span className="text-[22px] font-bold leading-none tracking-[-0.02em] text-encre [font-stretch:125%]">Pièces</span>
-              <span className="mt-1 block text-xs text-texte-2">{nomCabinet}</span>
-            </a>
-          </div>
-          <nav aria-label="Écrans" className="relative -mx-1 flex gap-1 overflow-x-auto px-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0">
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-20 border-b border-trait bg-feuille">
+        <div className="flex flex-wrap items-center gap-x-8 px-4 sm:px-7 lg:h-14 lg:flex-nowrap">
+          <a href={lienVers({ ecran: 'accueil' })} className="titre flex h-12 items-center text-[23px] lg:h-full">
+            Pièces
+          </a>
+          <nav
+            aria-label="Écrans"
+            className="relative order-last -mx-4 flex h-11 w-[calc(100%+2rem)] gap-6 overflow-x-auto border-t border-trait px-4 sm:-mx-7 sm:w-[calc(100%+3.5rem)] sm:px-7 lg:order-none lg:mx-0 lg:h-full lg:w-auto lg:border-0 lg:px-0"
+          >
             {ONGLETS.map((o) => (
               <Onglet key={o.libelle} o={o} route={route} piecesAValider={piecesAValider} />
             ))}
           </nav>
-          <div className="mt-auto hidden rounded-md border border-dashed border-attention/60 bg-attention-pale/40 px-3 py-2.5 text-xs leading-snug text-attention lg:block">
-            <strong className="font-semibold">Démonstration.</strong> Clients, pièces et échéances fictifs. Plan SYSCOHADA provisoire, à faire valider
-            par un expert-comptable.
-          </div>
+          <p className="ml-auto flex items-center gap-2 text-xs text-texte-2">
+            <span className="hidden truncate sm:inline">{nomCabinet}</span>
+            <span
+              className="rounded-[4px] border border-trait-fort px-1.5 leading-5"
+              title="Clients, pièces et échéances fictifs. Plan SYSCOHADA provisoire, à faire valider par un expert-comptable."
+            >
+              Démonstration
+            </span>
+          </p>
         </div>
-      </aside>
-      <div className="min-w-0">
-        <p className="border-b border-dashed border-attention/50 bg-attention-pale/40 px-4 py-1.5 text-xs text-attention lg:hidden">
-          Démonstration : données fictives.
-        </p>
-        <main className="mx-auto max-w-[1360px] px-4 py-5 sm:px-6 lg:px-8 lg:py-7">{children}</main>
-      </div>
+      </header>
+      {pleineLargeur ? <main>{children}</main> : <main className="mx-auto max-w-[1280px] px-4 py-7 sm:px-7 lg:py-9">{children}</main>}
     </div>
   )
 }

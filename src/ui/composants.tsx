@@ -1,5 +1,5 @@
 // Petits composants d'affichage partagés. Ils ne calculent rien : ils affichent ce que le domaine a préparé.
-// Identité « registre » : feuilles blanches à filets fins sur papier, encre bleue pour l'action, états toujours libellés.
+// Identité « surligneur » : page blanche, encre noire, un trait jaune sur ce qui demande l'œil, états toujours libellés.
 import type { ReactNode } from 'react'
 import { formatFcfa, formatMontant } from '../domain/montants'
 import type { Alerte, Canal, Confiance } from '../domain/types'
@@ -7,34 +7,24 @@ import type { Alerte, Canal, Confiance } from '../domain/types'
 /** Mention « fictif » discrète : la mention DÉMO principale est portée une seule fois par la coquille. */
 export function BadgeDemo({ texte = 'DÉMO' }: { texte?: string }) {
   return (
-    <span className="inline-flex items-center rounded-sm border border-dashed border-attention/60 px-1.5 text-[11px] font-medium leading-5 text-attention">
+    <span className="inline-flex items-center rounded-[4px] border border-trait-fort px-1.5 text-[11px] font-medium leading-5 text-texte-2">
       {texte}
     </span>
   )
 }
 
-const CONFIANCE: Record<Exclude<Confiance, 'haut'>, { texte: string; classe: string; signe: string }> = {
-  moyen: { texte: 'à vérifier', classe: 'text-attention', signe: '◐' },
-  bas: { texte: 'douteux', classe: 'text-critique', signe: '○' },
+const CONFIANCE: Record<Exclude<Confiance, 'haut'>, { texte: string; classe: string }> = {
+  moyen: { texte: 'à vérifier', classe: 'fluo text-texte' },
+  bas: { texte: 'douteux', classe: 'fluo text-critique' },
 }
 
 /** La confiance n'est signalée que lorsqu'elle n'est pas haute : une lecture sûre n'a pas besoin d'étiquette. */
 export function PastilleConfiance({ confiance }: { confiance: Confiance | null }) {
   if (confiance === null) return <span className="text-xs text-texte-3">non lu</span>
-  if (confiance === 'haut')
-    return (
-      <span className="text-xs text-texte-3" title="Confiance haute">
-        <span aria-hidden>✓</span>
-        <span className="sr-only">confiance haute</span>
-      </span>
-    )
+  if (confiance === 'haut') return <span className="sr-only">confiance haute</span>
   const c = CONFIANCE[confiance]
   return (
-    <span
-      className={`inline-flex items-center gap-1 whitespace-nowrap text-xs font-medium ${c.classe}`}
-      title={`Confiance ${confiance === 'moyen' ? 'moyenne' : 'basse'}`}
-    >
-      <span aria-hidden>{c.signe}</span>
+    <span className={`whitespace-nowrap text-xs font-semibold ${c.classe}`} title={`Confiance ${confiance === 'moyen' ? 'moyenne' : 'basse'}`}>
       {c.texte}
     </span>
   )
@@ -72,7 +62,7 @@ export function ListeAlertes({ alertes }: { alertes: readonly Alerte[] }) {
   )
 }
 
-/** Une feuille du registre : surface blanche, filet fin, titre élargi. */
+/** Une section : titre, filet encre dessous, contenu. Pas de boîte : l'espace et le filet suffisent. */
 export function Carte({
   titre,
   action,
@@ -85,12 +75,12 @@ export function Carte({
   className?: string
 }) {
   return (
-    <section className={`rounded-[5px] border border-trait bg-feuille ${className}`}>
-      <header className="flex items-center justify-between gap-3 border-b border-trait px-5 py-3">
-        <h2 className="text-[15px] font-semibold tracking-[-0.005em] [font-stretch:112%]">{titre}</h2>
+    <section className={className}>
+      <header className="flex min-h-9 flex-wrap items-end justify-between gap-3 border-b border-encre pb-2">
+        <h2 className="text-[17px] font-semibold tracking-[-0.01em]">{titre}</h2>
         {action}
       </header>
-      <div className="px-5 py-4">{children}</div>
+      <div className="pt-4">{children}</div>
     </section>
   )
 }
@@ -98,7 +88,7 @@ export function Carte({
 type VarianteBouton = 'principal' | 'secondaire' | 'danger' | 'discret'
 
 const STYLES_BOUTON: Record<VarianteBouton, string> = {
-  principal: 'bg-encre text-white hover:bg-[#16204a] disabled:bg-encre/40',
+  principal: 'bg-encre text-white hover:bg-black disabled:bg-encre/35',
   secondaire:
     'bg-feuille text-texte border border-trait-fort hover:border-encre hover:text-encre disabled:text-texte-3 disabled:hover:border-trait-fort',
   danger: 'bg-feuille text-critique border border-critique/40 hover:bg-critique-pale disabled:opacity-40',
@@ -113,7 +103,7 @@ export function Bouton({
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center gap-2 rounded-md px-3.5 py-2 text-sm font-medium disabled:cursor-not-allowed ${STYLES_BOUTON[variante]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed ${STYLES_BOUTON[variante]} ${className}`}
       {...props}
     />
   )
@@ -122,16 +112,14 @@ export function Bouton({
 /** Touche clavier affichée dans un bouton ou une aide. */
 export function Touche({ children, sombre = false }: { children: ReactNode; sombre?: boolean }) {
   return (
-    <kbd
-      className={`rounded-[3px] px-1.5 text-[11px] font-medium leading-5 ${sombre ? 'bg-white/15 text-white' : 'border border-trait bg-papier text-texte-2'}`}
-    >
+    <kbd className={`rounded-[4px] px-1.5 text-[11px] font-medium leading-5 ${sombre ? 'bg-white/15 text-white/85' : 'bg-encre-pale text-texte-2'}`}>
       {children}
     </kbd>
   )
 }
 
 export function Vide({ children }: { children: ReactNode }) {
-  return <p className="border-l-2 border-trait-fort py-2 pl-3 text-sm text-texte-2">{children}</p>
+  return <p className="py-3 text-sm text-texte-2">{children}</p>
 }
 
 export function Raison({ children }: { children: ReactNode }) {

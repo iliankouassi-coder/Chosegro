@@ -35,7 +35,7 @@ function CarteRelance({ r }: { r: RelanceAPreparer }) {
 
   const statut = STATUTS[r.statut]
   return (
-    <li className="flex flex-col rounded-[5px] border border-trait bg-feuille">
+    <li className="flex flex-col rounded-xl border border-trait">
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 border-b border-trait px-4 py-3">
         <div className="min-w-0">
           <a href={lienVers({ ecran: 'client', clientId: r.client.id })} className="font-semibold hover:text-encre hover:underline">
@@ -54,7 +54,7 @@ function CarteRelance({ r }: { r: RelanceAPreparer }) {
       </div>
       <div className="flex-1 px-4 py-3">
         <Raison>{r.raison}</Raison>
-        <p className="mt-2 whitespace-pre-wrap rounded-[10px] rounded-tl-[3px] border border-trait bg-papier px-3.5 py-2.5 text-sm leading-relaxed text-texte">
+        <p className="mt-2 whitespace-pre-wrap rounded-[14px] rounded-tl-[4px] bg-encre-pale px-3.5 py-2.5 text-sm leading-relaxed text-texte">
           {r.texte}
         </p>
       </div>
@@ -67,7 +67,7 @@ function CarteRelance({ r }: { r: RelanceAPreparer }) {
             onClick={() => {
               if (r.statut === 'a_faire') void actions.changerRelance(r, 'preparee')
             }}
-            className="inline-flex items-center gap-2 rounded-md bg-encre px-3.5 py-2 text-sm font-medium text-white hover:bg-[#16204a]"
+            className="inline-flex items-center gap-2 rounded-lg bg-encre px-4 py-2.5 text-sm font-semibold text-white hover:bg-black"
           >
             <IconeCanal canal="whatsapp" />
             Ouvrir WhatsApp
@@ -101,7 +101,7 @@ export function Relances() {
   return (
     <section aria-labelledby="titre-relances">
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-3">
-        <h1 id="titre-relances" className="text-[26px] font-bold tracking-[-0.01em] text-encre [font-stretch:115%]">
+        <h1 id="titre-relances" className="titre text-[38px]">
           Relances à envoyer
         </h1>
         {relances.length > 0 && (

@@ -52,7 +52,7 @@ export function Parametres() {
 
   return (
     <div className="grid grid-cols-1 gap-6">
-      <h1 className="text-[26px] font-bold tracking-[-0.01em] text-encre [font-stretch:115%]">Paramètres</h1>
+      <h1 className="titre text-[38px]">Paramètres</h1>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Carte titre="Cabinet et règles">
           <div className="grid grid-cols-1 gap-4 text-sm">

@@ -29,17 +29,17 @@ export function Accueil() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-8">
+    <div className="grid grid-cols-1 gap-10">
       {/* Le point du jour */}
-      <header className="grid grid-cols-1 gap-5 border-b border-trait pb-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+      <header className="grid grid-cols-1 gap-6 pb-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div>
-          <h1 className="text-[34px] font-bold leading-[1.05] tracking-[-0.02em] text-encre first-letter:uppercase [font-stretch:118%] sm:text-[42px]">
-            {jour}
-          </h1>
-          <ul className="mt-4 grid max-w-[68ch] gap-1.5 text-[15px] leading-relaxed text-texte">
+          <h1 className="titre text-[44px] first-letter:uppercase sm:text-[56px]">{jour}</h1>
+          <ul className="mt-5 grid max-w-[68ch] gap-1 text-[16px] leading-relaxed text-texte">
             <li>
-              <a href="#a-valider" className="underline decoration-trait-fort underline-offset-4 hover:decoration-encre">
-                <strong className="font-semibold">{pluriel(piecesAValider.nombre, 'pièce à valider', 'pièces à valider')}</strong>
+              <a href="#a-valider" className="hover:underline">
+                <strong className={`font-semibold ${piecesAValider.nombre > 0 ? 'fluo' : ''}`}>
+                  {pluriel(piecesAValider.nombre, 'pièce à valider', 'pièces à valider')}
+                </strong>
               </a>
               {piecesAValider.arriveesDepuisLaVeille.length > 0 && <>, dont {piecesAValider.arriveesDepuisLaVeille.length} arrivées depuis hier</>}
               {piecesAValider.enLecture > 0 && <> ; {pluriel(piecesAValider.enLecture, 'autre en cours de lecture', 'autres en cours de lecture')}</>}
@@ -77,18 +77,18 @@ export function Accueil() {
         {piecesAValider.nombre > 0 && (
           <a
             href={lienVers({ ecran: 'validation', pieceId: null })}
-            className="inline-flex items-center justify-center gap-2 self-end rounded-md bg-encre px-5 py-3 text-[15px] font-semibold text-white hover:bg-[#16204a]"
+            className="inline-flex items-center justify-center gap-2 self-end rounded-lg bg-encre px-6 py-3.5 text-[15px] font-semibold text-white hover:bg-black"
           >
             Commencer la validation
           </a>
         )}
       </header>
 
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid grid-cols-1 gap-x-12 gap-y-10 xl:grid-cols-[minmax(0,1fr)_340px]">
         {/* Bloc 1 : pièces à valider */}
         <section id="a-valider" aria-labelledby="titre-a-valider">
           <div className="mb-3 flex items-baseline justify-between gap-3">
-            <h2 id="titre-a-valider" className="text-lg font-semibold [font-stretch:112%]">
+            <h2 id="titre-a-valider" className="text-[17px] font-semibold">
               Pièces à valider
             </h2>
             <span className="text-sm text-texte-2">arrivées depuis hier, par client</span>
@@ -96,21 +96,21 @@ export function Accueil() {
           {groupes.length === 0 ? (
             <Vide>Aucune pièce arrivée depuis la veille. Pour la démo, chargez la boîte de réception démo dans l’écran Réception.</Vide>
           ) : (
-            <div className="relative overflow-x-auto rounded-[5px] border border-trait bg-feuille">
+            <div className="relative overflow-x-auto border-t border-encre">
               <table className="w-full min-w-[560px] text-sm">
                 <thead>
                   <tr className="border-b border-trait text-left text-xs text-texte-2">
-                    <th className="py-2 pl-4 font-medium">Reçue</th>
+                    <th className="py-2 pl-2 font-medium">Reçue</th>
                     <th className="font-medium">Canal</th>
                     <th className="font-medium">Fournisseur lu</th>
-                    <th className="pr-4 text-right font-medium">Montant TTC</th>
-                    <th className="pr-4 font-medium">Lecture</th>
+                    <th className="pr-2 text-right font-medium">Montant TTC</th>
+                    <th className="pr-2 font-medium">Lecture</th>
                   </tr>
                 </thead>
                 {groupes.map((g) => (
                   <tbody key={g.client?.id ?? g.lignes[0]!.piece.clientId}>
-                    <tr className="bg-papier/70">
-                      <th colSpan={5} className="border-y border-trait py-1.5 pl-4 text-left text-[13px] font-semibold text-encre">
+                    <tr className="bg-encre-pale/70">
+                      <th colSpan={5} className="border-y border-trait py-1.5 pl-2 text-left text-[13px] font-semibold text-encre">
                         {g.client?.raisonSociale ?? 'Client inconnu'}
                         <span className="ml-2 font-normal text-texte-2">{pluriel(g.lignes.length, 'pièce', 'pièces')}</span>
                       </th>
@@ -123,7 +123,7 @@ export function Accueil() {
                         onClick={() => allerA(l.piece.id)}
                         onKeyDown={(e) => e.key === 'Enter' && allerA(l.piece.id)}
                       >
-                        <td className="chiffres whitespace-nowrap py-2.5 pl-4 text-texte-2">{recue(l.piece.recueLe)}</td>
+                        <td className="chiffres whitespace-nowrap py-2.5 pl-2 text-texte-2">{recue(l.piece.recueLe)}</td>
                         <td>
                           <span className="inline-flex items-center gap-1.5 text-texte-2">
                             <IconeCanal canal={l.piece.canal} />
@@ -131,12 +131,12 @@ export function Accueil() {
                           </span>
                         </td>
                         <td className="font-medium">{l.fournisseur ?? <span className="font-normal text-texte-3">non lu</span>}</td>
-                        <td className="pr-4 text-right">
+                        <td className="pr-2 text-right">
                           <Montant valeur={l.ttc} devise={l.devise} />
                         </td>
-                        <td className="pr-4">
+                        <td className="pr-2">
                           {etat.lectures[l.piece.id] ? (
-                            <span className="text-xs text-tampon">{etat.lectures[l.piece.id]}</span>
+                            <span className="text-xs text-texte-2">{etat.lectures[l.piece.id]}</span>
                           ) : l.piece.erreurLecture ? (
                             <span className="text-xs font-medium text-critique">échec de lecture</span>
                           ) : l.piece.statut === 'a_lire' ? (
@@ -157,15 +157,15 @@ export function Accueil() {
         <div className="grid grid-cols-1 content-start gap-8">
           {/* Bloc 2 : clients en retard */}
           <section id="retards" aria-labelledby="titre-retards">
-            <h2 id="titre-retards" className="mb-3 text-lg font-semibold [font-stretch:112%]">
+            <h2 id="titre-retards" className="mb-3 text-[17px] font-semibold">
               Clients en retard
             </h2>
             {clientsEnRetard.length === 0 ? (
               <Vide>Aucun client en retard aujourd’hui.</Vide>
             ) : (
-              <ul className="divide-y divide-trait rounded-[5px] border border-trait bg-feuille">
+              <ul className="divide-y divide-trait border-t border-encre">
                 {clientsEnRetard.map(({ client, etat: retard, relance }) => (
-                  <li key={client.id} className="grid grid-cols-1 gap-1.5 px-4 py-3">
+                  <li key={client.id} className="grid grid-cols-1 gap-1.5 px-1 py-3.5">
                     <a href={lienVers({ ecran: 'client', clientId: client.id })} className="font-semibold hover:text-encre hover:underline">
                       {client.raisonSociale}
                     </a>
@@ -192,15 +192,15 @@ export function Accueil() {
 
           {/* Bloc 3 : échéances de la semaine */}
           <section id="echeances" aria-labelledby="titre-echeances">
-            <h2 id="titre-echeances" className="mb-3 text-lg font-semibold [font-stretch:112%]">
+            <h2 id="titre-echeances" className="mb-3 text-[17px] font-semibold">
               Échéances de la semaine
             </h2>
             {echeancesDeLaSemaine.length === 0 ? (
               <Vide>Aucune échéance dans les 7 prochains jours.</Vide>
             ) : (
-              <ul className="divide-y divide-trait rounded-[5px] border border-trait bg-feuille">
+              <ul className="divide-y divide-trait border-t border-encre">
                 {echeancesDeLaSemaine.map(({ echeance, badge, dossiersPasPrets }) => (
-                  <li key={echeance.id} className="grid grid-cols-[52px_minmax(0,1fr)] gap-3 px-4 py-3">
+                  <li key={echeance.id} className="grid grid-cols-[52px_minmax(0,1fr)] gap-3 px-1 py-3.5">
                     <div className="rounded-[4px] border border-trait text-center leading-tight">
                       <div className="chiffres pt-1 text-lg font-bold text-encre">{echeance.date.slice(8, 10)}</div>
                       <div className="pb-1 text-[11px] text-texte-2">

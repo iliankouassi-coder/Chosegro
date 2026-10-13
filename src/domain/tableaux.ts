@@ -95,6 +95,11 @@ export function regrouperParClient(lignes: readonly LignePiece[]): GroupeClient[
   return [...groupes.values()]
 }
 
+/** La file de l'écran Validation : les pièces à valider, dans l'ordre où « Suivante » les parcourt. */
+export function fileDeValidation(d: Donnees): LignePiece[] {
+  return piecesAValider(d.pieces).map((p) => lignePiece(p, d.clients))
+}
+
 /** Les trois blocs de l'accueil, dans l'ordre de la spec. */
 export function tableauAccueil(d: Donnees, maintenant: IsoDateHeure): Accueil {
   const aujourdhui = dateAbidjan(maintenant)
@@ -171,9 +176,7 @@ export function ficheClient(d: Donnees, clientId: string): FicheClient | null {
   const client = d.clients.find((c) => c.id === clientId)
   if (!client) return null
   const mots = d.parametres.motsCourantsFournisseur
-  const pieces = d.pieces
-    .filter((p) => p.clientId === clientId)
-    .sort((a, b) => (a.recueLe < b.recueLe ? 1 : a.recueLe > b.recueLe ? -1 : 0))
+  const pieces = d.pieces.filter((p) => p.clientId === clientId).sort((a, b) => (a.recueLe < b.recueLe ? 1 : a.recueLe > b.recueLe ? -1 : 0))
 
   const parNom = new Map<string, FournisseurDuClient>()
   for (const piece of pieces) {
@@ -237,8 +240,7 @@ export function relancesAPreparer(d: Donnees, maintenant: IsoDateHeure): Relance
     if (!client) return []
     const relance = relanceDuMois(d.relances, client.id, mois, 'retard')
     const texte =
-      relance?.texte ??
-      redigerRelanceRetard({ modele: p.modeleRelance, nomCabinet: p.nomCabinet, client, mois, recues: etat.recuesCeMois })
+      relance?.texte ?? redigerRelanceRetard({ modele: p.modeleRelance, nomCabinet: p.nomCabinet, client, mois, recues: etat.recuesCeMois })
     return [
       {
         client,
@@ -260,9 +262,7 @@ export function relancesAPreparer(d: Donnees, maintenant: IsoDateHeure): Relance
       const client = d.clients.find((c) => c.id === piece.clientId)
       if (!client) return []
       const relance = d.relances.find((r) => r.motif === 'illisible' && r.pieceId === piece.id) ?? null
-      const texte =
-        relance?.texte ??
-        redigerRelanceIllisible({ modele: p.modeleRelanceIllisible, nomCabinet: p.nomCabinet, client, piece })
+      const texte = relance?.texte ?? redigerRelanceIllisible({ modele: p.modeleRelanceIllisible, nomCabinet: p.nomCabinet, client, piece })
       return [
         {
           client,

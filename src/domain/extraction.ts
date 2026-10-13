@@ -295,7 +295,8 @@ function lireChamp<T>(objet: Objet, cle: string, lireValeur: LectureValeur<T>, e
   return valeur === null ? nonLu() : { valeur, confiance }
 }
 
-const XOF = /^(?:xof|(?:f|fr|frs|francs?)?cfa(?:bceao|uemoa)?|f|fr|frs)$/
+// « francs » seul désigne le FCFA en Côte d'Ivoire, comme « F » ou « Frs ».
+const XOF = /^(?:xof|(?:f|fr|frs|francs?)?cfa(?:bceao|uemoa)?|f|fr|frs|francs?)$/
 const EUR = /^(?:€|eur|euros?)$/
 const USD = /^(?:\$|usd|us\$|\$us|dollars?(?:us|americains?)?)$/
 
@@ -318,24 +319,28 @@ export function normaliserDevise(texte: string): string | null {
   return t.toUpperCase()
 }
 
-/** lireMontant ne connaît que le FCFA : un symbole de devise étrangère en tête ou en fin est retiré. */
-const sansDeviseEtrangere = (texte: string): string =>
-  texte
-    .trim()
-    .replace(/^(?:€|eur(?:os?)?|us\$|\$|usd)\s*/i, '')
-    .replace(/\s*(?:€|eur(?:os?)?|us\$|\$us|\$|usd)$/i, '')
+/** Symbole ou code de devise étrangère écrit avec le montant (« 1 180 € », « $2,080.00 »). */
+const DEVISE_ETRANGERE_EN_TETE = /^(€|eur(?:os?)?|us\$|\$|usd)\s*/i
+const DEVISE_ETRANGERE_EN_FIN = /\s*(€|eur(?:os?)?|us\$|\$us|\$|usd)$/i
 
-function versMontant(champ: ChampLu<string>, cle: CleMontant, problemes: string[]): ChampLu<number> {
-  if (champ.valeur === null) return nonLu()
-  const lu = lireMontant(sansDeviseEtrangere(champ.valeur))
-  if (lu.ok) return { valeur: lu.valeur, confiance: champ.confiance }
+/**
+ * lireMontant ne connaît que le FCFA : le symbole d'une devise étrangère est retiré du montant,
+ * mais il est gardé pour que la devise ne soit jamais perdue (un montant en euros ne passe pas en FCFA).
+ */
+function versMontant(champ: ChampLu<string>, cle: CleMontant, problemes: string[]): { champ: ChampLu<number>; devise: string | null } {
+  if (champ.valeur === null) return { champ: nonLu(), devise: null }
+  const texte = champ.valeur.trim()
+  const symbole = DEVISE_ETRANGERE_EN_TETE.exec(texte)?.[1] ?? DEVISE_ETRANGERE_EN_FIN.exec(texte)?.[1] ?? null
+  const devise = symbole === null ? null : normaliserDevise(symbole)
+  const lu = lireMontant(texte.replace(DEVISE_ETRANGERE_EN_TETE, '').replace(DEVISE_ETRANGERE_EN_FIN, ''))
+  if (lu.ok) return { champ: { valeur: lu.valeur, confiance: champ.confiance }, devise }
   const precision = lu.erreur.startsWith('Montant avec des centimes')
     ? ' (centimes indiqués, à vérifier sur la pièce)'
     : lu.erreur.startsWith('Montant trop grand')
       ? ' (montant trop grand)'
       : ''
   problemes.push(`${PREFIXES_PROBLEME[cle]} « ${champ.valeur} »${precision}`)
-  return nonLu()
+  return { champ: nonLu(), devise }
 }
 
 function versDate(champ: ChampLu<string>, problemes: string[]): ChampLu<IsoDate> {
@@ -389,20 +394,61 @@ export function normaliserExtraction(brut: unknown): Resultat<Extraction, string
   if (erreurs.length > 0) return echec(erreurs)
 
   const problemes: string[] = []
-  const deviseNormalisee = devise.valeur === null ? null : normaliserDevise(devise.valeur)
+  // Même ordre que l'écran : date, puis montants, puis compte.
+  const dateNormalisee = versDate(date, problemes)
+  const montants = {
+    ht: versMontant(ht, 'ht', problemes),
+    tva: versMontant(tva, 'tva', problemes),
+    ttc: versMontant(ttc, 'ttc', problemes),
+  }
+
+  // Devise : celle lue, ou celle écrite avec les montants. Une contradiction est signalée, et la devise
+  // étrangère l'emporte : elle bloque la validation au lieu de laisser passer des euros comme des FCFA.
+  let deviseLue: ChampLu<string> =
+    devise.valeur === null ? nonLu() : { valeur: normaliserDevise(devise.valeur) ?? devise.valeur, confiance: devise.confiance }
+  const devisesMontants = [...new Set([montants.ht.devise, montants.tva.devise, montants.ttc.devise].filter((d): d is string => d !== null))]
+  const [deviseMontants] = devisesMontants
+  if (devisesMontants.length > 1) {
+    problemes.push(`Devises différentes dans les montants (${devisesMontants.join(', ')}) : vérifiez la pièce.`)
+  }
+  if (deviseMontants !== undefined && deviseLue.valeur === null) {
+    deviseLue = { valeur: deviseMontants, confiance: 'moyen' }
+    problemes.push(`Devise non lue, mais les montants sont écrits en ${deviseMontants} : devise ${deviseMontants} retenue.`)
+  } else if (deviseMontants !== undefined && deviseLue.valeur !== deviseMontants) {
+    problemes.push(
+      `Devise incohérente : ${deviseLue.valeur === 'XOF' ? 'FCFA' : String(deviseLue.valeur)} sur la pièce, ${deviseMontants} dans les montants. Devise ${deviseMontants} retenue, à vérifier.`,
+    )
+    deviseLue = { valeur: deviseMontants, confiance: 'bas' }
+  }
+
+  // Signe : des montants tous négatifs font un avoir, repris en valeur absolue ; des signes mélangés
+  // restent tels quels et bloquent la validation (ecritures.ts).
+  let natureLue = nature
+  const lus = [montants.ht.champ, montants.tva.champ, montants.ttc.champ]
+  const nonNuls = lus.map((c) => c.valeur).filter((v): v is number => v !== null && v !== 0)
+  if (nonNuls.length > 0 && nonNuls.every((v) => v < 0)) {
+    for (const c of lus) if (c.valeur !== null) c.valeur = Math.abs(c.valeur)
+    if (natureLue.valeur !== 'avoir') {
+      natureLue = { valeur: 'avoir', confiance: 'moyen' }
+      problemes.push('Montants négatifs : pièce traitée comme un avoir, montants repris en valeur absolue.')
+    }
+  } else if (nonNuls.some((v) => v < 0)) {
+    problemes.push('Signes incohérents : certains montants sont négatifs, d’autres non. Vérifiez la pièce.')
+  }
+
   return succes({
     lisible,
     motifIllisible,
     manuscrit,
     fournisseur: versTexte(fournisseur),
     destinataire: versTexte(destinataire),
-    date: versDate(date, problemes),
+    date: dateNormalisee,
     numeroFacture: versTexte(numero),
-    ht: versMontant(ht, 'ht', problemes),
-    tva: versMontant(tva, 'tva', problemes),
-    ttc: versMontant(ttc, 'ttc', problemes),
-    devise: deviseNormalisee === null ? nonLu() : { valeur: deviseNormalisee, confiance: devise.confiance },
-    nature,
+    ht: montants.ht.champ,
+    tva: montants.tva.champ,
+    ttc: montants.ttc.champ,
+    devise: deviseLue,
+    nature: natureLue,
     // Un QR code non lu n'est ni présent ni absent : il est incertain.
     qrFne: qrFne.valeur === null ? { valeur: 'incertain', confiance: 'bas' } : qrFne,
     compteIa: versCompte(compte, problemes),

@@ -304,10 +304,15 @@ describe('normaliserTelephone', () => {
     expect(normaliserTelephone('22507070707')).toBeNull()
   })
 
-  it('refuse un numéro +225 trop long et un numéro local qui ne commence pas par 0', () => {
+  it('refuse un numéro +225 trop long et un numéro local à 9 chiffres', () => {
     expect(normaliserTelephone('+225 07 07 07 07 07 7')).toBeNull()
-    expect(normaliserTelephone('27 22 44 55 66')).toBeNull()
     expect(normaliserTelephone('707070707')).toBeNull()
+    expect(normaliserTelephone('37 22 44 55 66')).toBeNull()
+  })
+
+  it('accepte un fixe ivoirien à 10 chiffres, avec ou sans indicatif', () => {
+    expect(normaliserTelephone('27 22 44 55 66')).toBe('2252722445566')
+    expect(normaliserTelephone('+225 27 22 44 55 66')).toBe('2252722445566')
   })
 
   it('refuse le texte, les signes en trop et le vide', () => {

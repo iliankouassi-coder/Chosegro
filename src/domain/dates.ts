@@ -81,8 +81,12 @@ export function estIsoMois(texte: string): boolean {
  * AAAA-MM-JJ ou « 12 octobre 2026 ». L'ordre jour-mois est celui de la Côte d'Ivoire.
  * Renvoie null si la date est absente, ambiguë ou impossible (31/02).
  */
+/** Ce qui entoure souvent la date sur une pièce : « Abidjan, le », « Date : », « Le », et l'heure qui suit. */
+const PREFIXE_DATE = /^(?:[\p{L}' -]+,\s*)?(?:(?:date(?:\s+de\s+facture)?|émise?\s+le|fait\s+le)\s*:?\s*)?(?:le\s+)?/iu
+const HEURE_FINALE = /\s*(?:,|à|a)?\s*\d{1,2}\s*[:h]\s*\d{2}(?:\s*[:m]\s*\d{2})?\s*$/i
+
 export function lireDate(texte: string): IsoDate | null {
-  const t = texte.trim()
+  const t = texte.trim().replace(PREFIXE_DATE, '').replace(HEURE_FINALE, '').trim()
   if (t === '') return null
 
   const iso = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/.exec(t)
@@ -104,7 +108,9 @@ export function lireDate(texte: string): IsoDate | null {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-  const lettres = /^(?:[a-z]+\.?\s+)?(\d{1,2})(?:er)?\s+([a-z]+)\.?\s+(\d{4})$/.exec(sansAccents)
+  const lettres =
+    /^(?:[a-z]+\.?\s+)?(\d{1,2})(?:er)?\s+([a-z]+)\.?\s+(\d{4})$/.exec(sansAccents) ??
+    /^(\d{1,2})[-/.\s]([a-z]+)\.?[-/.\s](\d{4})$/.exec(sansAccents)
   if (lettres) {
     const j = Number(lettres[1])
     const m = MOIS_LUS[lettres[2] ?? '']

@@ -2,6 +2,7 @@
 // Tout est calculé ici : les composants React se contentent d'afficher.
 import { dateAbidjan, moisDe } from './dates'
 import { badgeEcheance, dossiersPasPrets, echeancesDeLaSemaine, type DossierPasPret } from './echeances'
+import { determinerType } from './ecritures'
 import { confianceGlobale } from './extraction'
 import { motsDuNom, normaliserFournisseur, resoudreFournisseur } from './fournisseurs'
 import { piecesArriveesDepuisLaVeille, piecesAValider } from './pieces'
@@ -126,6 +127,7 @@ export function listeClients(d: Donnees, maintenant: IsoDateHeure): LigneClient[
     }))
 }
 
+/** Un tiers du client (fournisseur, ou acheteur pour ses ventes), tel qu'il apparaît sur ses pièces. */
 export interface FournisseurDuClient {
   /** Nom normalisé, avant fusion. */
   normalise: string
@@ -156,7 +158,10 @@ export function ficheClient(d: Donnees, clientId: string): FicheClient | null {
 
   const parNom = new Map<string, FournisseurDuClient>()
   for (const piece of pieces) {
-    const nom = piece.extraction?.fournisseur.valeur
+    // Le tiers de la pièce : le fournisseur pour un achat, l'acheteur pour une vente du client.
+    const e = piece.extraction
+    if (!e) continue
+    const nom = determinerType(e, client, mots).sens === 'vente' ? e.destinataire.valeur : e.fournisseur.valeur
     if (!nom || motsDuNom(nom).length === 0) continue
     const normalise = normaliserFournisseur(nom, mots)
     const existant = parNom.get(normalise) ?? {

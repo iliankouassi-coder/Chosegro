@@ -246,12 +246,11 @@ describe('vente et avoir', () => {
     expect(p.ecriture.lignes[0]?.libelle).toBe('CIE avoir AV-12')
   })
 
-  it("traite des montants négatifs comme un avoir, et le dit", () => {
-    const p = proposerEcriture(entree(fabriquerExtraction({ ht: -10_000, tva: -1_800, ttc: -11_800 })))
-    expect(p.determination.estAvoir).toBe(true)
-    expect(p.determination.raison).toContain('Les montants sont négatifs.')
-    expect(p.bloquants).toEqual([])
-    expect(p.ecriture.lignes[2]).toMatchObject({ compte: '4011', debit: 11_800, credit: 0 })
+  it('bloque des montants aux signes incohérents au lieu de les harmoniser', () => {
+    // Des montants tous négatifs deviennent un avoir dès la lecture (normaliserExtraction) ; ici, un seul l'est.
+    const p = proposerEcriture(entree(fabriquerExtraction({ ht: 100_000, tva: 18_000, ttc: -118_000 })))
+    expect(p.determination.estAvoir).toBe(false)
+    expect(p.bloquants.some((b) => b.startsWith('Montant TTC négatif'))).toBe(true)
   })
 
   it("inverse l'écriture de vente pour un avoir émis par le client", () => {
@@ -278,11 +277,27 @@ describe('vente et avoir', () => {
     expect(t.sens).toBe('achat')
   })
 
-  it('rapproche les noms d’une même entreprise', () => {
+  it('reconnaît le client sous son nom complet, pas sous un nom plus court', () => {
     expect(memeEntreprise('Boutique Awa Mode SARL', 'BOUTIQUE AWA MODE', MOTS_COURANTS_DEFAUT)).toBe(true)
-    expect(memeEntreprise('Awa Mode', 'Boutique Awa Mode SARL', MOTS_COURANTS_DEFAUT)).toBe(true)
-    expect(memeEntreprise('Awa', 'Boutique Awa Mode SARL', MOTS_COURANTS_DEFAUT)).toBe(false)
+    expect(memeEntreprise('Boutique Awa Mode Cocody', 'Boutique Awa Mode SARL', MOTS_COURANTS_DEFAUT)).toBe(true)
+    expect(memeEntreprise('Mode Awa Boutique', 'Boutique Awa Mode SARL', MOTS_COURANTS_DEFAUT)).toBe(true)
+    // Un fournisseur dont le nom reprend une partie de celui du client n'est pas le client.
+    expect(memeEntreprise('Transit Express CI', 'Lagune Transit Express SA', MOTS_COURANTS_DEFAUT)).toBe(false)
+    expect(memeEntreprise('Awa Mode', 'Boutique Awa Mode SARL', MOTS_COURANTS_DEFAUT)).toBe(false)
     expect(memeEntreprise('CIE', 'Boutique Awa Mode SARL', MOTS_COURANTS_DEFAUT)).toBe(false)
+  })
+
+  it("reste un achat quand le nom du fournisseur reprend une partie de celui du client", () => {
+    const lagune = fabriquerClient({ id: 'client-lagune', raisonSociale: 'Lagune Transit Express SA' })
+    const p = proposerEcriture(entree(fabriquerExtraction({ fournisseur: 'Transit Express CI', destinataire: null }), { client: lagune }))
+    expect(p.determination.type).toBe('achat')
+  })
+
+  it('refuse une date corrigée qui n’est pas une vraie date', () => {
+    for (const date of ['12/10/2026', '2026-02-30', 'hier']) {
+      const p = proposerEcriture(entree(fabriquerExtraction(), { corrections: { date } }))
+      expect(p.bloquants).toContain(`Date « ${date} » invalide : corrigez-la.`)
+    }
   })
 })
 

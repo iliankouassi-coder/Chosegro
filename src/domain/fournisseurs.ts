@@ -100,12 +100,18 @@ export function fusionnerFournisseurs(
   aliasLu: string,
   cibleLue: string,
   motsCourants: readonly string[] = MOTS_COURANTS_DEFAUT,
-): { ok: true; fusions: FusionFournisseur[] } | { ok: false; erreur: string } {
+): { ok: true; fusions: FusionFournisseur[]; alias: string; cible: string } | { ok: false; erreur: string } {
   // Les noms sont normalisés ici : une fusion saisie avec un nom brut (« Total Energies ») fonctionne aussi.
   const alias = normaliserFournisseur(aliasLu, motsCourants)
-  const cible = normaliserFournisseur(cibleLue, motsCourants)
+  // Une cible déjà rattachée à un autre nom est remplacée par ce nom : les règles suivent le nom canonique.
+  const cible = resoudreFournisseur(cibleLue, clientId, fusions, motsCourants)
   if (alias === '' || cible === '') return { ok: false, erreur: 'Nom de fournisseur vide.' }
-  if (alias === cible) return { ok: false, erreur: 'Un fournisseur ne peut pas être fusionné avec lui-même.' }
+  if (alias === normaliserFournisseur(cibleLue, motsCourants)) {
+    return { ok: false, erreur: 'Un fournisseur ne peut pas être fusionné avec lui-même.' }
+  }
+  if (alias === cible) {
+    return { ok: false, erreur: `« ${normaliserFournisseur(cibleLue, motsCourants)} » est déjà rattaché à « ${alias} » : la fusion créerait une boucle.` }
+  }
   const ciblesDuClient = new Map(fusions.filter((f) => f.clientId === clientId).map((f) => [f.alias, f.cible]))
   let courant: string | undefined = cible
   const vus = new Set<string>()
@@ -118,7 +124,7 @@ export function fusionnerFournisseurs(
   }
   const autres = fusions.filter((f) => !(f.clientId === clientId && f.alias === alias))
   const redirigees = autres.map((f) => (f.clientId === clientId && f.cible === alias ? { ...f, cible } : f))
-  return { ok: true, fusions: [...redirigees, { clientId, alias, cible }] }
+  return { ok: true, fusions: [...redirigees, { clientId, alias, cible }], alias, cible }
 }
 
 /** Retire une fusion : le nom redevient un fournisseur distinct. */

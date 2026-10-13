@@ -2,7 +2,7 @@
 // Les numéros de compte viennent uniquement du plan importé, des paramètres (choisis dans ce plan),
 // des règles apprises et des corrections du collaborateur. Rien n'est validé sans action humaine.
 import { montantsRetenus, type MontantsRetenus } from './controle'
-import { dateAbidjan, formatJourMois } from './dates'
+import { dateAbidjan, estIsoDate, formatJourMois } from './dates'
 import { normaliserFournisseur, resoudreFournisseur } from './fournisseurs'
 import { formatFcfa, formatMontant, somme } from './montants'
 import { verifierCompteImputable, type PlanComptable } from './plan'
@@ -33,17 +33,19 @@ export interface DeterminationType {
   raison: string
 }
 
-/** Deux noms désignent-ils la même entreprise ? Égalité après normalisation, ou mêmes mots dans un autre ordre. */
-export function memeEntreprise(a: string, b: string, motsCourants: readonly string[]): boolean {
-  const na = normaliserFournisseur(a, motsCourants)
-  const nb = normaliserFournisseur(b, motsCourants)
-  if (na === '' || nb === '') return false
-  if (na === nb) return true
-  const ma = new Set(na.split(' '))
-  const mb = new Set(nb.split(' '))
-  const [petit, grand] = ma.size <= mb.size ? [ma, mb] : [mb, ma]
-  // Un nom de deux mots ou plus entièrement contenu dans l'autre : « Awa Mode » et « Boutique Awa Mode ».
-  return petit.size >= 2 && [...petit].every((mot) => grand.has(mot))
+/**
+ * Le nom lu sur la pièce désigne-t-il le client du cabinet ? Oui s'il est égal à sa raison sociale après
+ * normalisation, ou s'il en contient tous les mots (« Boutique Awa Mode Cocody »). Un nom plus court
+ * (« Transit Express » pour « Lagune Transit Express ») ne suffit pas : c'est peut-être un fournisseur,
+ * et une vente prise pour un achat se voit moins qu'un achat pris pour une vente.
+ */
+export function memeEntreprise(nomLu: string, raisonSociale: string, motsCourants: readonly string[]): boolean {
+  const lu = normaliserFournisseur(nomLu, motsCourants)
+  const client = normaliserFournisseur(raisonSociale, motsCourants)
+  if (lu === '' || client === '') return false
+  if (lu === client) return true
+  const motsLus = new Set(lu.split(' '))
+  return client.split(' ').every((mot) => motsLus.has(mot))
 }
 
 /**
@@ -61,7 +63,8 @@ export function determinerType(
   const destinataireEstLeClient =
     destinataire !== null && memeEntreprise(destinataire, client.raisonSociale, motsCourants)
   const sens: Sens = emetteurEstLeClient && !destinataireEstLeClient ? 'vente' : 'achat'
-  const estAvoir = e.nature.valeur === 'avoir' || (e.ttc.valeur !== null && e.ttc.valeur < 0)
+  // Des montants tous négatifs sont déjà devenus un avoir à la lecture (normaliserExtraction).
+  const estAvoir = e.nature.valeur === 'avoir'
 
   let raison: string
   if (sens === 'vente') {
@@ -73,7 +76,6 @@ export function determinerType(
   } else {
     raison = estAvoir ? `Avoir reçu de ${emetteur} : l'écriture d'achat est inversée.` : `Pièce émise par ${emetteur} : achat.`
   }
-  if (estAvoir && e.nature.valeur !== 'avoir') raison += ' Les montants sont négatifs.'
   return { type: estAvoir ? 'avoir' : sens, sens, estAvoir, emetteurEstLeClient, raison }
 }
 
@@ -122,6 +124,7 @@ export function verifierEcriture(e: Pick<EcritureProposee, 'lignes' | 'date'>, p
   const bloquants: string[] = []
   const avertissements: string[] = []
   if (e.date === null) bloquants.push('Date de la pièce non lue : corrigez-la.')
+  else if (!estIsoDate(e.date)) bloquants.push(`Date « ${e.date} » invalide : corrigez-la.`)
   if (e.lignes.length < 2) bloquants.push("L'écriture doit avoir au moins deux lignes.")
   e.lignes.forEach((ligne, i) => {
     const n = i + 1
@@ -261,7 +264,8 @@ export function proposerEcriture(entree: EntreeProposition): PropositionEcriture
       bloquants.push(`${libelle} non lu : corrigez-le.`)
       return 0
     }
-    if (m < 0 && !estAvoir) bloquants.push(`${libelle} négatif (${formatMontant(m)}) sur une pièce qui n'est pas un avoir.`)
+    // Un montant encore négatif ici a des signes incohérents avec les autres : rien n'est harmonisé en silence.
+    if (m < 0) bloquants.push(`${libelle} négatif (${formatMontant(m)}) : les signes des montants sont incohérents, vérifiez la pièce.`)
     return Math.abs(m)
   }
   const ht = valeur(montants.ht, 'Montant HT')

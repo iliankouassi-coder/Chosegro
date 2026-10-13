@@ -66,6 +66,15 @@ describe('fusions manuelles', () => {
     expect(resoudreFournisseur('TotalEnergies', client, b.fusions)).toBe('total')
   })
 
+  it('rattache toujours au nom canonique, même quand la cible choisie est déjà rattachée', () => {
+    const a = fusionnerFournisseurs([], client, 'carbu lagune energies', 'carbu lagune')
+    if (!a.ok) throw new Error(a.erreur)
+    const b = fusionnerFournisseurs(a.fusions, client, 'lagune carbu services', 'carbu lagune energies')
+    if (!b.ok) throw new Error(b.erreur)
+    expect(b.cible).toBe('carbu lagune')
+    expect(b.fusions).toContainEqual({ clientId: client, alias: 'lagune carbu services', cible: 'carbu lagune' })
+  })
+
   it('refuse une fusion qui créerait une boucle', () => {
     const a = fusionnerFournisseurs([], client, 'a', 'b')
     if (!a.ok) throw new Error(a.erreur)

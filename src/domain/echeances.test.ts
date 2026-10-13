@@ -335,14 +335,24 @@ describe('dossiersPasPrets', () => {
     expect(r.map((d) => d.client.id)).toEqual(['resto'])
   })
 
-  it('date la pièce par sa réception à Abidjan quand aucune date n\'est lue', () => {
+  it("compte une pièce dont la date n'est pas lue si elle est arrivée entre le début de la période et l'échéance", () => {
     const nonLue = fabriquerPiece({ id: 'p1', clientId: 'resto', statut: 'a_lire', extraction: null, recueLe: '2026-09-30T23:59:00.000Z' })
     const sansDate = piece('p2', 'resto', null)
     expect(dossiersPasPrets(tvaOctobre, clients, [nonLue])).toEqual([
-      { client: resto, piecesNonValidees: 1, raison: '1 pièce de septembre 2026 pas encore validée' },
+      { client: resto, piecesNonValidees: 1, raison: "1 pièce sans date lue (reçue avant l'échéance) pas encore validée" },
     ])
-    // Reçue le 02/10 et sans date lue : elle relève d'octobre, pas de septembre.
-    expect(dossiersPasPrets(tvaOctobre, clients, [sansDate])).toEqual([])
+    // Reçue le 02/10, avant l'échéance du 15/10, sans date lue : c'est peut-être une pièce de septembre.
+    expect(dossiersPasPrets(tvaOctobre, clients, [sansDate]).map((d) => d.piecesNonValidees)).toEqual([1])
+    // Reçue après l'échéance : elle ne la concerne pas.
+    const apres = fabriquerPiece({ id: 'p3', clientId: 'resto', statut: 'a_valider', extraction: null, recueLe: '2026-10-20T09:00:00.000Z' })
+    expect(dossiersPasPrets(tvaOctobre, clients, [apres])).toEqual([])
+    // Une pièce datée hors période ne compte pas, même reçue pendant la période.
+    expect(dossiersPasPrets(tvaOctobre, clients, [piece('p4', 'resto', '2026-08-15')])).toEqual([])
+  })
+
+  it('distingue les pièces de la période et celles sans date dans la raison', () => {
+    const r = dossiersPasPrets(tvaOctobre, clients, [piece('p1', 'resto', '2026-09-05'), piece('p2', 'resto', '2026-09-06'), piece('p3', 'resto', null)])
+    expect(r[0]?.raison).toBe("2 pièces de septembre 2026 et 1 pièce sans date lue (reçue avant l'échéance) pas encore validées")
   })
 
   it('n\'inclut que les clients concernés par les régimes de l\'échéance', () => {

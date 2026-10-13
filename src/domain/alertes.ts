@@ -26,6 +26,7 @@ export type CodeAlerte =
   | 'date_future'
   | 'date_ancienne'
   | 'tva_supposee_nulle'
+  | 'ht_deduit'
   | 'tva_nulle'
   | 'ecart_montants'
   | 'montants_incomplets'
@@ -79,16 +80,16 @@ const verifierContexte = (c: ContexteAlertes): void => {
   if (!Number.isSafeInteger(c.toleranceEcart) || c.toleranceEcart < 0) {
     throw new Error(`Tolérance d'écart invalide : ${String(c.toleranceEcart)} (un nombre entier de FCFA, positif ou nul, est attendu)`)
   }
-  if (c.tauxTvaHabituel !== null && (!Number.isFinite(c.tauxTvaHabituel) || c.tauxTvaHabituel < 0 || c.tauxTvaHabituel > 100)) {
-    throw new Error(`Taux de TVA habituel invalide : ${String(c.tauxTvaHabituel)} (un pourcentage entre 0 et 100 est attendu)`)
-  }
 }
+
+/** Un taux habituel hors de 0 à 100 % (règle abîmée) est ignoré : il ne doit jamais empêcher l'affichage. */
+const tauxValide = (taux: number | null): taux is number => taux !== null && Number.isFinite(taux) && taux >= 0 && taux <= 100
 
 /**
  * Alertes à afficher pour une pièce, triées par niveau (bloquant, attention, info), dans un ordre
  * stable à l'intérieur d'un niveau. Le contrôle des montants porte sur les montants retenus :
  * ceux lus, sauf la TVA d'un ticket ou d'un reçu sans TVA, prise à 0 et signalée.
- * Lève une erreur si le contexte est invalide (date du jour, tolérance, taux habituel).
+ * Lève une erreur si la date du jour ou la tolérance sont invalides ; un taux habituel invalide est ignoré.
  */
 export function alertesPiece(e: Extraction, contexte: ContexteAlertes): Alerte[] {
   verifierContexte(contexte)
@@ -103,7 +104,7 @@ export function alertesPiece(e: Extraction, contexte: ContexteAlertes): Alerte[]
     ajouter(
       'illisible',
       'bloquant',
-      `Pièce illisible${motif !== null ? ` (${motif})` : ''} : rejetez-la, le message de relance est prêt.`,
+      `Pièce illisible${motif !== null ? ` (${motif})` : ''} : rejetez-la (le message de relance sera prêt), ou saisissez à la main le HT, la TVA, le TTC et la date pour la valider.`,
     )
   }
 
@@ -124,6 +125,8 @@ export function alertesPiece(e: Extraction, contexte: ContexteAlertes): Alerte[]
   if (retenus.tvaSupposeeNulle) {
     const deduit = retenus.htDeduitDuTtc ? ' HT pris égal au TTC.' : ''
     ajouter('tva_supposee_nulle', 'attention', `${designation(e.nature.valeur, e.manuscrit)} sans TVA : TVA à 0.${deduit}`)
+  } else if (retenus.htDeduitDuTtc) {
+    ajouter('ht_deduit', 'attention', 'HT non lu : pris égal au TTC, car la TVA lue vaut 0. Vérifiez-le sur la pièce.')
   }
   const controle = controlerMontants({ ht: retenus.ht, tva: retenus.tva, ttc: retenus.ttc }, contexte.toleranceEcart)
   if (controle.statut === 'ecart') {
@@ -142,7 +145,7 @@ export function alertesPiece(e: Extraction, contexte: ContexteAlertes): Alerte[]
     ajouter('tva_nulle', 'info', 'TVA à 0 sur cette pièce.')
   }
   // Le taux est celui des montants lus : une TVA supposée nulle n'est pas un taux lu.
-  if (contexte.tauxTvaHabituel !== null && e.ht.valeur !== null && e.tva.valeur !== null) {
+  if (tauxValide(contexte.tauxTvaHabituel) && e.ht.valeur !== null && e.tva.valeur !== null) {
     const taux = tauxApparent(Math.abs(e.ht.valeur), Math.abs(e.tva.valeur))
     if (taux !== null && taux !== contexte.tauxTvaHabituel) {
       ajouter(

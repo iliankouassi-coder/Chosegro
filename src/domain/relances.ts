@@ -131,7 +131,8 @@ const INDICATIF_CI = '225'
 
 /**
  * Numéro au format attendu par wa.me : chiffres seuls, indicatif compris, sans « + » ni « 00 ».
- * « +225 07 07 07 07 07 », « 00225… », « 225… » et « 07 07 07 07 07 » donnent « 2250707070707 ».
+ * « +225 07 07 07 07 07 », « 00225… », « 225… » et « 07 07 07 07 07 » donnent « 2250707070707 » ;
+ * un fixe à 10 chiffres (« 27 22 44 55 66 ») prend aussi l'indicatif.
  * Un autre numéro international (avec + ou 00) est accepté de 8 à 15 chiffres. Sinon null :
  * l'ancien format ivoirien à 8 chiffres est ambigu et n'est pas deviné.
  */
@@ -146,7 +147,8 @@ export function normaliserTelephone(telephone: string): string | null {
   }
   if (!/^\d+$/.test(t)) return null
   if (t.length === 13 && t.startsWith(INDICATIF_CI)) return t
-  if (t.length === 10 && t.startsWith('0')) return `${INDICATIF_CI}${t}`
+  // 10 chiffres locaux : mobiles (01, 05, 07) et fixes (21, 25, 27), qui peuvent aussi avoir WhatsApp Business.
+  if (t.length === 10 && /^[02]/.test(t)) return `${INDICATIF_CI}${t}`
   return null
 }
 

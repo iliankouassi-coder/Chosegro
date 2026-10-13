@@ -149,9 +149,11 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
   // Raccourcis : Entrée valide, flèche droite passe à la suivante, C corrige.
   useEffect(() => {
     const surTouche = (e: KeyboardEvent): void => {
-      const cible = e.target as HTMLElement | null
+      const cible = e.target instanceof HTMLElement ? e.target : null
       const dansUnChamp = cible !== null && ['INPUT', 'TEXTAREA', 'SELECT'].includes(cible.tagName)
-      if (e.key === 'Enter' && !dansUnChamp && cible?.tagName !== 'BUTTON') {
+      // Entrée sur un lien ou un bouton garde son rôle ; une touche maintenue ne valide pas pièce après pièce.
+      const surUnControle = cible?.closest('a, button, input, select, textarea, [contenteditable]') != null
+      if (e.key === 'Enter' && !e.repeat && !surUnControle) {
         e.preventDefault()
         valider()
       } else if (e.key === 'ArrowRight' && !dansUnChamp && suivante) {
@@ -202,7 +204,7 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
           <Carte titre="Pièce pas encore lue">
             <p className="text-sm text-slate-700">{etat.lectures[piece.id] ?? 'En attente de lecture par Claude Code.'}</p>
             {piece.erreurLecture && <Erreur>{piece.erreurLecture}</Erreur>}
-            {piece.erreurLecture && !etat.lectures[piece.id] && (
+            {!etat.lectures[piece.id] && (
               <div className="mt-3 flex gap-2">
                 <Bouton variante="principal" onClick={() => void actions.relire(piece.id)}>
                   Réessayer

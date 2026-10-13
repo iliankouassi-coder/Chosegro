@@ -5,7 +5,8 @@
 import { estIsoDate, formatDate, formatDateHeure } from './dates'
 import { motsDuNom, resoudreFournisseur } from './fournisseurs'
 import { estMontant, formatFcfa } from './montants'
-import type { Canal, FusionFournisseur, IsoDate, Piece } from './types'
+import { memeEntreprise } from './ecritures'
+import type { Canal, Client, FusionFournisseur, IsoDate, Piece } from './types'
 
 export type CritereDoublon = 'empreinte' | 'fournisseur_date_ttc'
 
@@ -22,6 +23,11 @@ export interface OptionsDoublon {
   fusions: readonly FusionFournisseur[]
   /** Mots retirés des noms de fournisseurs (paramètre motsCourantsFournisseur). */
   motsCourants: readonly string[]
+  /**
+   * Clients du cabinet. Pour une vente, l'émetteur est le client lui-même : c'est alors le destinataire
+   * qui est comparé, sinon deux ventes du même jour et du même montant à deux acheteurs seraient des doublons.
+   */
+  clients?: readonly Pick<Client, 'id' | 'raisonSociale'>[]
 }
 
 const RECU: Record<Canal, string> = {
@@ -68,6 +74,8 @@ const pieceRecue = (p: Piece): string => {
 }
 
 interface Signature {
+  /** Vente du client du cabinet : le tiers comparé est le destinataire. */
+  vente: boolean
   /** Nom tel qu'il est lu, pour l'affichage. */
   nomLu: string
   /** Nom canonique chez le client, après normalisation et fusions. */
@@ -80,13 +88,16 @@ interface Signature {
 const signatureDe = (p: Piece, options: OptionsDoublon): Signature | null => {
   const e = p.extraction
   if (e === null) return null
-  const nomLu = e.fournisseur.valeur?.trim() ?? ''
+  const client = options.clients?.find((c) => c.id === p.clientId)
+  const emetteur = e.fournisseur.valeur?.trim() ?? ''
+  const estUneVente = client !== undefined && emetteur !== '' && memeEntreprise(emetteur, client.raisonSociale, options.motsCourants)
+  const nomLu = estUneVente ? (e.destinataire.valeur?.trim() ?? '') : emetteur
   const date = e.date.valeur
   const ttc = e.ttc.valeur
   if (nomLu === '' || date === null || !estIsoDate(date) || ttc === null || !estMontant(ttc)) return null
   const fournisseur = resoudreFournisseur(nomLu, p.clientId, options.fusions, options.motsCourants)
   if (fournisseur === '') return null
-  return { nomLu, fournisseur, date, ttc }
+  return { vente: estUneVente, nomLu, fournisseur, date, ttc }
 }
 
 /** « F-102 », « f 102 » et « F102 » sont le même numéro. */
@@ -144,13 +155,13 @@ export function chercherDoublon(
   for (const original of anterieures) {
     if (original.clientId !== piece.clientId) continue
     const autre = signatureDe(original, options)
-    if (autre === null || autre.fournisseur !== ici.fournisseur || autre.date !== ici.date || autre.ttc !== ici.ttc) {
+    if (autre === null || autre.vente !== ici.vente || autre.fournisseur !== ici.fournisseur || autre.date !== ici.date || autre.ttc !== ici.ttc) {
       continue
     }
     const memeEcriture = motsDuNom(ici.nomLu).join(' ') === motsDuNom(autre.nomLu).join(' ')
     const nom = memeEcriture ? ici.nomLu : `${ici.nomLu} ici, ${autre.nomLu} sur l'autre pièce`
     const raison =
-      `Même fournisseur (${nom}), même date (${formatDate(ici.date)}) et même TTC (${formatFcfa(ici.ttc)}) ` +
+      `${ici.vente ? 'Même acheteur' : 'Même fournisseur'} (${nom}), même date (${formatDate(ici.date)}) et même TTC (${formatFcfa(ici.ttc)}) ` +
       `que ${pieceRecue(original)}.`
     return { original, critere: 'fournisseur_date_ttc', raison: [raison, ...misesEnGarde(piece, original)].join(' ') }
   }

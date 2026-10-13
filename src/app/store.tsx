@@ -167,6 +167,18 @@ async function chargerDemo(plan: PlanComptable): Promise<void> {
   })
 }
 
+/**
+ * Une lecture suivie par une page qui a été rechargée (ou par un serveur redémarré) ne reviendra pas :
+ * la pièce reste « à lire », avec l'erreur et le bouton Réessayer, au lieu d'attendre indéfiniment.
+ */
+async function signalerLecturesInterrompues(): Promise<void> {
+  const enSuspens = (await db.pieces.where('statut').equals('a_lire').toArray()).filter((p) => p.erreurLecture === null)
+  for (const piece of enSuspens) {
+    const r = enregistrerEchecLecture(piece, 'Lecture interrompue (page rechargée ou serveur redémarré) : cliquez sur Réessayer.')
+    if (r.ok) await db.pieces.put(r.valeur)
+  }
+}
+
 /** Démarrage unique (React peut monter deux fois le fournisseur en développement). */
 let demarrage: Promise<{ plan: PlanComptable; source: 'fichier' | 'importe' }> | null = null
 
@@ -305,6 +317,7 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
       try {
         const { plan, source } = await demarrer()
         planRef.current = plan
+        await signalerLecturesInterrompues()
         if (annule) return
         setEtat((e) => ({ ...e, plan, sourcePlan: source }))
         await recharger()
@@ -618,7 +631,8 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
           const d = donneesRef.current
           const r = fusionnerFournisseurs(d.fusions, clientId, alias, cible, d.parametres.motsCourantsFournisseur)
           if (!r.ok) return r
-          const regles = reporterReglesApresFusion(d.regles, clientId, alias, cible)
+          // La fusion se fait vers le nom canonique : la règle de l'alias le suit.
+          const regles = reporterReglesApresFusion(d.regles, clientId, r.alias, r.cible)
           await db.transaction('rw', db.fusions, db.regles, async () => {
             await db.fusions.clear()
             await db.fusions.bulkPut(r.fusions.map((f) => ({ ...f, id: `${f.clientId}|${f.alias}` })))

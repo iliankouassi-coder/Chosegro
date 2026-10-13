@@ -4,7 +4,7 @@ import { alertesPiece } from './alertes'
 import { controlerMontants, type ControleMontants } from './controle'
 import { dateAbidjan, moisDe } from './dates'
 import { chercherDoublon, type CandidatDoublon } from './doublons'
-import { proposerEcriture, validerEcriture, type PropositionEcriture } from './ecritures'
+import { determinerType, proposerEcriture, validerEcriture, type PropositionEcriture } from './ecritures'
 import { confianceGlobale, corrigerExtraction, type CorrectionsExtraction } from './extraction'
 import { resoudreFournisseur } from './fournisseurs'
 import { tauxApparent } from './montants'
@@ -79,22 +79,21 @@ export function preparerValidation(ctx: ContexteValidation, corrections: Correct
   }
 
   const mots = p.motsCourantsFournisseur
-  const memeTiers = (autre: Piece, nom: string | null): boolean => {
-    const lu = autre.extraction?.fournisseur.valeur
-    return (
-      nom !== null &&
-      lu !== null &&
-      lu !== undefined &&
-      resoudreFournisseur(lu, client.id, ctx.fusions, mots) === resoudreFournisseur(nom, client.id, ctx.fusions, mots)
-    )
+  // Le tiers d'une pièce : son émetteur pour un achat, son destinataire pour une vente.
+  const tiersDe = (e: Extraction): { sens: 'achat' | 'vente'; nom: string } | null => {
+    const sens = determinerType(e, client, mots).sens
+    const nom = sens === 'achat' ? e.fournisseur.valeur : e.destinataire.valeur
+    return nom === null ? null : { sens, nom: resoudreFournisseur(nom, client.id, ctx.fusions, mots) }
   }
-  const piecesValideesDuFournisseur = ctx.pieces.filter(
-    (autre) =>
-      autre.id !== piece.id &&
-      autre.clientId === client.id &&
-      autre.statut === 'validee' &&
-      memeTiers(autre, extraction.fournisseur.valeur),
-  ).length
+  const tiers = tiersDe(extraction)
+  const piecesValideesDuFournisseur =
+    tiers === null
+      ? 0
+      : ctx.pieces.filter((autre) => {
+          if (autre.id === piece.id || autre.clientId !== client.id || autre.statut !== 'validee' || autre.extraction === null) return false
+          const t = tiersDe(autre.extraction)
+          return t !== null && t.sens === tiers.sens && t.nom === tiers.nom
+        }).length
 
   const numeroPieceRepli = numeroPieceInterne(piece)
   const proposition = proposerEcriture({
@@ -123,9 +122,17 @@ export function preparerValidation(ctx: ContexteValidation, corrections: Correct
     type: proposition.determination.type,
     emetteurEstLeClient: proposition.determination.emetteurEstLeClient,
   })
-  const doublon = chercherDoublon({ ...piece, extraction }, ctx.pieces, { fusions: ctx.fusions, motsCourants: mots })
+  const doublon = chercherDoublon({ ...piece, extraction }, ctx.pieces, { fusions: ctx.fusions, motsCourants: mots, clients: [client] })
   const bloquants = [...proposition.bloquants]
-  if (!extraction.lisible) bloquants.unshift('Pièce illisible : rejetez-la, ou corrigez les champs à la main.')
+  // Une pièce jugée illisible par l'IA se valide seulement si le collaborateur a saisi lui-même ce qui compte.
+  const c = corrections.champs ?? {}
+  const saisieManuelle =
+    c.ht !== undefined && c.tva !== undefined && c.ttc !== undefined && (c.date !== undefined || corrections.date !== undefined)
+  if (!extraction.lisible && !saisieManuelle) {
+    bloquants.unshift(
+      'Pièce illisible : rejetez-la (le message de relance sera prêt), ou saisissez à la main le HT, la TVA, le TTC et la date pour la valider.',
+    )
+  }
 
   return succes({
     extraction,
@@ -170,7 +177,9 @@ export function validerLaPiece(
   const compte = proposition.comptes.chargeOuProduit
   if (proposition.compteCorrige && compte !== null && proposition.tiersNormalise !== null) {
     const m = proposition.montants
-    const taux = m.ht !== null && m.tva !== null ? tauxApparent(Math.abs(m.ht), Math.abs(m.tva)) : null
+    const lu = m.ht !== null && m.tva !== null ? tauxApparent(Math.abs(m.ht), Math.abs(m.tva)) : null
+    // Un taux aberrant (HT et TVA lus à l'envers) n'est pas appris : le taux par défaut le remplace.
+    const taux = lu !== null && lu >= 0 && lu <= 100 ? lu : null
     apprentissage = apprendreRegle(regles, {
       clientId: ctx.client.id,
       fournisseurNormalise: proposition.tiersNormalise,

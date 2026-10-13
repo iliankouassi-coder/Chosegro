@@ -90,22 +90,22 @@ describe('alertesPiece : photo floue ou coupée', () => {
     expect(trouver(a, 'illisible')).toEqual({
       code: 'illisible',
       niveau: 'bloquant',
-      message: 'Pièce illisible (photo floue) : rejetez-la, le message de relance est prêt.',
+      message: 'Pièce illisible (photo floue) : rejetez-la (le message de relance sera prêt), ou saisissez à la main le HT, la TVA, le TTC et la date pour la valider.',
     })
   })
 
   it("met le motif en incise : minuscule initiale et sans point final, sauf pour un sigle", () => {
     const floue = alertesPiece(extraction({}, { lisible: false, motifIllisible: '  Photo floue. ' }), contexte())
-    expect(message(floue, 'illisible')).toBe('Pièce illisible (photo floue) : rejetez-la, le message de relance est prêt.')
+    expect(message(floue, 'illisible')).toBe('Pièce illisible (photo floue) : rejetez-la (le message de relance sera prêt), ou saisissez à la main le HT, la TVA, le TTC et la date pour la valider.')
     const sigle = alertesPiece(extraction({}, { lisible: false, motifIllisible: 'QR code coupé' }), contexte())
-    expect(message(sigle, 'illisible')).toBe('Pièce illisible (QR code coupé) : rejetez-la, le message de relance est prêt.')
+    expect(message(sigle, 'illisible')).toBe('Pièce illisible (QR code coupé) : rejetez-la (le message de relance sera prêt), ou saisissez à la main le HT, la TVA, le TTC et la date pour la valider.')
   })
 
   it('se passe du motif quand il est absent ou vide', () => {
     const sans = alertesPiece(extraction({}, { lisible: false, motifIllisible: null }), contexte())
-    expect(message(sans, 'illisible')).toBe('Pièce illisible : rejetez-la, le message de relance est prêt.')
+    expect(message(sans, 'illisible')).toBe('Pièce illisible : rejetez-la (le message de relance sera prêt), ou saisissez à la main le HT, la TVA, le TTC et la date pour la valider.')
     const vide = alertesPiece(extraction({}, { lisible: false, motifIllisible: '   ' }), contexte())
-    expect(message(vide, 'illisible')).toBe('Pièce illisible : rejetez-la, le message de relance est prêt.')
+    expect(message(vide, 'illisible')).toBe('Pièce illisible : rejetez-la (le message de relance sera prêt), ou saisissez à la main le HT, la TVA, le TTC et la date pour la valider.')
   })
 
   it("place l'alerte bloquante en tête, avant ce qui n'a pas pu être lu", () => {
@@ -451,10 +451,16 @@ describe('alertesPiece : contexte invalide', () => {
     expect(() => alertesPiece(extraction(), contexte({ toleranceEcart: Number.NaN }))).toThrow("Tolérance d'écart invalide")
   })
 
-  it('refuse un taux habituel qui n’est pas un pourcentage', () => {
-    expect(() => alertesPiece(extraction(), contexte({ tauxTvaHabituel: Number.NaN }))).toThrow('Taux de TVA habituel invalide')
-    expect(() => alertesPiece(extraction(), contexte({ tauxTvaHabituel: -5 }))).toThrow('Taux de TVA habituel invalide')
-    expect(() => alertesPiece(extraction(), contexte({ tauxTvaHabituel: 180 }))).toThrow('Taux de TVA habituel invalide')
+  it('ignore un taux habituel qui n’est pas un pourcentage, sans empêcher l’affichage de la pièce', () => {
+    for (const taux of [Number.NaN, -5, 180, 556]) {
+      const a = alertesPiece(extraction(), contexte({ tauxTvaHabituel: taux }))
+      expect(codes(a)).not.toContain('taux_tva_inhabituel')
+    }
+  })
+
+  it('signale un HT déduit du TTC quand la TVA lue vaut 0, même sur une facture', () => {
+    const a = alertesPiece(extraction({ ht: null, tva: 0, ttc: 50_000 }), contexte())
+    expect(message(a, 'ht_deduit')).toBe('HT non lu : pris égal au TTC, car la TVA lue vaut 0. Vérifiez-le sur la pièce.')
   })
 })
 

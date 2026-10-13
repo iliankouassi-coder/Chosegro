@@ -5,8 +5,12 @@ import { echec, succes, type Resultat } from './types'
 export const ESPACE_MILLIERS = '\u00A0'
 
 const ESPACES = /[\s\u00A0\u202F\u2009']/g
-const DEVISE_EN_TETE = /^(?:f\s*cfa|fcfa|xof|cfa)\s*/i
-const DEVISE_EN_FIN = /\s*(?:f\s*cfa|fcfa|xof|cfa|frs?|f)\.?$/i
+/** Les écritures du FCFA sur les pièces : « FCFA », « F CFA », « F.CFA », « Frs CFA », « francs CFA », « XOF »… */
+const FCFA = '(?:f\\.?\\s*cfa|frs?\\.?\\s*cfa|francs?\\s*cfa|fcfa|xof|cfa)'
+const DEVISE_EN_TETE = new RegExp(`^${FCFA}\\s*`, 'i')
+const DEVISE_EN_FIN = new RegExp(`\\s*(?:${FCFA}|frs?|francs?|f)\\.?$`, 'i')
+/** « 118 000 TTC », « 100 000 F HT » : la mention HT ou TTC qui suit le montant. */
+const MENTION_HT_TTC = /\s*\b(?:ht|ttc)\.?$/i
 
 const groupesDeTrois = (partie: string, separateur: string): boolean => {
   const groupes = partie.split(separateur)
@@ -28,7 +32,7 @@ export function lireMontant(texte: string): Resultat<number> {
   const brut = texte.trim()
   if (brut === '') return echec('Montant vide')
 
-  let t = brut.replace(DEVISE_EN_TETE, '').replace(DEVISE_EN_FIN, '').trim()
+  let t = brut.replace(MENTION_HT_TTC, '').replace(DEVISE_EN_TETE, '').replace(DEVISE_EN_FIN, '').trim()
   let negatif = false
   if (/^\(.*\)$/.test(t)) {
     negatif = true

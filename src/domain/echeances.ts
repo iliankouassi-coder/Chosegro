@@ -214,10 +214,10 @@ export interface DossierPasPret {
   raison: string
 }
 
-/** Date retenue pour une pièce : la date lue sur la pièce, sinon le jour de réception à Abidjan. */
-const dateDeLaPiece = (piece: Piece): IsoDate => {
+/** Date lue sur la pièce, ou null si elle n'est pas (encore) connue. */
+const dateLue = (piece: Piece): IsoDate | null => {
   const lue = piece.extraction?.date.valeur ?? null
-  return lue !== null && estIsoDate(lue) ? lue : dateAbidjan(piece.recueLe)
+  return lue !== null && estIsoDate(lue) ? lue : null
 }
 
 /** « de septembre 2026 », « d'octobre 2026 » si la période est un mois entier ; sinon « du 01/09/2026 au 15/09/2026 ». */
@@ -229,30 +229,44 @@ const libellePeriode = (periode: Periode): string => {
   return `du ${formatDate(periode.debut)} au ${formatDate(periode.fin)}`
 }
 
-const raisonPasPret = (n: number, periode: Periode): string =>
-  n >= 2
-    ? `${n} pièces ${libellePeriode(periode)} pas encore validées`
-    : `${n} pièce ${libellePeriode(periode)} pas encore validée`
+const raisonPasPret = (datees: number, sansDate: number, periode: Periode): string => {
+  const parties: string[] = []
+  if (datees > 0) parties.push(`${datees} ${datees >= 2 ? 'pièces' : 'pièce'} ${libellePeriode(periode)}`)
+  if (sansDate > 0) parties.push(`${sansDate} ${sansDate >= 2 ? 'pièces' : 'pièce'} sans date lue (reçue${sansDate >= 2 ? 's' : ''} avant l'échéance)`)
+  const total = datees + sansDate
+  return `${parties.join(' et ')} pas encore ${total >= 2 ? 'validées' : 'validée'}`
+}
 
 /**
- * Dossiers pas prêts pour une échéance : les clients concernés qui ont au moins une pièce
- * de la période à lire ou à valider. Triés par nombre de pièces décroissant, puis par raison sociale.
+ * Dossiers pas prêts pour une échéance : les clients concernés qui ont au moins une pièce de la période
+ * à lire ou à valider. Une pièce dont la date n'est pas encore lue compte aussi si elle est arrivée entre
+ * le début de la période et l'échéance : on ne déclare pas prêt un dossier dont on ignore une pièce.
+ * Triés par nombre de pièces décroissant, puis par raison sociale.
  */
 export function dossiersPasPrets(e: Echeance, clients: readonly Client[], pieces: readonly Piece[]): DossierPasPret[] {
   const periode = periodeEcheance(e)
   const concernes = new Set(clients.filter((client) => clientConcerne(e, client)).map((client) => client.id))
-  const nonValidees = new Map<string, number>()
+  const compte = new Map<string, { datees: number; sansDate: number }>()
   for (const piece of pieces) {
     if (!concernes.has(piece.clientId) || !STATUTS_NON_VALIDES.has(piece.statut)) continue
-    if (!estDansPeriode(dateDeLaPiece(piece), periode)) continue
-    nonValidees.set(piece.clientId, (nonValidees.get(piece.clientId) ?? 0) + 1)
+    const date = dateLue(piece)
+    const c = compte.get(piece.clientId) ?? { datees: 0, sansDate: 0 }
+    if (date !== null) {
+      if (!estDansPeriode(date, periode)) continue
+      c.datees += 1
+    } else {
+      const recue = dateAbidjan(piece.recueLe)
+      if (recue < periode.debut || recue > e.date) continue
+      c.sansDate += 1
+    }
+    compte.set(piece.clientId, c)
   }
 
   const dossiers: DossierPasPret[] = []
   for (const client of clients) {
-    const n = nonValidees.get(client.id) ?? 0
-    if (n === 0 || !concernes.has(client.id)) continue
-    dossiers.push({ client, piecesNonValidees: n, raison: raisonPasPret(n, periode) })
+    const c = compte.get(client.id)
+    if (!c || !concernes.has(client.id)) continue
+    dossiers.push({ client, piecesNonValidees: c.datees + c.sansDate, raison: raisonPasPret(c.datees, c.sansDate, periode) })
   }
   return dossiers.sort(
     (a, b) =>

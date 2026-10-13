@@ -283,20 +283,50 @@ describe('normaliserExtraction', () => {
       ['118 000 F CFA', 118_000],
       ['118000,00', 118_000],
       ['0', 0],
-      ['1 200 €', 1_200],
-      ['EUR 1 200,00', 1_200],
-      ['$1,200', 1_200],
-      ['1 200 USD', 1_200],
     ])('« %s » donne %d, avec la confiance de l’IA', (texte, attendu) => {
       const e = lu(avec({ montant_ht: champ(texte, 'moyen') }))
       expect(e.ht).toEqual({ valeur: attendu, confiance: 'moyen' })
       expect(e.problemes).toEqual([])
     })
 
-    it("garde le signe d'un montant négatif (avoir) : l'écriture l'interprète ailleurs", () => {
-      const e = lu(avec({ nature: champ('avoir'), montant_ttc: champ('-118 000') }))
-      expect(e.ttc.valeur).toBe(-118_000)
+    it.each([
+      ['1 200 €', 'EUR'],
+      ['EUR 1 200,00', 'EUR'],
+      ['$1,200', 'USD'],
+      ['1 200 USD', 'USD'],
+    ])('« %s » donne 1200 mais garde la devise %s : jamais des euros pris pour des FCFA', (texte, code) => {
+      const sansDevise = lu(avec({ montant_ht: champ(texte, 'moyen'), devise: champ(null, 'bas') }))
+      expect(sansDevise.ht).toEqual({ valeur: 1_200, confiance: 'moyen' })
+      expect(sansDevise.devise).toEqual({ valeur: code, confiance: 'moyen' })
+      expect(sansDevise.problemes).toEqual([`Devise non lue, mais les montants sont écrits en ${code} : devise ${code} retenue.`])
+      const contradiction = lu(avec({ montant_ht: champ(texte), devise: champ('FCFA') }))
+      expect(contradiction.devise.valeur).toBe(code)
+      expect(contradiction.problemes[0]).toContain('Devise incohérente : FCFA sur la pièce')
     })
+
+    it('traite des montants tous négatifs comme un avoir, en valeur absolue, et le dit', () => {
+      const e = lu(avec({ montant_ht: champ('-100 000'), montant_tva: champ('-18 000'), montant_ttc: champ('-118 000') }))
+      expect([e.ht.valeur, e.tva.valeur, e.ttc.valeur]).toEqual([100_000, 18_000, 118_000])
+      expect(e.nature).toEqual({ valeur: 'avoir', confiance: 'moyen' })
+      expect(e.problemes).toEqual(['Montants négatifs : pièce traitée comme un avoir, montants repris en valeur absolue.'])
+    })
+
+    it('signale des signes mélangés sans rien harmoniser', () => {
+      const e = lu(avec({ montant_ttc: champ('-118 000') }))
+      expect(e.ttc.valeur).toBe(-118_000)
+      expect(e.ht.valeur).toBe(100_000)
+      expect(e.problemes).toEqual(['Signes incohérents : certains montants sont négatifs, d’autres non. Vérifiez la pièce.'])
+    })
+
+    it.each([['F.CFA'], ['Frs CFA'], ['francs CFA'], ['FCFA TTC'], ['F HT']])('lit « 118 000 %s »', (suffixe) => {
+      expect(lu(avec({ montant_ttc: champ(`118 000 ${suffixe}`) })).ttc.valeur).toBe(118_000)
+    })
+
+    it('reconnaît « francs » seul comme le FCFA', () => {
+      expect(normaliserDevise('francs')).toBe('XOF')
+      expect(normaliserDevise('Franc')).toBe('XOF')
+    })
+
 
     it('rend non lu un montant illisible, avec une confiance basse et le problème affiché', () => {
       const e = lu(avec({ montant_ht: champ('1 25 000', 'haut') }))

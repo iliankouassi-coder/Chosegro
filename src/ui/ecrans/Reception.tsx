@@ -184,7 +184,7 @@ export function Reception() {
                         Séparer les pages
                       </Bouton>
                     )}
-                    {p.statut === 'a_lire' && p.erreurLecture && !etat.lectures[p.id] && (
+                    {p.statut === 'a_lire' && !etat.lectures[p.id] && (
                       <Bouton onClick={() => void actions.relire(p.id)}>Réessayer</Bouton>
                     )}
                   </div>

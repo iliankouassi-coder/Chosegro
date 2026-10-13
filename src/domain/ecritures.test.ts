@@ -115,7 +115,11 @@ describe("écriture d'achat", () => {
   })
 
   it("écarte un compte de regroupement ou d'une classe qui ne convient pas", () => {
-    expect(proposerEcriture(entree(fabriquerExtraction({ compteIa: '605' }))).comptes.chargeOuProduit).toBeNull()
+    const regroupement = proposerEcriture(entree(fabriquerExtraction({ compteIa: '605' })))
+    expect(regroupement.comptes.chargeOuProduit).toBeNull()
+    // Le compte existe dans le plan : la raison ne doit pas dire le contraire.
+    expect(regroupement.ecriture.raison).toContain("la proposition de l'IA (605) est un compte de regroupement")
+    expect(regroupement.ecriture.raison).not.toContain("n'est pas dans le plan")
     const vente = proposerEcriture(entree(fabriquerExtraction({ compteIa: '7011' })))
     expect(vente.comptes.chargeOuProduit).toBeNull()
     expect(vente.avertissements[0]).toContain('classe 7')
@@ -137,6 +141,23 @@ describe("écriture d'achat", () => {
   it('ne parle pas de première facture quand des factures ont déjà été validées', () => {
     const p = proposerEcriture(entree(fabriquerExtraction(), { piecesValideesDuFournisseur: 2 }))
     expect(p.ecriture.raison).toContain('aucune règle apprise pour ce fournisseur')
+  })
+
+  it("passe un achat d'immobilisation avec la TVA sur immobilisations et un fournisseur d'investissements", () => {
+    const p = proposerEcriture(entree(fabriquerExtraction({ compteIa: '2441' })))
+    expect(lignes(p.ecriture.lignes)).toEqual([
+      ['2441', 100_000, 0],
+      ['4451', 18_000, 0],
+      ['4812', 0, 118_000],
+    ])
+    expect(p.bloquants).toEqual([])
+    expect(p.avertissements.some((a) => a.startsWith("Achat d'immobilisation (compte 2441)"))).toBe(true)
+  })
+
+  it('reprend le compte tiers de la règle seulement avec son compte', () => {
+    const regle = fabriquerRegle({ compteChargeOuProduit: '6052', compteTiers: '4012' })
+    const corrige = proposerEcriture(entree(fabriquerExtraction(), { regles: [regle], corrections: { compteChargeOuProduit: '2441' } }))
+    expect(corrige.comptes.tiers).toBe('4812')
   })
 
   it('omet la ligne de TVA quand la TVA est à 0', () => {
@@ -364,6 +385,10 @@ describe('validerEcriture', () => {
 })
 
 describe('raisonRegle', () => {
+  it('dit qu’une règle a été modifiée à la main tant qu’elle n’a servi à aucune facture', () => {
+    expect(raisonRegle({ misAJourLe: '2026-10-13T08:00:00.000Z', utilisations: 0, sens: 'achat' })).toBe('Règle modifiée à la main le 13/10')
+  })
+
   it('accorde le nombre de factures', () => {
     expect(raisonRegle({ misAJourLe: '2026-10-13T08:00:00.000Z', utilisations: 1, sens: 'achat' })).toBe(
       'Règle apprise le 13/10 sur 1 facture de ce fournisseur',

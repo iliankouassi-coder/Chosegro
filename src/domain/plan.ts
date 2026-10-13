@@ -140,20 +140,21 @@ export function avertissementCompte(compte: CompteComptable): string | null {
 
 export type VerificationCompte =
   | { ok: true; compte: CompteComptable; avertissement: string | null }
-  | { ok: false; erreur: string }
+  | { ok: false; erreur: string; motif: 'vide' | 'absent' | 'regroupement' }
 
 /** Vérifie qu'un compte peut recevoir une ligne d'écriture. */
 export function verifierCompteImputable(plan: PlanComptable, code: string): VerificationCompte {
   const c = code.trim()
-  if (c === '') return { ok: false, erreur: 'Compte à choisir.' }
+  if (c === '') return { ok: false, erreur: 'Compte à choisir.', motif: 'vide' }
   const compte = plan.comptes.get(c)
-  if (!compte) return { ok: false, erreur: `Le compte ${c} n'existe pas dans le plan importé.` }
+  if (!compte) return { ok: false, erreur: `Le compte ${c} n'existe pas dans le plan importé.`, motif: 'absent' }
   const sousComptes = plan.enfants.get(c) ?? []
   if (sousComptes.length > 0) {
     const exemples = sousComptes.slice(0, 3).join(', ')
     return {
       ok: false,
       erreur: `Le compte ${c} a des sous-comptes : choisissez-en un (${exemples}${sousComptes.length > 3 ? '…' : ''}).`,
+      motif: 'regroupement',
     }
   }
   return { ok: true, compte, avertissement: avertissementCompte(compte) }

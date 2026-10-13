@@ -33,7 +33,7 @@ export function PastilleConfiance({ confiance }: { confiance: Confiance | null }
 
 export function Montant({ valeur, devise }: { valeur: number | null; devise?: string | null }) {
   if (valeur === null) return <span className="text-slate-400">non lu</span>
-  if (devise && devise !== 'XOF') return <span className="tabular-nums">{formatMontant(valeur)} {devise}</span>
+  if (devise && devise !== 'XOF') return <span className="tabular-nums">{`${formatMontant(valeur)}\u00A0${devise}`}</span>
   return <span className="tabular-nums">{formatFcfa(valeur)}</span>
 }
 

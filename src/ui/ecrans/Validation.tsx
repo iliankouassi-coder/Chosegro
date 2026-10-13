@@ -9,7 +9,7 @@ import { LIBELLES_JOURNAL } from '../../domain/export'
 import { LIBELLES_CANAL, LIBELLES_STATUT, pieceSuivante, piecesAValider } from '../../domain/pieces'
 import { libelleCompte, rechercherComptes } from '../../domain/plan'
 import { formatMontant, lireMontant } from '../../domain/montants'
-import type { ChampLu, Confiance, Piece } from '../../domain/types'
+import type { ChampLu, Confiance, NaturePiece, Piece } from '../../domain/types'
 import { preparerValidation, type Corrections } from '../../domain/validation'
 import { ApercuPiece } from '../ApercuPiece'
 import { BadgeDemo, Bouton, Carte, Erreur, ListeAlertes, PastilleConfiance, Raison, Vide } from '../composants'
@@ -18,6 +18,7 @@ const LIBELLES_TYPE = { achat: 'Achat', vente: 'Vente', avoir: 'Avoir' } as cons
 const LIBELLES_QR = { oui: 'Oui', non: 'Non', incertain: 'Incertain' } as const
 
 interface Saisie {
+  nature: '' | NaturePiece
   compte: string
   date: string
   ht: string
@@ -27,7 +28,9 @@ interface Saisie {
   devise: string
 }
 
-const SAISIE_VIDE: Saisie = { compte: '', date: '', ht: '', tva: '', ttc: '', fournisseur: '', devise: '' }
+const SAISIE_VIDE: Saisie = { nature: '', compte: '', date: '', ht: '', tva: '', ttc: '', fournisseur: '', devise: '' }
+
+const LIBELLES_NATURE: Record<NaturePiece, string> = { facture: 'Facture', avoir: 'Avoir', ticket: 'Ticket', recu: 'Reçu', autre: 'Autre' }
 
 /** Transforme la saisie du collaborateur en corrections pour le domaine (montants et dates normalisés par lui). */
 function versCorrections(s: Saisie): { corrections: Corrections; erreurs: string[] } {
@@ -48,6 +51,7 @@ function versCorrections(s: Saisie): { corrections: Corrections; erreurs: string
   if (date) champs.date = date
   if (s.fournisseur.trim() !== '') champs.fournisseur = s.fournisseur.trim()
   if (s.devise.trim() !== '') champs.devise = s.devise.trim().toUpperCase() === 'FCFA' ? 'XOF' : s.devise.trim().toUpperCase()
+  if (s.nature !== '') champs.nature = s.nature
   return {
     corrections: {
       champs,
@@ -364,6 +368,21 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
                       </label>
                     ))}
                   </div>
+                  <label className="grid gap-1 text-sm">
+                    <span className="font-medium">Nature de la pièce (un avoir inverse l’écriture)</span>
+                    <select
+                      className="rounded-lg border border-slate-300 px-3 py-2"
+                      value={saisie.nature}
+                      onChange={(e) => setSaisie({ ...saisie, nature: e.target.value as Saisie['nature'] })}
+                    >
+                      <option value="">{`Telle que lue : ${p.extraction.nature.valeur ? LIBELLES_NATURE[p.extraction.nature.valeur] : 'non lue'}`}</option>
+                      {(Object.keys(LIBELLES_NATURE) as NaturePiece[]).map((n) => (
+                        <option key={n} value={n}>
+                          {LIBELLES_NATURE[n]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <div className="grid grid-cols-3 gap-3">
                     <label className="grid gap-1 text-sm">
                       <span className="font-medium">Date</span>

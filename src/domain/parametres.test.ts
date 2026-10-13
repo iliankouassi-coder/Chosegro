@@ -18,6 +18,9 @@ describe('comptes par défaut', () => {
     expect(libelle(COMPTES_PAR_DEFAUT.client)).toBe('Clients')
     expect(libelle(COMPTES_PAR_DEFAUT.tvaRecuperable)).toBe('T.V.A. récupérable sur achats')
     expect(libelle(COMPTES_PAR_DEFAUT.tvaFacturee)).toBe('T.V.A. facturée sur ventes')
+    expect(libelle(COMPTES_PAR_DEFAUT.fournisseurImmobilisations)).toBe('Immobilisations corporelles')
+    expect(plan.comptes.get(COMPTES_PAR_DEFAUT.fournisseurImmobilisations)?.libelleParent).toBe("FOURNISSEURS D'INVESTISSEMENTS")
+    expect(libelle(COMPTES_PAR_DEFAUT.tvaRecuperableImmobilisations)).toBe('T.V.A. récupérable sur immobilisations')
   })
 })
 

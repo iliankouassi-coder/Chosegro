@@ -182,11 +182,13 @@ export interface PropositionEcriture {
 
 const pluriel = (n: number, singulier: string, plurielForme: string): string => (n > 1 ? plurielForme : singulier)
 
-/** « Règle apprise le 12/10 sur 3 factures de ce fournisseur » */
+/** « Règle apprise le 12/10 sur 3 factures de ce fournisseur », ou « Règle modifiée à la main le 13/10 ». */
 export function raisonRegle(regle: Pick<RegleFournisseur, 'misAJourLe' | 'utilisations' | 'sens'>): string {
-  const n = Math.max(1, regle.utilisations)
+  const le = formatJourMois(dateAbidjan(regle.misAJourLe))
+  if (regle.utilisations <= 0) return `Règle modifiée à la main le ${le}`
+  const n = regle.utilisations
   const tiers = regle.sens === 'vente' ? 'ce client' : 'ce fournisseur'
-  return `Règle apprise le ${formatJourMois(dateAbidjan(regle.misAJourLe))} sur ${n} ${pluriel(n, 'facture', 'factures')} de ${tiers}`
+  return `Règle apprise le ${le} sur ${n} ${pluriel(n, 'facture', 'factures')} de ${tiers}`
 }
 
 const classesAttendues = (sens: Sens): readonly number[] => (sens === 'achat' ? [6, 2] : [7])
@@ -239,7 +241,10 @@ export function proposerEcriture(entree: EntreeProposition): PropositionEcriture
       }
     } else if (proposeIa !== null && verification !== null && !verification.ok) {
       avertissements.push(`Proposition de l'IA écartée : ${verification.erreur}`)
-      raison = `Compte ${nature} à choisir : la proposition de l'IA n'est pas dans le plan (${contexte})`
+      raison =
+        verification.motif === 'regroupement'
+          ? `Compte ${nature} à choisir : la proposition de l'IA (${proposeIa}) est un compte de regroupement, choisissez un sous-compte (${contexte})`
+          : `Compte ${nature} à choisir : la proposition de l'IA n'est pas dans le plan (${contexte})`
     } else {
       raison = `Compte ${nature} à choisir : pas de proposition de l'IA (${contexte})`
     }
@@ -252,8 +257,19 @@ export function proposerEcriture(entree: EntreeProposition): PropositionEcriture
     raison = `Compte corrigé à la main : ${compteChargeOuProduit}${compteInitial !== null ? ` au lieu de ${compteInitial}` : ''} (${raison})`
   }
 
-  const compteTiers = regle?.compteTiers ?? (sens === 'achat' ? comptesParDefaut.fournisseur : comptesParDefaut.client)
-  const compteTva = sens === 'achat' ? comptesParDefaut.tvaRecuperable : comptesParDefaut.tvaFacturee
+  // Un achat d'immobilisation (classe 2) a sa TVA récupérable et son fournisseur d'investissements.
+  const immobilisation = sens === 'achat' && compteChargeOuProduit !== null && compteChargeOuProduit.startsWith('2')
+  const tiersParDefaut =
+    sens === 'vente' ? comptesParDefaut.client : immobilisation ? comptesParDefaut.fournisseurImmobilisations : comptesParDefaut.fournisseur
+  // Le compte tiers d'une règle va avec son compte : il n'est repris que si ce compte n'a pas été corrigé.
+  const compteTiers = regle !== null && regle.compteChargeOuProduit === compteChargeOuProduit ? regle.compteTiers : tiersParDefaut
+  const compteTva =
+    sens === 'vente' ? comptesParDefaut.tvaFacturee : immobilisation ? comptesParDefaut.tvaRecuperableImmobilisations : comptesParDefaut.tvaRecuperable
+  if (immobilisation) {
+    avertissements.push(
+      `Achat d'immobilisation (compte ${compteChargeOuProduit}) : TVA sur ${compteTva} et fournisseur d'investissements ${compteTiers}.`,
+    )
+  }
 
   // Montants : ceux lus, en valeur absolue pour un avoir. Un montant manquant bloque la validation.
   const montants = montantsRetenus(e)

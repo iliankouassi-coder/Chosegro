@@ -1,7 +1,7 @@
 // Écran 6 — Export : client, période, journal ; aperçu avec contrôle débit = crédit ; CSV ou Excel générique.
 import { useEffect, useState } from 'react'
 import { useApp } from '../../app/store'
-import { bornesMois, dateAbidjan, formatDate, lireDate, moisDe, moisPrecedent, nomMois } from '../../domain/dates'
+import { bornesMois, dateAbidjan, formatDate, formatDateHeure, lireDate, moisDe, moisPrecedent, nomMois } from '../../domain/dates'
 import {
   COLONNES_EXPORT,
   COLONNES_PAR_DEFAUT,
@@ -93,6 +93,8 @@ export function Export() {
     copie[j] = a
     setColonnes(copie)
   }
+
+  const derniers = etat.exports.slice(0, 10)
 
   return (
     <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
@@ -226,6 +228,26 @@ export function Export() {
         {message && <p className="mt-2 text-sm text-emerald-800">{message}</p>}
         {erreur && <Erreur>{erreur}</Erreur>}
       </Carte>
+
+      {derniers.length > 0 && (
+        <div className="lg:col-start-2">
+          <Carte titre="Derniers exports">
+            <ul className="divide-y divide-slate-100 text-sm">
+              {derniers.map((x) => (
+                <li key={x.id} className="flex flex-wrap justify-between gap-2 py-2">
+                  <span>
+                    {formatDateHeure(x.date)} · {clients.find((c) => c.id === x.clientId)?.raisonSociale ?? x.clientId} · du {formatDate(x.periode.debut)} au{' '}
+                    {formatDate(x.periode.fin)} · {x.journal === 'tous' ? 'tous les journaux' : LIBELLES_JOURNAL[x.journal]}
+                  </span>
+                  <span className="tabular-nums text-slate-600">
+                    {x.format === 'xlsx' ? 'Excel' : 'CSV'} · {x.nombreLignes} lignes · débit {formatMontant(x.totalDebit)} = crédit {formatMontant(x.totalCredit)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Carte>
+        </div>
+      )}
     </div>
   )
 }

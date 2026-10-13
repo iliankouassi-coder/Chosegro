@@ -27,6 +27,7 @@ import type {
   Canal,
   Client,
   Echeance,
+  ExportRealise,
   FormatExport,
   IsoDateHeure,
   Parametres,
@@ -68,6 +69,8 @@ export interface EtatApp {
   decoupages: Record<string, Progression>
   sante: Sante | null
   boiteDemoChargee: boolean
+  /** Exports déjà réalisés, du plus récent au plus ancien. */
+  exports: ExportRealise[]
 }
 
 const DONNEES_VIDES: Donnees = {
@@ -241,19 +244,21 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
     decoupages: {},
     sante: null,
     boiteDemoChargee: false,
+    exports: [],
   })
   const planRef = useRef<PlanComptable | null>(null)
   const donneesRef = useRef<Donnees>(DONNEES_VIDES)
 
   const recharger = useCallback(async () => {
-    const [donnees, echeances, boiteDemoChargee] = await Promise.all([
+    const [donnees, echeances, boiteDemoChargee, exports] = await Promise.all([
       lireDonnees(),
       lireEcheancesActives(),
       lireMeta<boolean>(CLES_META.boiteDemoChargee),
+      db.exports.orderBy('date').reverse().toArray(),
     ])
     const complet: Donnees = { ...donnees, echeances: echeances.echeances }
     donneesRef.current = complet
-    setEtat((e) => ({ ...e, donnees: complet, erreursEcheances: echeances.erreurs, boiteDemoChargee: boiteDemoChargee === true }))
+    setEtat((e) => ({ ...e, donnees: complet, erreursEcheances: echeances.erreurs, boiteDemoChargee: boiteDemoChargee === true, exports }))
   }, [])
 
   const majLecture = useCallback((pieceId: string, message: string | null) => {

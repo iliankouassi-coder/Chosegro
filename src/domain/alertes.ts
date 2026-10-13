@@ -151,7 +151,7 @@ export function alertesPiece(e: Extraction, contexte: ContexteAlertes): Alerte[]
       ajouter(
         'taux_tva_inhabituel',
         'attention',
-        `Taux de TVA lu ${formatTaux(taux)} ; taux habituel de ce fournisseur ${formatTaux(contexte.tauxTvaHabituel)}.`,
+        `Taux de TVA lu ${formatTaux(taux)} ; taux habituel ${contexte.emetteurEstLeClient ? 'pour ce client' : 'de ce fournisseur'} ${formatTaux(contexte.tauxTvaHabituel)}.`,
       )
     }
   }

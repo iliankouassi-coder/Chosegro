@@ -190,6 +190,10 @@ export interface ComptesParDefaut {
   client: string
   tvaRecuperable: string
   tvaFacturee: string
+  /** Pour un achat d'immobilisation (compte de classe 2) : fournisseur d'investissements. */
+  fournisseurImmobilisations: string
+  /** Pour un achat d'immobilisation : TVA récupérable sur immobilisations. */
+  tvaRecuperableImmobilisations: string
 }
 
 export interface Parametres {

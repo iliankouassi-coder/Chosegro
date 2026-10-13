@@ -458,6 +458,14 @@ describe('alertesPiece : contexte invalide', () => {
     }
   })
 
+  it('parle du client, pas du fournisseur, pour le taux habituel d’une vente', () => {
+    const e = extraction({ ht: 100_000, tva: 9_000, ttc: 109_000 })
+    const m = message(alertesPiece(e, contexte({ tauxTvaHabituel: 18, emetteurEstLeClient: true, type: 'vente' })), 'taux_tva_inhabituel')
+    expect(m).toBe(
+      'Taux de TVA lu 9 % ; taux habituel pour ce client 18 %.',
+    )
+  })
+
   it('signale un HT déduit du TTC quand la TVA lue vaut 0, même sur une facture', () => {
     const a = alertesPiece(extraction({ ht: null, tva: 0, ttc: 50_000 }), contexte())
     expect(message(a, 'ht_deduit')).toBe('HT non lu : pris égal au TTC, car la TVA lue vaut 0. Vérifiez-le sur la pièce.')

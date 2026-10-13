@@ -84,5 +84,6 @@ export async function ecrireMeta(cle: string, valeur: unknown): Promise<void> {
 
 export async function lireParametres(defaut: Parametres): Promise<Parametres> {
   const enregistres = await lireMeta<Partial<Parametres>>(CLES_META.parametres)
-  return { ...defaut, ...enregistres }
+  // Les comptes ajoutés depuis le dernier enregistrement prennent leur valeur par défaut.
+  return { ...defaut, ...enregistres, comptesParDefaut: { ...defaut.comptesParDefaut, ...enregistres?.comptesParDefaut } }
 }

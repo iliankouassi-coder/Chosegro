@@ -86,7 +86,7 @@ export function verifierRegle(
   const tiers = verifierCompteImputable(plan, regle.compteTiers)
   if (!tiers.ok) erreurs.push(`Compte tiers : ${tiers.erreur}`)
   if (!Number.isFinite(regle.tauxTva) || regle.tauxTva < 0 || regle.tauxTva > 100) {
-    erreurs.push('Le taux de TVA doit être compris entre 0 et 100 %.')
+    erreurs.push('Le taux de TVA doit être compris entre 0 et 100\u00A0%.')
   }
   return erreurs
 }
@@ -100,7 +100,15 @@ export function modifierRegle(
 ): { regles: RegleFournisseur[]; regle: RegleFournisseur } | null {
   const existante = regles.find((r) => r.id === regleId)
   if (!existante) return null
-  const regle: RegleFournisseur = { ...existante, ...changements, misAJourLe: le }
+  // Un nouveau compte n'a encore servi à aucune facture : le compteur repart de 0 et la date est celle de la modification.
+  const compteChange =
+    changements.compteChargeOuProduit !== undefined && changements.compteChargeOuProduit !== existante.compteChargeOuProduit
+  const regle: RegleFournisseur = {
+    ...existante,
+    ...changements,
+    misAJourLe: compteChange ? le : existante.misAJourLe,
+    utilisations: compteChange ? 0 : existante.utilisations,
+  }
   return { regles: regles.map((r) => (r.id === regleId ? regle : r)), regle }
 }
 

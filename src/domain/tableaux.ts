@@ -129,6 +129,8 @@ export function listeClients(d: Donnees, maintenant: IsoDateHeure): LigneClient[
 
 /** Un tiers du client (fournisseur, ou acheteur pour ses ventes), tel qu'il apparaît sur ses pièces. */
 export interface FournisseurDuClient {
+  /** Fournisseur (achats) ou acheteur (ventes du client). */
+  role: 'fournisseur' | 'acheteur'
   /** Nom normalisé, avant fusion. */
   normalise: string
   /** Nom canonique après fusion (égal à normalise s'il n'y a pas de fusion). */
@@ -161,10 +163,12 @@ export function ficheClient(d: Donnees, clientId: string): FicheClient | null {
     // Le tiers de la pièce : le fournisseur pour un achat, l'acheteur pour une vente du client.
     const e = piece.extraction
     if (!e) continue
-    const nom = determinerType(e, client, mots).sens === 'vente' ? e.destinataire.valeur : e.fournisseur.valeur
+    const vente = determinerType(e, client, mots).sens === 'vente'
+    const nom = vente ? e.destinataire.valeur : e.fournisseur.valeur
     if (!nom || motsDuNom(nom).length === 0) continue
     const normalise = normaliserFournisseur(nom, mots)
     const existant = parNom.get(normalise) ?? {
+      role: vente ? ('acheteur' as const) : ('fournisseur' as const),
       normalise,
       canonique: resoudreFournisseur(nom, clientId, d.fusions, mots),
       nomsLus: [],

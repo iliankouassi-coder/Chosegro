@@ -10,6 +10,8 @@ import type { ComptesParDefaut, Parametres } from './types'
  * - 4111 « Clients »
  * - 4452 « T.V.A. récupérable sur achats »
  * - 4431 « T.V.A. facturée sur ventes »
+ * - 4812 « Immobilisations corporelles » (sous 481 « FOURNISSEURS D'INVESTISSEMENTS »), pour un achat de classe 2
+ * - 4451 « T.V.A. récupérable sur immobilisations », pour un achat de classe 2
  * À confirmer par un expert-comptable, comme le reste du plan provisoire.
  */
 export const COMPTES_PAR_DEFAUT: Readonly<ComptesParDefaut> = {
@@ -17,6 +19,8 @@ export const COMPTES_PAR_DEFAUT: Readonly<ComptesParDefaut> = {
   client: '4111',
   tvaRecuperable: '4452',
   tvaFacturee: '4431',
+  fournisseurImmobilisations: '4812',
+  tvaRecuperableImmobilisations: '4451',
 }
 
 export const MODELE_RELANCE_DEFAUT =
@@ -52,7 +56,7 @@ export function verifierParametres(p: Parametres): string[] {
   const erreurs: string[] = []
   if (p.nomCabinet.trim() === '') erreurs.push('Le nom du cabinet est obligatoire.')
   if (!Number.isFinite(p.tauxTvaDefaut) || p.tauxTvaDefaut < 0 || p.tauxTvaDefaut > 100) {
-    erreurs.push('Le taux de TVA doit être compris entre 0 et 100 %.')
+    erreurs.push('Le taux de TVA doit être compris entre 0 et 100\u00A0%.')
   }
   if (!Number.isSafeInteger(p.toleranceEcart) || p.toleranceEcart < 0) {
     erreurs.push("La tolérance d'écart doit être un nombre entier de FCFA, positif ou nul.")
@@ -61,7 +65,7 @@ export function verifierParametres(p: Parametres): string[] {
     erreurs.push('Le jour seuil de retard doit être compris entre 1 et 28.')
   }
   if (!Number.isFinite(p.ratioVolumeMinimum) || p.ratioVolumeMinimum < 0 || p.ratioVolumeMinimum > 1) {
-    erreurs.push('La part minimale du volume attendu doit être comprise entre 0 et 100 %.')
+    erreurs.push('La part minimale du volume attendu doit être comprise entre 0 et 100\u00A0%.')
   }
   if (p.modeleRelance.trim() === '') erreurs.push('Le texte de la relance est obligatoire.')
   if (p.modeleRelanceIllisible.trim() === '') erreurs.push('Le texte de la relance « photo illisible » est obligatoire.')

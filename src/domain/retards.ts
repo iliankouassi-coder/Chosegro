@@ -33,7 +33,7 @@ const accord = (n: number, singulier: string, pluriel: string): string => (n >= 
 const jourDuMois = (jour: number): string => `le ${jour === 1 ? '1er' : String(jour)} du mois`
 
 /** 0,5 → « 50 % », 0,125 → « 12,5 % ». */
-const pourcentage = (ratio: number): string => `${String(Math.round(ratio * 1000) / 10).replace('.', ',')} %`
+const pourcentage = (ratio: number): string => `${String(Math.round(ratio * 1000) / 10).replace('.', ',')}\u00A0%`
 
 const verifierEntrees = (client: Client, aujourdhui: IsoDate, params: ParametresRetard): void => {
   if (!estIsoDate(aujourdhui)) {

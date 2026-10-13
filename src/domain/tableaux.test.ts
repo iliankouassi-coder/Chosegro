@@ -106,9 +106,9 @@ describe('ficheClient', () => {
     const vente = piece('v', { extraction: fabriquerExtraction({ fournisseur: 'Boutique Awa Mode SARL', destinataire: 'Hôtel Lagune Bleue' }) })
     const achats = [piece('a1', { extraction: fabriquerExtraction({ fournisseur: 'TOTAL CI' }) }), piece('a2', { extraction: fabriquerExtraction({ fournisseur: "Total Côte d'Ivoire" }) })]
     const f = ficheClient(donnees([vente, ...achats]), 'awa')
-    expect(f?.fournisseurs.map((x) => [x.normalise, x.nombrePieces, x.nomsLus.length])).toEqual([
-      ['hotel lagune bleue', 1, 1],
-      ['total', 2, 2],
+    expect(f?.fournisseurs.map((x) => [x.normalise, x.role, x.nombrePieces, x.nomsLus.length])).toEqual([
+      ['hotel lagune bleue', 'acheteur', 1, 1],
+      ['total', 'fournisseur', 2, 2],
     ])
   })
 

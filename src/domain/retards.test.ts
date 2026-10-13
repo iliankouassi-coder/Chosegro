@@ -124,13 +124,13 @@ describe('evaluerRetard : volume du mois', () => {
     expect(etat.motif).toBe('volume_bas')
     expect(etat.recuesCeMois).toBe(2)
     expect(etat.attendues).toBe(12)
-    expect(etat.raison).toBe('2 pièces reçues sur 12 attendues ce mois-ci (moins de 50 %).')
+    expect(etat.raison).toBe('2 pièces reçues sur 12 attendues ce mois-ci (moins de 50\u00A0%).')
   })
 
   it('accorde au singulier une seule pièce reçue', () => {
     const etat = evaluerRetard(client('a', 3), pieces('a', 1), '2026-10-13', PARAMS)
     expect(etat.motif).toBe('volume_bas')
-    expect(etat.raison).toBe('1 pièce reçue sur 3 attendues ce mois-ci (moins de 50 %).')
+    expect(etat.raison).toBe('1 pièce reçue sur 3 attendues ce mois-ci (moins de 50\u00A0%).')
   })
 
   it("n'est pas en retard à exactement 50 % (la comparaison est stricte)", () => {
@@ -173,19 +173,19 @@ describe('evaluerRetard : volume du mois', () => {
   it('affiche le pourcentage tiré des paramètres', () => {
     const params = { ...PARAMS, ratioVolumeMinimum: 0.25 }
     expect(evaluerRetard(client('a', 12), pieces('a', 2), '2026-10-13', params).raison).toBe(
-      '2 pièces reçues sur 12 attendues ce mois-ci (moins de 25 %).',
+      '2 pièces reçues sur 12 attendues ce mois-ci (moins de 25\u00A0%).',
     )
     expect(evaluerRetard(client('a', 12), pieces('a', 3), '2026-10-13', params).enRetard).toBe(false)
     const unHuitieme = { ...PARAMS, ratioVolumeMinimum: 0.125 }
     expect(evaluerRetard(client('a', 16), pieces('a', 1), '2026-10-13', unHuitieme).raison).toBe(
-      '1 pièce reçue sur 16 attendues ce mois-ci (moins de 12,5 %).',
+      '1 pièce reçue sur 16 attendues ce mois-ci (moins de 12,5\u00A0%).',
     )
   })
 
   it('avec une part minimale de 100 %, il faut tout le volume attendu', () => {
     const params = { ...PARAMS, ratioVolumeMinimum: 1 }
     expect(evaluerRetard(client('a', 12), pieces('a', 11), '2026-10-13', params).raison).toBe(
-      '11 pièces reçues sur 12 attendues ce mois-ci (moins de 100 %).',
+      '11 pièces reçues sur 12 attendues ce mois-ci (moins de 100\u00A0%).',
     )
     expect(evaluerRetard(client('a', 12), pieces('a', 12), '2026-10-13', params).enRetard).toBe(false)
   })
@@ -200,7 +200,7 @@ describe('evaluerRetard : volume du mois', () => {
     const params = { ...PARAMS, ratioVolumeMinimum: 0.55 }
     expect(evaluerRetard(client('a', 20), pieces('a', 11), '2026-10-13', params).enRetard).toBe(false)
     expect(evaluerRetard(client('a', 20), pieces('a', 10), '2026-10-13', params).raison).toBe(
-      '10 pièces reçues sur 20 attendues ce mois-ci (moins de 55 %).',
+      '10 pièces reçues sur 20 attendues ce mois-ci (moins de 55\u00A0%).',
     )
   })
 })
@@ -320,7 +320,7 @@ describe('clientsEnRetard', () => {
     const etats = clientsEnRetard(clients, recues, '2026-10-13', PARAMS)
     expect(etats.map((e) => e.clientId)).toEqual(['vide', 'peu', 'moitie'])
     expect(etats.map((e) => e.motif)).toEqual(['aucune_piece', 'volume_bas', 'volume_bas'])
-    expect(etats[1]?.raison).toBe('1 pièce reçue sur 10 attendues ce mois-ci (moins de 50 %).')
+    expect(etats[1]?.raison).toBe('1 pièce reçue sur 10 attendues ce mois-ci (moins de 50\u00A0%).')
   })
 
   it('départage par raison sociale, sans tenir compte des accents ni de la casse', () => {
@@ -330,7 +330,7 @@ describe('clientsEnRetard', () => {
   })
 
   it('compare la part reçue, pas le nombre de pièces', () => {
-    // 2 sur 10 (20 %) passe avant 1 sur 3 (33 %).
+    // 2 sur 10 (20\u00A0%) passe avant 1 sur 3 (33\u00A0%).
     const clients = [client('tiers', 3, 'Alpha'), client('cinquieme', 10, 'Zoulou')]
     const recues = [...pieces('tiers', 1), ...pieces('cinquieme', 2)]
     const etats = clientsEnRetard(clients, recues, '2026-10-13', PARAMS)

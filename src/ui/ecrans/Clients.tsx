@@ -7,7 +7,7 @@ import { totaux } from '../../domain/ecritures'
 import { LIBELLES_JOURNAL } from '../../domain/export'
 import { LIBELLES_CANAL, LIBELLES_STATUT } from '../../domain/pieces'
 import { libelleCompte } from '../../domain/plan'
-import { formatMontant } from '../../domain/montants'
+import { formatFcfa, formatMontant } from '../../domain/montants'
 import { LIBELLES_STATUT_RELANCE } from '../../domain/relances'
 import { ficheClient, listeClients } from '../../domain/tableaux'
 import type { Client, RegleFournisseur } from '../../domain/types'
@@ -117,7 +117,7 @@ function LigneRegle({ regle }: { regle: RegleFournisseur }) {
           <div className="font-medium">{regle.fournisseurNormalise}</div>
           <Raison>
             {regle.sens === 'achat' ? 'Achat' : 'Vente'} · compte {regle.compteChargeOuProduit} ({libelle(regle.compteChargeOuProduit)}) · tiers{' '}
-            {regle.compteTiers} · TVA {regle.tauxTva} % · apprise le {formatJourMois(regle.misAJourLe.slice(0, 10))} · {regle.utilisations}{' '}
+            {regle.compteTiers} · TVA {regle.tauxTva}{'\u00A0'}% · {regle.utilisations > 0 ? 'apprise' : 'modifiée'} le {formatJourMois(regle.misAJourLe.slice(0, 10))} · {regle.utilisations}{' '}
             utilisation{regle.utilisations > 1 ? 's' : ''}
           </Raison>
         </div>
@@ -202,7 +202,7 @@ export function FicheClient({ clientId }: { clientId: string }) {
         )}
       </Carte>
 
-      <Carte titre="Fournisseurs et fusion des noms">
+      <Carte titre="Fournisseurs, acheteurs et fusion des noms">
         <Raison>
           Les noms sont rapprochés automatiquement (casse, accents, mots courants retirés). Quand un même fournisseur est écrit de deux
           façons très différentes, rattachez un nom à l’autre : règles et doublons les traiteront comme un seul fournisseur.
@@ -211,7 +211,8 @@ export function FicheClient({ clientId }: { clientId: string }) {
           <thead className="text-left text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th className="py-1.5">Nom normalisé</th>
-              <th>Écritures lues</th>
+              <th>Rôle</th>
+              <th>Noms lus</th>
               <th>Pièces</th>
               <th>Rattaché à</th>
             </tr>
@@ -220,6 +221,7 @@ export function FicheClient({ clientId }: { clientId: string }) {
             {fournisseurs.map((f) => (
               <tr key={f.normalise}>
                 <td className="py-1.5 font-medium">{f.normalise}</td>
+                <td className="text-slate-600">{f.role === 'fournisseur' ? 'Fournisseur' : 'Acheteur'}</td>
                 <td className="text-slate-600">{f.nomsLus.join(' · ')}</td>
                 <td>{f.nombrePieces}</td>
                 <td>
@@ -311,7 +313,7 @@ export function FicheClient({ clientId }: { clientId: string }) {
                   <span className="font-medium">
                     {formatDate(e.date)} · {LIBELLES_JOURNAL[e.journal]} · {e.numeroPiece}
                   </span>
-                  <span className="tabular-nums">{formatMontant(totaux(e.lignes).debit)} FCFA</span>
+                  <span className="tabular-nums">{formatFcfa(totaux(e.lignes).debit)}</span>
                 </div>
                 <Raison>
                   {e.lignes.map((l) => `${l.compte} ${l.debit ? `D ${formatMontant(l.debit)}` : `C ${formatMontant(l.credit)}`}`).join(' · ')} — validée par{' '}

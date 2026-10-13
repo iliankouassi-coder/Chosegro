@@ -76,6 +76,14 @@ describe('fiche client', () => {
     expect(modifierRegleVerifiee(regles, 'inconnue', {}, plan, '2026-10-14T08:00:00.000Z').ok).toBe(false)
   })
 
+  it('remet le compteur à 0 quand le compte est changé à la main, pas pour un autre changement', () => {
+    const regles = [fabriquerRegle({ utilisations: 5, misAJourLe: '2026-10-01T08:00:00.000Z' })]
+    const compte = modifierRegleVerifiee(regles, 'regle-1', { compteChargeOuProduit: '6051' }, plan, '2026-10-14T08:00:00.000Z')
+    expect(compte.ok && compte.valeur.regle).toMatchObject({ utilisations: 0, misAJourLe: '2026-10-14T08:00:00.000Z' })
+    const taux = modifierRegleVerifiee(regles, 'regle-1', { tauxTva: 9 }, plan, '2026-10-14T08:00:00.000Z')
+    expect(taux.ok && taux.valeur.regle).toMatchObject({ utilisations: 5, misAJourLe: '2026-10-01T08:00:00.000Z', tauxTva: 9 })
+  })
+
   it('supprime une règle', () => {
     expect(supprimerRegle([fabriquerRegle()], 'regle-1')).toEqual([])
   })

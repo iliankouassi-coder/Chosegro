@@ -44,7 +44,7 @@ export function ApercuPiece({ pieceId }: { pieceId: string }) {
         <Bouton variante="discret" className="!text-slate-200 hover:!bg-slate-700" onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} aria-label="Dézoomer">
           {'\u2212'}
         </Bouton>
-        <span className="w-14 text-center tabular-nums">{Math.round(zoom * 100)} %</span>
+        <span className="w-14 text-center tabular-nums">{Math.round(zoom * 100)}{'\u00A0'}%</span>
         <Bouton variante="discret" className="!text-slate-200 hover:!bg-slate-700" onClick={() => setZoom((z) => Math.min(4, z + 0.25))} aria-label="Zoomer">
           +
         </Bouton>

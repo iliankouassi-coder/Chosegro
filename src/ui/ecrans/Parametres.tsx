@@ -12,6 +12,8 @@ const LIBELLES_COMPTES: Record<keyof ComptesParDefaut, string> = {
   client: 'Compte client',
   tvaRecuperable: 'TVA récupérable (achats)',
   tvaFacturee: 'TVA facturée (ventes)',
+  fournisseurImmobilisations: 'Fournisseur d’immobilisations',
+  tvaRecuperableImmobilisations: 'TVA récupérable (immobilisations)',
 }
 
 export function Parametres() {
@@ -63,7 +65,7 @@ export function Parametres() {
             <label className="grid gap-1">
               <span className="font-medium">TVA par défaut (%)</span>
               <input className="rounded-lg border border-slate-300 px-3 py-2" value={String(p.tauxTvaDefaut)} onChange={(e) => nombre('tauxTvaDefaut', e.target.value)} />
-              <Raison>18 %, à confirmer.</Raison>
+              <Raison>18{'\u00A0'}%, à confirmer.</Raison>
             </label>
             <label className="grid gap-1">
               <span className="font-medium">Tolérance HT + TVA = TTC (FCFA)</span>
@@ -82,7 +84,7 @@ export function Parametres() {
               onChange={(e) => setP({ ...p, ratioVolumeMinimum: Number(e.target.value.replace(',', '.')) / 100 })}
             />
             <Raison>
-              En retard : aucune pièce depuis le 1er du mois au jour seuil, ou moins de {Math.round(p.ratioVolumeMinimum * 100)} % des pièces attendues.
+              En retard : aucune pièce depuis le 1er du mois au jour seuil, ou moins de {Math.round(p.ratioVolumeMinimum * 100)}{'\u00A0'}% des pièces attendues.
             </Raison>
           </label>
           <label className="grid gap-1">

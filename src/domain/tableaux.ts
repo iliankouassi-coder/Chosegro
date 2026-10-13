@@ -78,6 +78,23 @@ export interface Accueil {
   echeancesDeLaSemaine: EcheanceDeLaSemaine[]
 }
 
+export interface GroupeClient {
+  client: Client | null
+  lignes: LignePiece[]
+}
+
+/** Regroupe les lignes par client, dans l'ordre où chaque client apparaît pour la première fois (la plus récente d'abord). */
+export function regrouperParClient(lignes: readonly LignePiece[]): GroupeClient[] {
+  const groupes = new Map<string, GroupeClient>()
+  for (const l of lignes) {
+    const cle = l.client?.id ?? l.piece.clientId
+    const g = groupes.get(cle)
+    if (g) g.lignes.push(l)
+    else groupes.set(cle, { client: l.client, lignes: [l] })
+  }
+  return [...groupes.values()]
+}
+
 /** Les trois blocs de l'accueil, dans l'ordre de la spec. */
 export function tableauAccueil(d: Donnees, maintenant: IsoDateHeure): Accueil {
   const aujourdhui = dateAbidjan(maintenant)

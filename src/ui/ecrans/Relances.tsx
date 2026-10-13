@@ -7,7 +7,13 @@ import { useApp } from '../../app/store'
 import { formatDateHeure, nomMois } from '../../domain/dates'
 import { LIBELLES_STATUT_RELANCE } from '../../domain/relances'
 import { relancesAPreparer, type RelanceAPreparer } from '../../domain/tableaux'
-import { BadgeDemo, Bouton, Carte, Erreur, Raison, Vide } from '../composants'
+import { Bouton, Erreur, IconeCanal, Raison, Vide } from '../composants'
+
+const STATUTS: Record<RelanceAPreparer['statut'], { classe: string; signe: string }> = {
+  a_faire: { classe: 'font-semibold text-attention', signe: '▲' },
+  preparee: { classe: 'font-medium text-encre', signe: '◐' },
+  envoyee_main: { classe: 'text-bon', signe: '✓' },
+}
 
 function CarteRelance({ r }: { r: RelanceAPreparer }) {
   const { actions } = useApp()
@@ -27,34 +33,32 @@ function CarteRelance({ r }: { r: RelanceAPreparer }) {
     }
   }
 
+  const statut = STATUTS[r.statut]
   return (
-    <li className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <a href={lienVers({ ecran: 'client', clientId: r.client.id })} className="font-semibold hover:underline">
-              {r.client.raisonSociale}
-            </a>
-            <BadgeDemo />
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
-              {r.motif === 'retard' ? `Retard · ${nomMois(r.mois)}` : 'Photo illisible'}
-            </span>
+    <li className="flex flex-col rounded-[5px] border border-trait bg-feuille">
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 border-b border-trait px-4 py-3">
+        <div className="min-w-0">
+          <a href={lienVers({ ecran: 'client', clientId: r.client.id })} className="font-semibold hover:text-encre hover:underline">
+            {r.client.raisonSociale}
+          </a>
+          <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-texte-2">
+            <span className="font-medium text-texte">{r.motif === 'retard' ? `Retard de ${nomMois(r.mois)}` : 'Photo illisible'}</span>
+            <span className="chiffres">{r.client.telephoneWhatsapp}</span>
           </div>
-          <Raison>
-            {r.raison} · {r.client.telephoneWhatsapp}
-          </Raison>
         </div>
-        <span
-          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-            r.statut === 'envoyee_main' ? 'bg-emerald-100 text-emerald-800' : r.statut === 'preparee' ? 'bg-sky-100 text-sky-800' : 'bg-amber-100 text-amber-800'
-          }`}
-        >
+        <span className={`whitespace-nowrap text-xs ${statut.classe}`}>
+          <span aria-hidden>{statut.signe} </span>
           {LIBELLES_STATUT_RELANCE[r.statut]}
           {r.relance?.date && r.statut !== 'a_faire' ? ` le ${formatDateHeure(r.relance.date)}` : ''}
         </span>
       </div>
-      <p className="mt-3 whitespace-pre-wrap rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-800">{r.texte}</p>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="flex-1 px-4 py-3">
+        <Raison>{r.raison}</Raison>
+        <p className="mt-2 whitespace-pre-wrap rounded-[10px] rounded-tl-[3px] border border-trait bg-papier px-3.5 py-2.5 text-sm leading-relaxed text-texte">
+          {r.texte}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 border-t border-trait px-4 py-3">
         {r.lien.ok ? (
           <a
             href={r.lien.valeur}
@@ -63,17 +67,19 @@ function CarteRelance({ r }: { r: RelanceAPreparer }) {
             onClick={() => {
               if (r.statut === 'a_faire') void actions.changerRelance(r, 'preparee')
             }}
-            className="inline-flex items-center rounded-lg bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800"
+            className="inline-flex items-center gap-2 rounded-md bg-encre px-3.5 py-2 text-sm font-medium text-white hover:bg-[#16204a]"
           >
+            <IconeCanal canal="whatsapp" />
             Ouvrir WhatsApp
           </a>
         ) : (
           <Erreur>{r.lien.erreur}</Erreur>
         )}
         <Bouton onClick={() => void copier()}>{copie ? 'Copié' : 'Copier'}</Bouton>
-        <label className="ml-2 inline-flex items-center gap-2 text-sm">
+        <label className="ml-auto inline-flex cursor-pointer items-center gap-2 text-sm">
           <input
             type="checkbox"
+            className="h-4 w-4 accent-[var(--color-bon)]"
             checked={envoyee}
             onChange={(e) => {
               setEnvoyee(e.target.checked)
@@ -91,23 +97,33 @@ function CarteRelance({ r }: { r: RelanceAPreparer }) {
 export function Relances() {
   const { etat } = useApp()
   const relances = relancesAPreparer(etat.donnees, new Date().toISOString())
+  const restantes = relances.filter((r) => r.statut !== 'envoyee_main').length
   return (
-    <Carte titre="Relances à envoyer">
-      <Raison>
-        Rien ne part automatiquement. « Ouvrir WhatsApp » ouvre la conversation avec le message déjà écrit : c’est vous qui
-        l’envoyez, puis vous cochez « envoyée ».
-      </Raison>
-      <div className="mt-4">
-        {relances.length === 0 ? (
-          <Vide>Aucune relance à préparer : pas de client en retard ni de photo illisible.</Vide>
-        ) : (
-          <ul className="grid gap-4">
-            {relances.map((r) => (
-              <CarteRelance key={`${r.motif}-${r.client.id}-${r.piece?.id ?? r.mois}`} r={r} />
-            ))}
-          </ul>
+    <section aria-labelledby="titre-relances">
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-3">
+        <h1 id="titre-relances" className="text-[26px] font-bold tracking-[-0.01em] text-encre [font-stretch:115%]">
+          Relances à envoyer
+        </h1>
+        {relances.length > 0 && (
+          <p className="text-sm text-texte-2">
+            <span className="chiffres font-semibold text-texte">{restantes}</span> sur <span className="chiffres">{relances.length}</span> pas encore
+            envoyées
+          </p>
         )}
       </div>
-    </Carte>
+      <p className="mb-5 max-w-[75ch] text-sm text-texte-2">
+        Rien ne part automatiquement. « Ouvrir WhatsApp » ouvre la conversation avec le message déjà écrit : c’est vous qui l’envoyez, puis vous
+        cochez « envoyée ».
+      </p>
+      {relances.length === 0 ? (
+        <Vide>Aucune relance à préparer : pas de client en retard ni de photo illisible.</Vide>
+      ) : (
+        <ul className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          {relances.map((r) => (
+            <CarteRelance key={`${r.motif}-${r.client.id}-${r.piece?.id ?? r.mois}`} r={r} />
+          ))}
+        </ul>
+      )}
+    </section>
   )
 }

@@ -1,1 +1,101 @@
+@import "@fontsource-variable/archivo/wdth.css";
 @import "tailwindcss";
+
+/*
+  Identité « registre » : encre bleue de tampon sur papier de registre.
+  Une seule famille (Archivo, axe de largeur) : titres élargis, texte normal, tableaux de chiffres resserrés.
+*/
+@theme {
+  --font-sans: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --color-papier: #f3f4ef; /* fond de l'application : papier de registre */
+  --color-feuille: #ffffff; /* surfaces : la feuille posée sur le bureau */
+  --color-bureau: #e6e8e0; /* sous la pièce à valider : le plateau du bureau */
+  --color-trait: #d9ded3; /* filets du registre */
+  --color-trait-fort: #b9c1b2;
+  --color-encre: #1e2b5c; /* encre bleue : action principale, titres forts */
+  --color-encre-pale: #e6e9f4; /* même encre, très diluée : sélection, piste des jauges */
+  --color-tampon: #2e3f9e; /* encre du tampon « Saisi » */
+  --color-texte: #1b2130;
+  --color-texte-2: #586070;
+  --color-texte-3: #6e7582;
+
+  /* États, réservés : toujours accompagnés d'un libellé ou d'une icône */
+  --color-bon: #2f6b3f;
+  --color-bon-pale: #e5f0e7;
+  --color-attention: #9a6200;
+  --color-attention-pale: #fbf0d9;
+  --color-critique: #b42318;
+  --color-critique-pale: #fbe4e1;
+}
+
+html {
+  font-feature-settings: "kern";
+}
+body {
+  background: var(--color-papier);
+  color: var(--color-texte);
+}
+
+/* Chiffres alignés dans les colonnes uniquement */
+.chiffres {
+  font-variant-numeric: tabular-nums;
+  font-stretch: 92%;
+}
+
+/* Totaux comptables : double soulignement, comme au registre */
+.double-trait {
+  border-bottom: 3px double var(--color-texte);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-tampon);
+  outline-offset: 2px;
+}
+
+/* Le tampon « Saisi » : le seul mouvement de l'application, déclenché par la validation */
+@keyframes tamponner {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-14deg) scale(1.7);
+  }
+  60% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) rotate(-8deg) scale(0.96);
+  }
+  100% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) rotate(-8deg) scale(1);
+  }
+}
+.tampon {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  opacity: 0.9;
+  color: var(--color-tampon);
+  border: 4px double var(--color-tampon);
+  border-radius: 10px;
+  padding: 0.35em 0.9em 0.45em;
+  text-align: center;
+  background: rgb(255 255 255 / 0.55);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.tampon-rejet {
+  color: var(--color-critique);
+  border-color: var(--color-critique);
+}
+.tampon-neutre {
+  color: var(--color-texte-2);
+  border-color: var(--color-texte-2);
+}
+.tampon-anime {
+  animation: tamponner 320ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tampon-anime {
+    animation: none;
+  }
+}

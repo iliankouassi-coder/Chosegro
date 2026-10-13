@@ -20,7 +20,7 @@ function Ecran() {
       </div>
     )
   }
-  if (!etat.pret) return <p className="p-10 text-slate-500">Chargement de la démo…</p>
+  if (!etat.pret) return <p className="p-10 text-texte-2">Chargement de la démo…</p>
   return (
     <Coquille route={route} nomCabinet={etat.donnees.parametres.nomCabinet} piecesAValider={nombreAValider(etat.donnees)}>
       {route.ecran === 'accueil' && <Accueil />}

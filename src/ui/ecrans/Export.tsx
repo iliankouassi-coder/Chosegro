@@ -23,6 +23,7 @@ import type { FormatExport, Journal } from '../../domain/types'
 import { classeurExport } from '../../infra/excel'
 import { telecharger } from '../../infra/fichiers'
 import { Bouton, Carte, Erreur, Raison, Vide } from '../composants'
+import { CHAMP, CHAMP_COMPACT, ENTETE_TABLEAU } from '../styles'
 
 const JOURNAUX: (Journal | 'tous')[] = ['tous', 'achats', 'ventes', 'banque', 'caisse']
 
@@ -33,7 +34,8 @@ function ChampDate({ valeur, surChangement }: { valeur: string; surChangement: (
   useEffect(() => setTexte(formatDate(valeur)), [valeur])
   return (
     <input
-      className={`w-28 rounded border px-2 py-1 ${invalide ? 'border-rose-400' : 'border-slate-300'}`}
+      className={`${CHAMP_COMPACT} chiffres w-28 ${invalide ? '!border-critique' : ''}`}
+      aria-invalid={invalide}
       value={texte}
       placeholder="JJ/MM/AAAA"
       onChange={(e) => {
@@ -64,7 +66,9 @@ export function Export() {
   const options = { clientId: client.id, periode, journal }
   const apercu = preparerExport(ecritures, clients, options)
   const problemes = controlerExport(apercu, { colonnes, separateur })
-  const tableau = problemes.some((p) => p.startsWith('Colonne') || p.startsWith('Choisissez') || p.startsWith('La colonne')) ? null : tableauExport(apercu, colonnes)
+  const tableau = problemes.some((p) => p.startsWith('Colonne') || p.startsWith('Choisissez') || p.startsWith('La colonne'))
+    ? null
+    : tableauExport(apercu, colonnes)
 
   const exporter = async (format: FormatExport): Promise<void> => {
     setMessage(null)
@@ -97,12 +101,12 @@ export function Export() {
   const derniers = etat.exports.slice(0, 10)
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
       <Carte titre="Paramètres de l’export">
-        <div className="grid gap-4 text-sm">
-          <label className="grid gap-1">
+        <div className="grid grid-cols-1 gap-4 text-sm">
+          <label className="grid grid-cols-1 gap-1">
             <span className="font-medium">Client</span>
-            <select className="rounded-lg border border-slate-300 px-3 py-2" value={client.id} onChange={(e) => setClientId(e.target.value)}>
+            <select className={CHAMP} value={client.id} onChange={(e) => setClientId(e.target.value)}>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.raisonSociale}
@@ -110,13 +114,24 @@ export function Export() {
               ))}
             </select>
           </label>
-          <div className="grid gap-1">
+          <div className="grid grid-cols-1 gap-1">
             <span className="font-medium">Période</span>
-            <div className="flex gap-2">
-              <Bouton variante={periode.debut === bornesMois(moisCourant).debut ? 'principal' : 'secondaire'} onClick={() => setPeriode(bornesMois(moisCourant))}>
-                {nomMois(moisCourant)}
-              </Bouton>
-              <Bouton onClick={() => setPeriode(bornesMois(moisPrecedent(moisCourant)))}>{nomMois(moisPrecedent(moisCourant))}</Bouton>
+            <div className="inline-flex w-fit rounded-[5px] border border-trait-fort p-0.5">
+              {[moisCourant, moisPrecedent(moisCourant)].map((m) => {
+                const b = bornesMois(m)
+                const choisi = periode.debut === b.debut && periode.fin === b.fin
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    aria-pressed={choisi}
+                    onClick={() => setPeriode(b)}
+                    className={`rounded-[3px] px-3 py-1.5 first-letter:uppercase ${choisi ? 'bg-encre text-white' : 'text-texte-2 hover:bg-encre-pale hover:text-encre'}`}
+                  >
+                    {nomMois(m)}
+                  </button>
+                )
+              })}
             </div>
             <div className="flex items-center gap-2">
               <ChampDate valeur={periode.debut} surChangement={(debut) => setPeriode({ ...periode, debut })} />
@@ -124,9 +139,9 @@ export function Export() {
               <ChampDate valeur={periode.fin} surChangement={(fin) => setPeriode({ ...periode, fin })} />
             </div>
           </div>
-          <label className="grid gap-1">
+          <label className="grid grid-cols-1 gap-1">
             <span className="font-medium">Journal</span>
-            <select className="rounded-lg border border-slate-300 px-3 py-2" value={journal} onChange={(e) => setJournal(e.target.value as Journal | 'tous')}>
+            <select className={CHAMP} value={journal} onChange={(e) => setJournal(e.target.value as Journal | 'tous')}>
               {JOURNAUX.map((j) => (
                 <option key={j} value={j}>
                   {j === 'tous' ? 'Tous les journaux' : LIBELLES_JOURNAL[j]}
@@ -134,9 +149,9 @@ export function Export() {
               ))}
             </select>
           </label>
-          <div className="grid gap-1">
+          <div className="grid grid-cols-1 gap-1">
             <span className="font-medium">Colonnes (cochées, dans l’ordre)</span>
-            <ul className="grid gap-1">
+            <ul className="grid grid-cols-1 gap-1">
               {colonnes.map((cle, i) => (
                 <li key={cle} className="flex items-center gap-2">
                   <input type="checkbox" checked onChange={() => setColonnes(colonnes.filter((c) => c !== cle))} />
@@ -150,16 +165,16 @@ export function Export() {
                 </li>
               ))}
               {COLONNES_EXPORT.filter((c) => !colonnes.includes(c.cle)).map((c) => (
-                <li key={c.cle} className="flex items-center gap-2 text-slate-500">
+                <li key={c.cle} className="flex items-center gap-2 text-texte-3">
                   <input type="checkbox" checked={false} onChange={() => setColonnes([...colonnes, c.cle])} />
                   <span>{c.entete}</span>
                 </li>
               ))}
             </ul>
           </div>
-          <label className="grid gap-1">
+          <label className="grid grid-cols-1 gap-1">
             <span className="font-medium">Séparateur (CSV)</span>
-            <select className="rounded-lg border border-slate-300 px-3 py-2" value={separateur} onChange={(e) => setSeparateur(e.target.value as Separateur)}>
+            <select className={CHAMP} value={separateur} onChange={(e) => setSeparateur(e.target.value as Separateur)}>
               {SEPARATEURS.map((s) => (
                 <option key={s.libelle} value={s.valeur}>
                   {s.libelle}
@@ -172,7 +187,15 @@ export function Export() {
       </Carte>
 
       <Carte
-        titre={`Aperçu · ${client.raisonSociale} · du ${formatDate(periode.debut)} au ${formatDate(periode.fin)}`}
+        titre={
+          <span>
+            Aperçu{' '}
+            <span className="font-normal text-texte-2 [font-stretch:100%]">
+              {client.raisonSociale}, du <span className="chiffres">{formatDate(periode.debut)}</span> au{' '}
+              <span className="chiffres">{formatDate(periode.fin)}</span>
+            </span>
+          </span>
+        }
         action={
           <div className="flex gap-2">
             <Bouton variante="principal" disabled={problemes.length > 0} onClick={() => void exporter('xlsx')}>
@@ -185,8 +208,10 @@ export function Export() {
         }
       >
         {problemes.length > 0 && (
-          <div className="mb-3 rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-900">
-            <p className="font-medium">Export bloqué :</p>
+          <div className="mb-3 border-l-2 border-critique bg-critique-pale px-3 py-2 text-sm text-texte">
+            <p className="font-semibold text-critique">
+              <span aria-hidden>■ </span>Export bloqué :
+            </p>
             <ul className="list-disc pl-5">
               {problemes.map((p) => (
                 <li key={p}>{p}</li>
@@ -196,22 +221,27 @@ export function Export() {
         )}
         {texteNonValidees(apercu) && <Raison>{texteNonValidees(apercu)}</Raison>}
         {tableau && apercu.lignes.length > 0 && (
-          <div className="mt-2 overflow-x-auto">
+          <div className="relative mt-2 overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase tracking-wide text-slate-500">
-                <tr>
+              <thead>
+                <tr className={ENTETE_TABLEAU}>
                   {(tableau[0] ?? []).map((e, i) => (
-                    <th key={i} className={`py-1.5 pr-3 ${colonnes[i] === 'debit' || colonnes[i] === 'credit' ? 'text-right' : ''}`}>
+                    <th key={i} className={`py-1.5 pr-3 font-medium ${colonnes[i] === 'debit' || colonnes[i] === 'credit' ? 'text-right' : ''}`}>
                       {e}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-trait">
                 {tableau.slice(1).map((ligne, i) => (
                   <tr key={i}>
                     {ligne.map((v, j) => (
-                      <td key={j} className={`py-1 pr-3 ${typeof v === 'number' ? 'text-right tabular-nums' : ''}`}>
+                      <td
+                        key={j}
+                        className={`py-1.5 pr-3 align-top ${typeof v === 'number' ? 'chiffres text-right' : ''} ${
+                          colonnes[j] === 'libelle' || colonnes[j] === 'client' ? '' : 'whitespace-nowrap'
+                        } ${colonnes[j] === 'compte' ? 'chiffres font-semibold text-encre' : ''}`}
+                      >
                         {typeof v === 'number' ? (v === 0 ? '' : formatMontant(v)) : v}
                       </td>
                     ))}
@@ -221,26 +251,41 @@ export function Export() {
             </table>
           </div>
         )}
-        <p className={`mt-3 text-sm font-medium ${apercu.totalDebit === apercu.totalCredit ? 'text-emerald-800' : 'text-rose-800'}`}>
-          {apercu.lignes.length} ligne{apercu.lignes.length > 1 ? 's' : ''} · {apercu.nombreEcritures} écriture{apercu.nombreEcritures > 1 ? 's' : ''} ·{' '}
-          {texteTotauxExport(apercu)}
+        <p
+          className={`mt-3 border-t border-texte/70 pt-2 text-sm font-medium ${apercu.totalDebit === apercu.totalCredit ? 'text-bon' : 'text-critique'}`}
+        >
+          <span aria-hidden>{apercu.totalDebit === apercu.totalCredit ? '✓ ' : '■ '}</span>
+          {apercu.lignes.length} ligne{apercu.lignes.length > 1 ? 's' : ''}, {apercu.nombreEcritures} écriture{apercu.nombreEcritures > 1 ? 's' : ''}{' '}
+          : {texteTotauxExport(apercu)}
         </p>
-        {message && <p className="mt-2 text-sm text-emerald-800">{message}</p>}
+        {message && (
+          <p className="mt-2 text-sm text-bon">
+            <span aria-hidden>✓ </span>
+            {message}
+          </p>
+        )}
         {erreur && <Erreur>{erreur}</Erreur>}
       </Carte>
 
       {derniers.length > 0 && (
         <div className="lg:col-start-2">
           <Carte titre="Derniers exports">
-            <ul className="divide-y divide-slate-100 text-sm">
+            <ul className="-my-4 divide-y divide-trait text-sm">
               {derniers.map((x) => (
-                <li key={x.id} className="flex flex-wrap justify-between gap-2 py-2">
-                  <span>
-                    {formatDateHeure(x.date)} · {clients.find((c) => c.id === x.clientId)?.raisonSociale ?? x.clientId} · du {formatDate(x.periode.debut)} au{' '}
-                    {formatDate(x.periode.fin)} · {x.journal === 'tous' ? 'tous les journaux' : LIBELLES_JOURNAL[x.journal]}
-                  </span>
-                  <span className="tabular-nums text-slate-600">
-                    {x.format === 'xlsx' ? 'Excel' : 'CSV'} · {x.nombreLignes} lignes · débit {formatMontant(x.totalDebit)} = crédit {formatMontant(x.totalCredit)}
+                <li key={x.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-2.5">
+                  <div className="min-w-0">
+                    <span className="font-medium">{clients.find((c) => c.id === x.clientId)?.raisonSociale ?? x.clientId}</span>
+                    <span className="ml-2 text-texte-2">
+                      du <span className="chiffres">{formatDate(x.periode.debut)}</span> au{' '}
+                      <span className="chiffres">{formatDate(x.periode.fin)}</span>,{' '}
+                      {x.journal === 'tous' ? 'tous les journaux' : LIBELLES_JOURNAL[x.journal]}
+                    </span>
+                    <div className="chiffres text-xs text-texte-3">{formatDateHeure(x.date)}</div>
+                  </div>
+                  <span className="text-xs text-texte-2">
+                    <span className="font-semibold text-texte">{x.format === 'xlsx' ? 'Excel' : 'CSV'}</span>,{' '}
+                    <span className="chiffres">{x.nombreLignes}</span> lignes, débit <span className="chiffres">{formatMontant(x.totalDebit)}</span> =
+                    crédit <span className="chiffres">{formatMontant(x.totalCredit)}</span>
                   </span>
                 </li>
               ))}

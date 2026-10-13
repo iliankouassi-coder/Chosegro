@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { fabriquerClient, fabriquerExtraction, fabriquerPiece, fabriquerRegle } from '../test/fabriques'
 import { PARAMETRES_DEFAUT } from './parametres'
-import { ficheClient, listeClients, relancesAPreparer, tableauAccueil, type Donnees } from './tableaux'
+import { ficheClient, listeClients, regrouperParClient, relancesAPreparer, tableauAccueil, type Donnees } from './tableaux'
 import type { Echeance, Piece, Relance } from './types'
 
 const MAINTENANT = '2026-10-13T10:00:00.000Z'
@@ -139,5 +139,24 @@ describe('relancesAPreparer', () => {
     expect(illisibles).toHaveLength(1)
     expect(illisibles[0]?.texte).toContain('Pouvez-vous renvoyer la photo de la facture Eaux de Cocody ?')
     expect(illisibles[0]?.client.id).toBe('awa')
+  })
+})
+
+describe('regrouperParClient', () => {
+  it('regroupe par client en gardant l’ordre d’arrivée, le client le plus récent en tête', () => {
+    const d = donnees([
+      piece('a-recente', { recueLe: '2026-10-13T09:00:00.000Z' }),
+      piece('r1', { clientId: 'resto', recueLe: '2026-10-13T08:30:00.000Z' }),
+      piece('a-ancienne', { recueLe: '2026-10-13T08:00:00.000Z' }),
+    ])
+    const groupes = regrouperParClient(tableauAccueil(d, MAINTENANT).piecesAValider.arriveesDepuisLaVeille)
+    expect(groupes.map((g) => [g.client?.id, g.lignes.map((l) => l.piece.id)])).toEqual([
+      ['awa', ['a-recente', 'a-ancienne']],
+      ['resto', ['r1']],
+    ])
+  })
+
+  it('renvoie une liste vide sans pièce', () => {
+    expect(regrouperParClient([])).toEqual([])
   })
 })

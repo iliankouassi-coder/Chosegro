@@ -1,10 +1,11 @@
 // Image de la pièce, avec zoom. Un PDF est rendu page par page avec pdf.js.
-import { useEffect, useState } from 'react'
+// La pièce est posée sur le bureau comme une feuille ; le tampon (« Saisi », « Rejetée »…) s'applique sur la première page.
+import { useEffect, useState, type ReactNode } from 'react'
 import { useApp } from '../app/store'
 import { ouvrirPdf, pageEnImage } from '../infra/pdf'
 import { Bouton } from './composants'
 
-export function ApercuPiece({ pieceId }: { pieceId: string }) {
+export function ApercuPiece({ pieceId, tampon }: { pieceId: string; tampon?: ReactNode }) {
   const { actions } = useApp()
   const [images, setImages] = useState<string[]>([])
   const [erreur, setErreur] = useState<string | null>(null)
@@ -39,32 +40,37 @@ export function ApercuPiece({ pieceId }: { pieceId: string }) {
   }, [pieceId, actions])
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-800">
-      <div className="flex items-center gap-2 border-b border-slate-700 px-3 py-2 text-sm text-slate-200">
-        <Bouton variante="discret" className="!text-slate-200 hover:!bg-slate-700" onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} aria-label="Dézoomer">
-          {'\u2212'}
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[5px] border border-trait bg-bureau">
+      <div className="flex items-center gap-1 border-b border-trait bg-feuille/60 px-2 py-1.5 text-sm text-texte-2">
+        <Bouton variante="discret" className="!px-2.5 !py-1" onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} aria-label="Dézoomer">
+          {'−'}
         </Bouton>
-        <span className="w-14 text-center tabular-nums">{Math.round(zoom * 100)}{'\u00A0'}%</span>
-        <Bouton variante="discret" className="!text-slate-200 hover:!bg-slate-700" onClick={() => setZoom((z) => Math.min(4, z + 0.25))} aria-label="Zoomer">
+        <span className="chiffres w-12 text-center">
+          {Math.round(zoom * 100)}
+          {' '}%
+        </span>
+        <Bouton variante="discret" className="!px-2.5 !py-1" onClick={() => setZoom((z) => Math.min(4, z + 0.25))} aria-label="Zoomer">
           +
         </Bouton>
-        <Bouton variante="discret" className="!text-slate-200 hover:!bg-slate-700" onClick={() => setZoom(1)}>
+        <Bouton variante="discret" className="!px-2.5 !py-1" onClick={() => setZoom(1)}>
           Ajuster
         </Bouton>
-        {images.length > 1 && <span className="ml-auto text-xs text-slate-400">{images.length} pages</span>}
+        {images.length > 1 && <span className="ml-auto pr-2 text-xs">{images.length} pages</span>}
       </div>
-      <div className="min-h-0 flex-1 overflow-auto p-3">
-        {erreur && <p className="text-sm text-rose-200">{erreur}</p>}
-        {!erreur && images.length === 0 && <p className="text-sm text-slate-400">Chargement de la pièce…</p>}
-        <div className="grid gap-3" style={{ width: `${zoom * 100}%` }}>
+      <div className="min-h-0 flex-1 overflow-auto p-4 sm:p-6">
+        {erreur && <p className="text-sm text-critique">{erreur}</p>}
+        {!erreur && images.length === 0 && <p className="text-sm text-texte-2">Chargement de la pièce…</p>}
+        <div className="mx-auto grid gap-4" style={{ width: `${zoom * 100}%` }}>
           {images.map((src, i) => (
-            <img
-              key={src}
-              src={src}
-              alt={`Page ${i + 1} de la pièce`}
-              className="w-full cursor-zoom-in rounded bg-white shadow"
-              onClick={() => setZoom((z) => (z === 1 ? 2 : 1))}
-            />
+            <div key={src} className="relative">
+              <img
+                src={src}
+                alt={`Page ${i + 1} de la pièce`}
+                className="w-full cursor-zoom-in bg-white shadow-[0_1px_2px_rgb(27_33_48/0.12),0_6px_18px_-6px_rgb(27_33_48/0.22)]"
+                onClick={() => setZoom((z) => (z === 1 ? 2 : 1))}
+              />
+              {i === 0 && tampon}
+            </div>
           ))}
         </div>
       </div>

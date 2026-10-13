@@ -38,6 +38,7 @@ SPEC.md ne tranche pas ces points. Le choix retenu est le plus prudent, et chacu
 11. **Vente.** Une pièce est une vente quand l'émetteur lu porte le nom complet du client du cabinet (tous les mots de sa raison sociale). Un nom plus court, comme « Transit Express » pour « Lagune Transit Express SA », reste un achat : c'est peut-être un fournisseur.
 12. **Montants négatifs.** Des montants tous négatifs font un avoir, repris en valeur absolue, et c'est signalé. Des signes mélangés bloquent la validation.
 13. **TVA à 0 sans HT.** Le HT est pris égal au TTC, toujours avec une alerte. Sur un ticket ou un reçu sans TVA, la TVA est prise à 0, avec une alerte.
+14. **Achat d'immobilisation.** La spec décrit l'achat avec « le compte de TVA récupérable » et « le compte fournisseur ». Quand le compte retenu est de classe 2, la démo prend la TVA récupérable sur immobilisations (4451) et un fournisseur d'investissements (4812), deux paramètres choisis dans le plan, avec un avertissement. Si Adam préfère s'en tenir à 4452 et 4011, il suffit de les mettre dans les Paramètres.
 
 ## Ce qui ne peut être vérifié qu'en local
 
@@ -45,4 +46,4 @@ La lecture par `claude -p` utilise l'abonnement Claude d'Adam sur son Mac. Elle 
 
 ## Revue
 
-Le domaine a fait l'objet d'une revue adversariale sous quatre angles : conformité à SPEC.md et CLAUDE.md, bugs sur des entrées réalistes, justesse comptable et textes, trous dans les tests. Chaque défaut signalé a été contre-vérifié avant d'être corrigé. Les corrections sont dans des commits séparés, avec leurs tests.
+Le domaine a fait l'objet d'une revue adversariale sous quatre angles : conformité à SPEC.md et CLAUDE.md, bugs sur des entrées réalistes, justesse comptable et textes, trous dans les tests. Chaque défaut signalé a été contre-vérifié sur le code relu : 48 signalés, 32 confirmés, 16 écartés (comportement voulu ou hors de la spec). Les 32 défauts confirmés sont corrigés, chacun avec son test, dans des commits séparés. Plusieurs défauts écartés ont aussi été traités quand la correction était plus prudente sans rien casser (devise écrite avec les montants, signes incohérents, ventes comparées par acheteur, dates avec l'heure).

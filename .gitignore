@@ -5,3 +5,6 @@ coverage/
 .DS_Store
 # Fichiers déposés en direct, copiés par le serveur local avant la lecture par Claude Code
 .lectures/
+
+# Cache de Vitest
+.vitest/

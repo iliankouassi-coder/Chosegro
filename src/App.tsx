@@ -3,7 +3,11 @@ import { FournisseurApp, nombreAValider, useApp } from './app/store'
 import { Erreur } from './ui/composants'
 import { Coquille } from './ui/Coquille'
 import { Accueil } from './ui/ecrans/Accueil'
+import { Clients, FicheClient } from './ui/ecrans/Clients'
+import { Export } from './ui/ecrans/Export'
+import { Parametres } from './ui/ecrans/Parametres'
 import { Reception } from './ui/ecrans/Reception'
+import { Relances } from './ui/ecrans/Relances'
 import { Validation } from './ui/ecrans/Validation'
 
 function Ecran() {
@@ -22,6 +26,11 @@ function Ecran() {
       {route.ecran === 'accueil' && <Accueil />}
       {route.ecran === 'reception' && <Reception />}
       {route.ecran === 'validation' && <Validation pieceId={route.pieceId} />}
+      {route.ecran === 'clients' && <Clients />}
+      {route.ecran === 'client' && <FicheClient clientId={route.clientId} />}
+      {route.ecran === 'relances' && <Relances />}
+      {route.ecran === 'export' && <Export />}
+      {route.ecran === 'parametres' && <Parametres key={JSON.stringify(etat.donnees.parametres)} />}
     </Coquille>
   )
 }

@@ -1,0 +1,10 @@
+{
+  "//": "Garde-fou : src/domain ne connaît ni le navigateur ni Node. Toute utilisation de window, document, fs ou process y fait échouer `npm run typecheck`.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["src/domain"],
+  "exclude": ["src/domain/**/*.test.ts"]
+}

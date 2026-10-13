@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+*.local
+.DS_Store
+# Fichiers déposés en direct, copiés par le serveur local avant la lecture par Claude Code
+.lectures/

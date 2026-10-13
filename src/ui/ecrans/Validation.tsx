@@ -332,7 +332,7 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
                     </span>
                     <input
                       ref={champCompte}
-                      className="rounded-lg border border-slate-300 px-3 py-2 font-mono"
+                      className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2 font-mono"
                       value={saisie.compte}
                       placeholder={p.proposition.comptes.chargeOuProduit ?? 'ex. 6055 ou « bureau »'}
                       onChange={(e) => setSaisie({ ...saisie, compte: e.target.value })}
@@ -357,10 +357,10 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     {(['ht', 'tva', 'ttc'] as const).map((cle) => (
-                      <label key={cle} className="grid gap-1 text-sm">
+                      <label key={cle} className="grid min-w-0 gap-1 text-sm">
                         <span className="font-medium">{cle.toUpperCase()}</span>
                         <input
-                          className="rounded-lg border border-slate-300 px-3 py-2 text-right tabular-nums"
+                          className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-right tabular-nums"
                           value={saisie[cle]}
                           placeholder={p.extraction[cle].valeur !== null ? formatMontant(p.extraction[cle].valeur) : 'non lu'}
                           onChange={(e) => setSaisie({ ...saisie, [cle]: e.target.value })}
@@ -371,7 +371,7 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
                   <label className="grid gap-1 text-sm">
                     <span className="font-medium">Nature de la pièce (un avoir inverse l’écriture)</span>
                     <select
-                      className="rounded-lg border border-slate-300 px-3 py-2"
+                      className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2"
                       value={saisie.nature}
                       onChange={(e) => setSaisie({ ...saisie, nature: e.target.value as Saisie['nature'] })}
                     >
@@ -384,28 +384,28 @@ function ValidationPiece({ piece, file }: { piece: Piece; file: Piece[] }) {
                     </select>
                   </label>
                   <div className="grid grid-cols-3 gap-3">
-                    <label className="grid gap-1 text-sm">
+                    <label className="grid min-w-0 gap-1 text-sm">
                       <span className="font-medium">Date</span>
                       <input
-                        className="rounded-lg border border-slate-300 px-3 py-2"
+                        className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2"
                         value={saisie.date}
                         placeholder={p.extraction.date.valeur ? formatDate(p.extraction.date.valeur) : 'JJ/MM/AAAA'}
                         onChange={(e) => setSaisie({ ...saisie, date: e.target.value })}
                       />
                     </label>
-                    <label className="grid gap-1 text-sm">
+                    <label className="grid min-w-0 gap-1 text-sm">
                       <span className="font-medium">Fournisseur</span>
                       <input
-                        className="rounded-lg border border-slate-300 px-3 py-2"
+                        className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2"
                         value={saisie.fournisseur}
                         placeholder={p.extraction.fournisseur.valeur ?? 'non lu'}
                         onChange={(e) => setSaisie({ ...saisie, fournisseur: e.target.value })}
                       />
                     </label>
-                    <label className="grid gap-1 text-sm">
+                    <label className="grid min-w-0 gap-1 text-sm">
                       <span className="font-medium">Devise</span>
                       <input
-                        className="rounded-lg border border-slate-300 px-3 py-2"
+                        className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2"
                         value={saisie.devise}
                         placeholder={p.extraction.devise.valeur === 'XOF' ? 'FCFA' : (p.extraction.devise.valeur ?? 'non lue')}
                         onChange={(e) => setSaisie({ ...saisie, devise: e.target.value })}

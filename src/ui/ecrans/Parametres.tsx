@@ -55,25 +55,25 @@ export function Parametres() {
         <div className="grid gap-4 text-sm">
           <label className="grid gap-1">
             <span className="font-medium">Nom du cabinet (tel qu’il apparaît dans les relances : « Bonjour, ici … »)</span>
-            <input className="rounded-lg border border-slate-300 px-3 py-2" value={p.nomCabinet} onChange={(e) => setP({ ...p, nomCabinet: e.target.value })} />
+            <input className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2" value={p.nomCabinet} onChange={(e) => setP({ ...p, nomCabinet: e.target.value })} />
           </label>
           <label className="grid gap-1">
             <span className="font-medium">Collaborateur qui utilise la démo (enregistré sur chaque validation)</span>
-            <input className="rounded-lg border border-slate-300 px-3 py-2" value={p.collaborateur} onChange={(e) => setP({ ...p, collaborateur: e.target.value })} />
+            <input className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2" value={p.collaborateur} onChange={(e) => setP({ ...p, collaborateur: e.target.value })} />
           </label>
           <div className="grid grid-cols-3 gap-3">
-            <label className="grid gap-1">
+            <label className="grid min-w-0 gap-1">
               <span className="font-medium">TVA par défaut (%)</span>
-              <input className="rounded-lg border border-slate-300 px-3 py-2" value={String(p.tauxTvaDefaut)} onChange={(e) => nombre('tauxTvaDefaut', e.target.value)} />
+              <input className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2" value={String(p.tauxTvaDefaut)} onChange={(e) => nombre('tauxTvaDefaut', e.target.value)} />
               <Raison>18{'\u00A0'}%, à confirmer.</Raison>
             </label>
-            <label className="grid gap-1">
+            <label className="grid min-w-0 gap-1">
               <span className="font-medium">Tolérance HT + TVA = TTC (FCFA)</span>
-              <input className="rounded-lg border border-slate-300 px-3 py-2" value={String(p.toleranceEcart)} onChange={(e) => nombre('toleranceEcart', e.target.value)} />
+              <input className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2" value={String(p.toleranceEcart)} onChange={(e) => nombre('toleranceEcart', e.target.value)} />
             </label>
-            <label className="grid gap-1">
+            <label className="grid min-w-0 gap-1">
               <span className="font-medium">Seuil de retard (jour du mois)</span>
-              <input className="rounded-lg border border-slate-300 px-3 py-2" value={String(p.jourSeuilRetard)} onChange={(e) => nombre('jourSeuilRetard', e.target.value)} />
+              <input className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2" value={String(p.jourSeuilRetard)} onChange={(e) => nombre('jourSeuilRetard', e.target.value)} />
             </label>
           </div>
           <label className="grid gap-1">
@@ -89,14 +89,14 @@ export function Parametres() {
           </label>
           <label className="grid gap-1">
             <span className="font-medium">Texte de la relance (client en retard)</span>
-            <textarea rows={4} className="rounded-lg border border-slate-300 px-3 py-2" value={p.modeleRelance} onChange={(e) => setP({ ...p, modeleRelance: e.target.value })} />
+            <textarea rows={4} className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2" value={p.modeleRelance} onChange={(e) => setP({ ...p, modeleRelance: e.target.value })} />
             <Raison>Clés : {CLES_MODELE_RELANCE.map((c) => `{${c}}`).join(', ')}.</Raison>
           </label>
           <label className="grid gap-1">
             <span className="font-medium">Texte de la relance (photo illisible)</span>
             <textarea
               rows={3}
-              className="rounded-lg border border-slate-300 px-3 py-2"
+              className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2"
               value={p.modeleRelanceIllisible}
               onChange={(e) => setP({ ...p, modeleRelanceIllisible: e.target.value })}
             />

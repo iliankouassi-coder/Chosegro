@@ -2,6 +2,8 @@
 
 SPEC.md fait foi. Ce plan découpe la démo en étapes livrables une par une : chaque étape se termine par `npm test` et `npm run typecheck` au vert, puis un commit.
 
+**État : toutes les étapes sont construites.** Il reste à refaire la recette sur le Mac d'Adam (étape 11).
+
 ## Étapes
 
 | # | Étape | Contenu | Vérification |
@@ -17,7 +19,7 @@ SPEC.md fait foi. Ce plan découpe la démo en étapes livrables une par une : c
 | 8 | Écran 5 — Relances | Message préparé, lien `wa.me`, Copier, case « envoyée » | Test d'acceptation 3 (relance) |
 | 9 | Écran 6 — Export | Aperçu, blocage si débit ≠ crédit, CSV ou Excel, colonnes et séparateur | Test d'acceptation 3 (export) |
 | 10 | Écran 7 — Paramètres | Cabinet, TVA par défaut, imports, seuil de retard, texte de relance | |
-| 11 | Recette | README, recette des 3 tests d'acceptation, vérification de la lecture d'un JPG et d'un PDF par Claude Code sur le Mac | À faire sur le Mac d'Adam |
+| 11 | Recette | README, recette des 3 tests d'acceptation (`npm run recette`), vérification de la lecture d'un JPG et d'un PDF par Claude Code | Faite dans l'environnement de développement ; **à refaire sur le Mac d'Adam** |
 
 ## Interprétations à faire valider par Adam
 
@@ -31,8 +33,16 @@ SPEC.md ne tranche pas ces points. Le choix retenu est le plus prudent, et chacu
 6. **Retard.** Avant le jour seuil (le 10 par défaut), aucun client n'est en retard. À partir du jour seuil : 0 pièce depuis le 1er du mois, ou moins de 50 % des pièces attendues. Les doublons ne comptent pas.
 7. **Doublons.** Une même empreinte de fichier est cherchée chez tous les clients (un même fichier rangé chez deux clients est suspect). Le critère « même fournisseur, même date, même TTC » reste limité au même client.
 8. **Échéances de la semaine.** Ce sont les 7 jours qui commencent aujourd'hui, pas la semaine du lundi au dimanche.
-9. **Photo illisible.** L'IA la signale, mais la pièce reste « à valider ». Le collaborateur la rejette d'un clic (« Rejeter (illisible) »), et le message de relance est alors prêt.
+9. **Photo illisible.** L'IA la signale, mais la pièce reste « à valider ». Le collaborateur la rejette d'un clic (« Rejeter (illisible) »), et le message de relance est alors prêt. S'il arrive à lire la pièce, il peut saisir lui-même le HT, la TVA, le TTC et la date : la validation est alors permise.
+10. **Pièce sans date lue.** Une pièce encore à lire, ou dont la date n'est pas lue, compte comme « pas validée » pour une échéance si elle est arrivée entre le début de la période et l'échéance : on ne déclare pas prêt un dossier dont on ignore une pièce.
+11. **Vente.** Une pièce est une vente quand l'émetteur lu porte le nom complet du client du cabinet (tous les mots de sa raison sociale). Un nom plus court, comme « Transit Express » pour « Lagune Transit Express SA », reste un achat : c'est peut-être un fournisseur.
+12. **Montants négatifs.** Des montants tous négatifs font un avoir, repris en valeur absolue, et c'est signalé. Des signes mélangés bloquent la validation.
+13. **TVA à 0 sans HT.** Le HT est pris égal au TTC, toujours avec une alerte. Sur un ticket ou un reçu sans TVA, la TVA est prise à 0, avec une alerte.
 
 ## Ce qui ne peut être vérifié qu'en local
 
-La lecture par `claude -p` utilise l'abonnement Claude d'Adam sur son Mac. Elle est développée et testée avec un faux `claude`. La vérification réelle (une photo JPG et un PDF) se fait au premier lancement sur le Mac. Si elle échoue, le README le dira, sans contournement.
+La lecture par `claude -p` utilise l'abonnement Claude d'Adam sur son Mac. Elle est testée avec un faux `claude` dans `npm test`. Elle a aussi été faite pour de vrai dans l'environnement de développement (Linux, Claude Code 2.1.296) : 12 s pour la photo JPG, 10 s pour le PDF, tous les champs justes. La même vérification est à refaire au premier lancement sur le Mac. Si elle échoue, le README le dira, sans contournement.
+
+## Revue
+
+Le domaine a fait l'objet d'une revue adversariale sous quatre angles : conformité à SPEC.md et CLAUDE.md, bugs sur des entrées réalistes, justesse comptable et textes, trous dans les tests. Chaque défaut signalé a été contre-vérifié avant d'être corrigé. Les corrections sont dans des commits séparés, avec leurs tests.

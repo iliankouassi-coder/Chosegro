@@ -2,8 +2,8 @@ import { mkdtempSync, readFileSync, rmSync, existsSync, readdirSync } from 'node
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { argumentsClaude, FileDeLecture, lireSortieClaude, remplirPrompt, type DemandeLecture, type EtatLecture } from './fileLecture'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { argumentsClaude, DELAI_LECTURE_MS, FileDeLecture, lireSortieClaude, remplirPrompt, type DemandeLecture, type EtatLecture } from './fileLecture'
 
 const FAUX = fileURLToPath(new URL('./test/faux-claude.mjs', import.meta.url))
 let dossier = ''
@@ -110,6 +110,21 @@ describe('file de lecture', () => {
     const e = await attendreFin(f, f.soumettre(demande(mode)))
     expect(e.etat).toBe('echec')
     if (e.etat === 'echec') expect(e.erreur).toContain(message)
+  })
+
+  it('arrête par défaut une lecture au bout de 120 s, comme le veut la spec', async () => {
+    expect(DELAI_LECTURE_MS).toBe(120_000)
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const f = new FileDeLecture({ commande: [process.execPath, FAUX], dossier, lirePrompt: () => 'Client : {{client}}' })
+      const id = f.soumettre(demande('mode:lent'))
+      await vi.advanceTimersByTimeAsync(119_000)
+      expect(f.etat(id)?.etat).toBe('en_cours')
+      await vi.advanceTimersByTimeAsync(2_000)
+      expect(f.etat(id)).toMatchObject({ etat: 'echec', erreur: 'Délai de 120 s dépassé : la lecture a été arrêtée.' })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('dit quand Claude Code est introuvable', async () => {

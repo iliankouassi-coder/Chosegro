@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.domain.json",
     "build": "npm run typecheck && vite build",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "recette": "node scripts/recette/recette.cjs"
   },
   "dependencies": {
     "dexie": "^4.4.6",

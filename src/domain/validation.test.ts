@@ -90,9 +90,37 @@ describe('validerLaPiece', () => {
     expect(r.valeur.apprentissage).toBeNull()
   })
 
-  it('refuse tant que quelque chose bloque', () => {
-    const piece = fabriquerPiece({ extraction: fabriquerExtraction({ compteIa: null }) })
-    expect(validerLaPiece(ctx(piece), preparer(ctx(piece)), action).ok).toBe(false)
+  it('refuse tant que quelque chose bloque : compte à choisir, devise étrangère, pièce illisible, signes incohérents', () => {
+    const cas = [
+      fabriquerExtraction({ compteIa: null }),
+      fabriquerExtraction({ devise: 'USD', ht: 100, tva: 18, ttc: 118 }),
+      fabriquerExtraction({}, { lisible: false }),
+      fabriquerExtraction({ ttc: -118_000 }),
+    ]
+    for (const extraction of cas) {
+      const piece = fabriquerPiece({ extraction })
+      const r = validerLaPiece(ctx(piece), preparer(ctx(piece)), action)
+      expect(r.ok).toBe(false)
+      if (!r.ok) expect(r.erreur.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('valide après correction d’un montant, et garde la valeur corrigée sur la pièce', () => {
+    const piece = fabriquerPiece({ extraction: fabriquerExtraction({ ttc: 120_700 }) })
+    expect(preparer(ctx(piece)).bloquants.length).toBeGreaterThan(0)
+    const corrige = preparer(ctx(piece), { champs: { ttc: 118_000 } })
+    expect(corrige.bloquants).toEqual([])
+    expect(corrige.controle.ecart).toBe(0)
+    const r = validerLaPiece(ctx(piece), corrige, action)
+    if (!r.ok) throw new Error(r.erreur.join(' '))
+    expect(r.valeur.piece.extraction?.ttc).toEqual({ valeur: 118_000, confiance: 'haut' })
+    expect(r.valeur.ecriture.lignes.find((l) => l.credit > 0)?.credit).toBe(118_000)
+  })
+
+  it('remplace une date lue par la date corrigée', () => {
+    const piece = fabriquerPiece({ extraction: fabriquerExtraction({ date: '2025-10-05' }) })
+    const p = preparer(ctx(piece), { date: '2026-10-05' })
+    expect(p.proposition.ecriture.date).toBe('2026-10-05')
   })
 
   it('apprend la règle quand le compte est corrigé, et compte une utilisation sinon', () => {
@@ -106,11 +134,76 @@ describe('validerLaPiece', () => {
     expect(utilise.valeur.regles[0]?.utilisations).toBe(4)
   })
 
+  it('ne crée aucune règle quand rien n’est corrigé', () => {
+    const piece = fabriquerPiece()
+    const r = validerLaPiece(ctx(piece), preparer(ctx(piece)), action)
+    if (!r.ok) throw new Error(r.erreur.join(' '))
+    expect(r.valeur.regles).toEqual([])
+    expect(r.valeur.apprentissage).toBeNull()
+  })
+
+  it('une règle utilisée sans correction passe de 3 à 4 utilisations, sans apprentissage', () => {
+    const piece = fabriquerPiece()
+    const regle = fabriquerRegle({ compteChargeOuProduit: '6053', utilisations: 3 })
+    const r = validerLaPiece(ctx(piece, { regles: [regle] }), preparer(ctx(piece, { regles: [regle] })), action)
+    if (!r.ok) throw new Error(r.erreur.join(' '))
+    expect(r.valeur.apprentissage).toBeNull()
+    expect(r.valeur.regles).toEqual([{ ...regle, utilisations: 4 }])
+  })
+
+  it('une correction sur une vente crée une règle de vente, appliquée à la vente suivante au même acheteur et pas à un achat', () => {
+    const vente = (id: string): Piece =>
+      fabriquerPiece({ id, empreinte: id, extraction: fabriquerExtraction({ fournisseur: client.raisonSociale, destinataire: 'Hôtel Lagune Bleue', numeroFacture: id, compteIa: '7011' }) })
+    const premiere = vente('AWA-1')
+    const r = validerLaPiece(ctx(premiere), preparer(ctx(premiere), { compteChargeOuProduit: '7012' }), action)
+    if (!r.ok) throw new Error(r.erreur.join(' '))
+    expect(r.valeur.apprentissage?.regle).toMatchObject({ sens: 'vente', fournisseurNormalise: 'hotel lagune bleue', compteChargeOuProduit: '7012', compteTiers: '4111' })
+    const suivante = vente('AWA-2')
+    expect(preparer(ctx(suivante, { regles: r.valeur.regles })).proposition.comptes.chargeOuProduit).toBe('7012')
+    // Un achat auprès d'un tiers du même nom ne reprend pas la règle de vente.
+    const achat = fabriquerPiece({ id: 'achat', extraction: fabriquerExtraction({ fournisseur: 'Hôtel Lagune Bleue' }) })
+    expect(preparer(ctx(achat, { regles: r.valeur.regles })).proposition.ecriture.source).toBe('ia')
+  })
+
   it('n’apprend pas un taux de TVA aberrant (HT et TVA lus à l’envers)', () => {
     const piece = fabriquerPiece({ extraction: fabriquerExtraction({ ht: 3_051, tva: 16_949, ttc: 20_000 }) })
     const r = validerLaPiece(ctx(piece), preparer(ctx(piece), { compteChargeOuProduit: '6042' }), action)
     if (!r.ok) throw new Error(r.erreur.join(' '))
     expect(r.valeur.apprentissage?.regle.tauxTva).toBe(PARAMETRES_DEFAUT.tauxTvaDefaut)
+  })
+})
+
+describe('ce que preparerValidation transmet', () => {
+  it('dit « première facture » seulement s’il n’y a aucune pièce validée de ce fournisseur chez ce client', () => {
+    const nouvelle = fabriquerPiece({ id: 'nouvelle', empreinte: 'n' })
+    const dejaValidee = fabriquerPiece({ id: 'ancienne', empreinte: 'a', statut: 'validee', recueLe: '2026-09-12T09:00:00.000Z', extraction: fabriquerExtraction({ date: '2026-09-05', ttc: 59_000, ht: 50_000, tva: 9_000 }) })
+    const raison = (pieces: Piece[]): string => preparer(ctx(nouvelle, { pieces: [...pieces, nouvelle] })).proposition.ecriture.raison
+    expect(raison([dejaValidee])).toContain('aucune règle apprise pour ce fournisseur')
+    expect(raison([{ ...dejaValidee, clientId: 'autre-client' }])).toContain('première facture de ce fournisseur')
+    expect(raison([{ ...dejaValidee, statut: 'a_valider' }])).toContain('première facture de ce fournisseur')
+  })
+
+  it('utilise la tolérance des paramètres pour le contrôle', () => {
+    const piece = fabriquerPiece({ extraction: fabriquerExtraction({ ttc: 118_008 }) })
+    expect(preparer(ctx(piece)).controle.statut).toBe('ecart')
+    expect(preparer(ctx(piece, { parametres: { ...PARAMETRES_DEFAUT, toleranceEcart: 10 } })).controle.statut).toBe('conforme')
+  })
+
+  it('tient compte des fusions de fournisseurs pour les doublons', () => {
+    const a = fabriquerPiece({ id: 'a', empreinte: 'a', recueLe: '2026-10-12T09:00:00.000Z', extraction: fabriquerExtraction({ fournisseur: 'TOTAL CI' }) })
+    const b = fabriquerPiece({ id: 'b', empreinte: 'b', recueLe: '2026-10-12T10:00:00.000Z', extraction: fabriquerExtraction({ fournisseur: 'Total Energies' }) })
+    expect(preparer(ctx(b, { pieces: [a, b] })).doublon).toBeNull()
+    const fusions = [{ clientId: client.id, alias: 'total energies', cible: 'total' }]
+    expect(preparer(ctx(b, { pieces: [a, b], fusions })).doublon?.original.id).toBe('a')
+  })
+
+  it('apprend le taux lu et signale ensuite un taux inhabituel', () => {
+    const a9 = fabriquerPiece({ id: 'a9', extraction: fabriquerExtraction({ ht: 100_000, tva: 9_000, ttc: 109_000 }) })
+    const r = validerLaPiece(ctx(a9), preparer(ctx(a9), { compteChargeOuProduit: '6053' }), action)
+    if (!r.ok) throw new Error(r.erreur.join(' '))
+    expect(r.valeur.apprentissage?.regle.tauxTva).toBe(9)
+    const a18 = fabriquerPiece({ id: 'a18', extraction: fabriquerExtraction() })
+    expect(preparer(ctx(a18, { regles: r.valeur.regles })).alertes.some((x) => x.code === 'taux_tva_inhabituel')).toBe(true)
   })
 })
 

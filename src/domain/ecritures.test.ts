@@ -68,6 +68,20 @@ describe("écriture d'achat", () => {
     expect(p.ecriture.raison).toBe('Règle apprise le 12/10 sur 3 factures de ce fournisseur')
   })
 
+  it('crédite le compte tiers de la règle, pas celui par défaut', () => {
+    const regle = fabriquerRegle({ compteChargeOuProduit: '6052', compteTiers: '4012' })
+    const p = proposerEcriture(entree(fabriquerExtraction(), { regles: [regle] }))
+    expect(lignes(p.ecriture.lignes)).toContainEqual(['4012', 0, 118_000])
+  })
+
+  it("n'applique pas une règle d'achat à une vente adressée au même nom", () => {
+    const regle = fabriquerRegle({ fournisseurNormalise: 'hotel lagune bleue', compteChargeOuProduit: '6052' })
+    const vente = fabriquerExtraction({ fournisseur: 'Boutique Awa Mode SARL', destinataire: 'Hôtel Lagune Bleue', compteIa: '7011' })
+    const p = proposerEcriture(entree(vente, { regles: [regle] }))
+    expect(p.regle).toBeNull()
+    expect(p.comptes.chargeOuProduit).toBe('7011')
+  })
+
   it("n'applique pas la règle d'un autre client", () => {
     const regle = fabriquerRegle({ clientId: 'autre-client' })
     const p = proposerEcriture(entree(fabriquerExtraction(), { regles: [regle] }))

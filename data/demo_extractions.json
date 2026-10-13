@@ -1,0 +1,1306 @@
+{
+  "avertissement": "Lectures pré-enregistrées des pièces fictives, au format de la sortie de Claude Code. Elles permettent la démo sans Claude Code. Généré par npm run seed.",
+  "reference": "2026-10-13",
+  "lectures": {
+    "H01_manutention_vridi.jpg": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Manutention Vridi Services",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Lagune Transit Express SA",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "07/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "MVS-2187",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "180 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "32 400",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "212 400",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "613",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Prestations de manutention portuaire"
+    },
+    "H02_vente_lagune_negoce.pdf": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Lagune Transit Express SA",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Import Négoce Abidjan",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "09/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "LTE-2026-0091",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "450 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "81 000",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "531 000",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "oui",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "7061",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Facture de prestations de transit émise par le client"
+    },
+    "H03_energie_lagune.jpg": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Énergie des Lagunes",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Lagune Transit Express SA",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "10/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "EL-2026-4402",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "98 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "17 640",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "115 640",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6052",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Facture d'électricité"
+    },
+    "H04_tissus_golfe.jpg": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Tissus du Golfe",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Boutique Awa Mode SARL",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "08/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "TG-1288",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "360 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "64 800",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "424 800",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6011",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Achat de tissus destinés à la revente"
+    },
+    "H05_eaux_cocody.jpg": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Eaux de Cocody",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Boutique Awa Mode SARL",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "07/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "EC-7702",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "18 500",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "3 330",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "21 830",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6051",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Facture d'eau"
+    },
+    "H06_grossiste_adjame.jpg": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Grossiste Vivres Adjamé",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "date": {
+        "valeur": "29/09/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "T-4410",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "montant_tva": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "montant_ttc": {
+        "valeur": "118 000",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "ticket",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6021",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Denrées pour la cuisine du restaurant"
+    },
+    "I01_energie_awa_fne.jpg": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Énergie des Lagunes",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Boutique Awa Mode SARL",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "10/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "EL-2026-4471",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "84 500",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "15 210",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "99 710",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "oui",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6052",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Facture d'électricité"
+    },
+    "I02_bureau_plus_0412.jpg": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Bureau Plus Cocody",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Boutique Awa Mode SARL",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "28/09/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "BP-0412",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "54 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "9 720",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "63 720",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6047",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Ramettes de papier, stylos et classeurs"
+    },
+    "I03_bureau_plus_0457.pdf": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Bureau Plus Cocody",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Boutique Awa Mode SARL",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "12/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "BP-0457",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "42 500",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "7 650",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "50 150",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6047",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Cartouches d'encre et agrafeuse"
+    },
+    "I04_tissus_golfe_avoir.jpg": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Tissus du Golfe",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Boutique Awa Mode SARL",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "09/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "AV-031",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "45 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "8 100",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "53 100",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "avoir",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6011",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Avoir sur un achat de tissus destinés à la revente"
+    },
+    "I05_vente_awa_hotel.pdf": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Boutique Awa Mode SARL",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Hôtel Lagune Bleue",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "11/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "AWA-2026-118",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "265 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "47 700",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "312 700",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "oui",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "7011",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Vente de vêtements par la boutique"
+    },
+    "I06_carbu_lagune_ticket.jpg": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "CARBU LAGUNE CI",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "date": {
+        "valeur": "11/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "T-88213",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "16 949",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "3 051",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "20 000",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "ticket",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6042",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Achat de carburant"
+    },
+    "I07_carbu_lagune_energies.jpg": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Carbu Lagune Énergies",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Boutique Awa Mode SARL",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "12/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "CLE-5521",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "120 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "21 600",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "141 600",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6042",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Carburant du véhicule de livraison"
+    },
+    "I08_eaux_cocody_floue.jpg": {
+      "lisible": false,
+      "motif_illisible": "Photo floue : les montants et la date sont illisibles.",
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Eaux de Cocody",
+        "confiance": "bas"
+      },
+      "destinataire": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "date": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "numero_facture": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "montant_ht": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "montant_tva": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "montant_ttc": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "devise": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "bas"
+      },
+      "qr_fne": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "compte_propose": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "raison_compte": null
+    },
+    "I10_papier_lagune_4_pages.pdf#1": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Manutention Vridi Services",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Lagune Transit Express SA",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "25/09/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "MVS-2210",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "montant_tva": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "montant_ttc": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "moyen"
+      },
+      "compte_propose": {
+        "valeur": "613",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Prestations de manutention portuaire"
+    },
+    "I10_papier_lagune_4_pages.pdf#2": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Manutention Vridi Services",
+        "confiance": "moyen"
+      },
+      "destinataire": {
+        "valeur": "Lagune Transit Express SA",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "25/09/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "MVS-2210",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "240 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "43 200",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "283 200",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "613",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Prestations de manutention portuaire"
+    },
+    "I10_papier_lagune_4_pages.pdf#1,2": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Manutention Vridi Services",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Lagune Transit Express SA",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "25/09/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "MVS-2210",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "240 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "43 200",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "283 200",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "613",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Prestations de manutention portuaire"
+    },
+    "I10_papier_lagune_4_pages.pdf#3": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Télécom Lagunes",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Lagune Transit Express SA",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "29/09/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "TL-90012",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "64 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "11 520",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "75 520",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6281",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Forfait de téléphonie mobile"
+    },
+    "I10_papier_lagune_4_pages.pdf#4": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Énergie des Lagunes",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Lagune Transit Express SA",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "27/09/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "EL-2026-3302",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "132 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "23 760",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "155 760",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6052",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Facture d'électricité"
+    },
+    "I11_ocean_line_usd.pdf": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Ocean Line Shipping Ltd",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Lagune Transit Express SA",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "08/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "OLS-INV-55120",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "2,080.00",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "0.00",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "2,080.00",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "USD",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "613",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Fret maritime refacturé au client du transitaire"
+    },
+    "I12_garage_ecart.jpg": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Garage Auto Treichville",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Lagune Transit Express SA",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "10/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "GAT-3390",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "85 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "15 300",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "103 000",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6242",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Entretien du véhicule de livraison"
+    },
+    "I13_maquis_manuscrit.jpg": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": true,
+      "fournisseur": {
+        "valeur": "Maquis Chez Tantie Rose",
+        "confiance": "moyen"
+      },
+      "destinataire": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "date": {
+        "valeur": "11/10/2026",
+        "confiance": "moyen"
+      },
+      "numero_facture": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "montant_ht": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "montant_tva": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "montant_ttc": {
+        "valeur": "12 500",
+        "confiance": "moyen"
+      },
+      "devise": {
+        "valeur": null,
+        "confiance": "bas"
+      },
+      "nature": {
+        "valeur": "recu",
+        "confiance": "moyen"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "moyen"
+      },
+      "compte_propose": {
+        "valeur": "6383",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Repas offerts à des clients"
+    },
+    "I14_conseil_ancienne.jpg": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Études & Conseils Plateau",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Lagune Transit Express SA",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "13/08/2025",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "ECP-087",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "300 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "54 000",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "354 000",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6324",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Honoraires de conseil juridique"
+    },
+    "I15_telecom_lagune_fne.jpg": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Télécom Lagunes",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Lagune Transit Express SA",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "12/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "TL-90377",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "45 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "8 100",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "53 100",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "oui",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6281",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Abonnement internet de l'entreprise"
+    },
+    "D01_imprimerie_express.jpg": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Imprimerie Express Plateau",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Boutique Awa Mode SARL",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "12/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "IEP-2026-311",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "75 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "13 500",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "88 500",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "non",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6047",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Cartes de visite et flyers imprimés"
+    },
+    "D02_clim_service.pdf": {
+      "lisible": true,
+      "motif_illisible": null,
+      "manuscrit": false,
+      "fournisseur": {
+        "valeur": "Clim Service Plus",
+        "confiance": "haut"
+      },
+      "destinataire": {
+        "valeur": "Lagune Transit Express SA",
+        "confiance": "haut"
+      },
+      "date": {
+        "valeur": "11/10/2026",
+        "confiance": "haut"
+      },
+      "numero_facture": {
+        "valeur": "CSP-0788",
+        "confiance": "haut"
+      },
+      "montant_ht": {
+        "valeur": "75 000",
+        "confiance": "haut"
+      },
+      "montant_tva": {
+        "valeur": "13 500",
+        "confiance": "haut"
+      },
+      "montant_ttc": {
+        "valeur": "88 500",
+        "confiance": "haut"
+      },
+      "devise": {
+        "valeur": "FCFA",
+        "confiance": "haut"
+      },
+      "nature": {
+        "valeur": "facture",
+        "confiance": "haut"
+      },
+      "qr_fne": {
+        "valeur": "oui",
+        "confiance": "haut"
+      },
+      "compte_propose": {
+        "valeur": "6242",
+        "confiance": "moyen"
+      },
+      "raison_compte": "Entretien des climatiseurs des bureaux"
+    }
+  }
+}

@@ -1,0 +1,473 @@
+{
+  "avertissement": "ÉCHÉANCES FICTIVES pour la démo (badge DÉMO — à valider). Remplacer par le calendrier fiscal réel, validé par un expert-comptable. Période par défaut : le mois qui précède l’échéance.",
+  "echeances": [
+    {
+      "id": "demo-2026-10-01",
+      "libelle": "Acompte d'impôt (date fictive)",
+      "date": "2026-10-01",
+      "regimes": [
+        "RNI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2026-10-08",
+      "libelle": "Retenues sur salaires (date fictive)",
+      "date": "2026-10-08",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2026-10-15",
+      "libelle": "TVA du mois précédent (date fictive)",
+      "date": "2026-10-15",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2026-10-22",
+      "libelle": "Impôt synthétique (date fictive)",
+      "date": "2026-10-22",
+      "regimes": [
+        "RSI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2026-10-28",
+      "libelle": "Taxes diverses (date fictive)",
+      "date": "2026-10-28",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2026-11-01",
+      "libelle": "Acompte d'impôt (date fictive)",
+      "date": "2026-11-01",
+      "regimes": [
+        "RNI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2026-11-08",
+      "libelle": "Retenues sur salaires (date fictive)",
+      "date": "2026-11-08",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2026-11-15",
+      "libelle": "TVA du mois précédent (date fictive)",
+      "date": "2026-11-15",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2026-11-22",
+      "libelle": "Impôt synthétique (date fictive)",
+      "date": "2026-11-22",
+      "regimes": [
+        "RSI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2026-11-28",
+      "libelle": "Taxes diverses (date fictive)",
+      "date": "2026-11-28",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2026-12-01",
+      "libelle": "Acompte d'impôt (date fictive)",
+      "date": "2026-12-01",
+      "regimes": [
+        "RNI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2026-12-08",
+      "libelle": "Retenues sur salaires (date fictive)",
+      "date": "2026-12-08",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2026-12-15",
+      "libelle": "TVA du mois précédent (date fictive)",
+      "date": "2026-12-15",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2026-12-22",
+      "libelle": "Impôt synthétique (date fictive)",
+      "date": "2026-12-22",
+      "regimes": [
+        "RSI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2026-12-28",
+      "libelle": "Taxes diverses (date fictive)",
+      "date": "2026-12-28",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-01-01",
+      "libelle": "Acompte d'impôt (date fictive)",
+      "date": "2027-01-01",
+      "regimes": [
+        "RNI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-01-08",
+      "libelle": "Retenues sur salaires (date fictive)",
+      "date": "2027-01-08",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-01-15",
+      "libelle": "TVA du mois précédent (date fictive)",
+      "date": "2027-01-15",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-01-22",
+      "libelle": "Impôt synthétique (date fictive)",
+      "date": "2027-01-22",
+      "regimes": [
+        "RSI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-01-28",
+      "libelle": "Taxes diverses (date fictive)",
+      "date": "2027-01-28",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-02-01",
+      "libelle": "Acompte d'impôt (date fictive)",
+      "date": "2027-02-01",
+      "regimes": [
+        "RNI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-02-08",
+      "libelle": "Retenues sur salaires (date fictive)",
+      "date": "2027-02-08",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-02-15",
+      "libelle": "TVA du mois précédent (date fictive)",
+      "date": "2027-02-15",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-02-22",
+      "libelle": "Impôt synthétique (date fictive)",
+      "date": "2027-02-22",
+      "regimes": [
+        "RSI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-02-28",
+      "libelle": "Taxes diverses (date fictive)",
+      "date": "2027-02-28",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-03-01",
+      "libelle": "Acompte d'impôt (date fictive)",
+      "date": "2027-03-01",
+      "regimes": [
+        "RNI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-03-08",
+      "libelle": "Retenues sur salaires (date fictive)",
+      "date": "2027-03-08",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-03-15",
+      "libelle": "TVA du mois précédent (date fictive)",
+      "date": "2027-03-15",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-03-22",
+      "libelle": "Impôt synthétique (date fictive)",
+      "date": "2027-03-22",
+      "regimes": [
+        "RSI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-03-28",
+      "libelle": "Taxes diverses (date fictive)",
+      "date": "2027-03-28",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-04-01",
+      "libelle": "Acompte d'impôt (date fictive)",
+      "date": "2027-04-01",
+      "regimes": [
+        "RNI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-04-08",
+      "libelle": "Retenues sur salaires (date fictive)",
+      "date": "2027-04-08",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-04-15",
+      "libelle": "TVA du mois précédent (date fictive)",
+      "date": "2027-04-15",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-04-22",
+      "libelle": "Impôt synthétique (date fictive)",
+      "date": "2027-04-22",
+      "regimes": [
+        "RSI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-04-28",
+      "libelle": "Taxes diverses (date fictive)",
+      "date": "2027-04-28",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-05-01",
+      "libelle": "Acompte d'impôt (date fictive)",
+      "date": "2027-05-01",
+      "regimes": [
+        "RNI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-05-08",
+      "libelle": "Retenues sur salaires (date fictive)",
+      "date": "2027-05-08",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-05-15",
+      "libelle": "TVA du mois précédent (date fictive)",
+      "date": "2027-05-15",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-05-22",
+      "libelle": "Impôt synthétique (date fictive)",
+      "date": "2027-05-22",
+      "regimes": [
+        "RSI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-05-28",
+      "libelle": "Taxes diverses (date fictive)",
+      "date": "2027-05-28",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-06-01",
+      "libelle": "Acompte d'impôt (date fictive)",
+      "date": "2027-06-01",
+      "regimes": [
+        "RNI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-06-08",
+      "libelle": "Retenues sur salaires (date fictive)",
+      "date": "2027-06-08",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-06-15",
+      "libelle": "TVA du mois précédent (date fictive)",
+      "date": "2027-06-15",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-06-22",
+      "libelle": "Impôt synthétique (date fictive)",
+      "date": "2027-06-22",
+      "regimes": [
+        "RSI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-06-28",
+      "libelle": "Taxes diverses (date fictive)",
+      "date": "2027-06-28",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-07-01",
+      "libelle": "Acompte d'impôt (date fictive)",
+      "date": "2027-07-01",
+      "regimes": [
+        "RNI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-07-08",
+      "libelle": "Retenues sur salaires (date fictive)",
+      "date": "2027-07-08",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-07-15",
+      "libelle": "TVA du mois précédent (date fictive)",
+      "date": "2027-07-15",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-07-22",
+      "libelle": "Impôt synthétique (date fictive)",
+      "date": "2027-07-22",
+      "regimes": [
+        "RSI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-07-28",
+      "libelle": "Taxes diverses (date fictive)",
+      "date": "2027-07-28",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-08-01",
+      "libelle": "Acompte d'impôt (date fictive)",
+      "date": "2027-08-01",
+      "regimes": [
+        "RNI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-08-08",
+      "libelle": "Retenues sur salaires (date fictive)",
+      "date": "2027-08-08",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-08-15",
+      "libelle": "TVA du mois précédent (date fictive)",
+      "date": "2027-08-15",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-08-22",
+      "libelle": "Impôt synthétique (date fictive)",
+      "date": "2027-08-22",
+      "regimes": [
+        "RSI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-08-28",
+      "libelle": "Taxes diverses (date fictive)",
+      "date": "2027-08-28",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-09-01",
+      "libelle": "Acompte d'impôt (date fictive)",
+      "date": "2027-09-01",
+      "regimes": [
+        "RNI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-09-08",
+      "libelle": "Retenues sur salaires (date fictive)",
+      "date": "2027-09-08",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-09-15",
+      "libelle": "TVA du mois précédent (date fictive)",
+      "date": "2027-09-15",
+      "regimes": [],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-09-22",
+      "libelle": "Impôt synthétique (date fictive)",
+      "date": "2027-09-22",
+      "regimes": [
+        "RSI"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-2027-09-28",
+      "libelle": "Taxes diverses (date fictive)",
+      "date": "2027-09-28",
+      "regimes": [],
+      "demo": true
+    }
+  ]
+}

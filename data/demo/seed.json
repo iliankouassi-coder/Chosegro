@@ -1,0 +1,195 @@
+{
+  "version": "28f153c1b40cbc9c",
+  "reference": "2026-10-13",
+  "avertissement": "Données fictives de démonstration. Généré par npm run seed : ne pas modifier à la main.",
+  "clients": [
+    {
+      "id": "client-awa",
+      "raisonSociale": "Boutique Awa Mode SARL",
+      "secteur": "Prêt-à-porter",
+      "regimeFiscal": "RSI",
+      "telephoneWhatsapp": "+225 07 00 00 01 01",
+      "email": "contact@awa-mode.example",
+      "collaborateur": "Mariam K.",
+      "piecesAttenduesParMois": 3
+    },
+    {
+      "id": "client-lagune",
+      "raisonSociale": "Lagune Transit Express SA",
+      "secteur": "Transit et dédouanement",
+      "regimeFiscal": "RNI",
+      "telephoneWhatsapp": "+225 05 00 00 02 02",
+      "email": "compta@lagune-transit.example",
+      "collaborateur": "Yao B.",
+      "piecesAttenduesParMois": 5
+    },
+    {
+      "id": "client-baobab",
+      "raisonSociale": "Restaurant Le Baobab Doré",
+      "secteur": "Restauration",
+      "regimeFiscal": "RSI",
+      "telephoneWhatsapp": "+225 01 00 00 03 03",
+      "email": "gerance@baobab-dore.example",
+      "collaborateur": "Mariam K.",
+      "piecesAttenduesParMois": 4
+    }
+  ],
+  "historique": [
+    {
+      "fichier": "H01_manutention_vridi.jpg",
+      "clientId": "client-lagune",
+      "canal": "whatsapp",
+      "recue": {
+        "joursAvant": 5,
+        "heure": "10:12"
+      }
+    },
+    {
+      "fichier": "H02_vente_lagune_negoce.pdf",
+      "clientId": "client-lagune",
+      "canal": "email",
+      "recue": {
+        "joursAvant": 4,
+        "heure": "15:40"
+      }
+    },
+    {
+      "fichier": "H03_energie_lagune.jpg",
+      "clientId": "client-lagune",
+      "canal": "whatsapp",
+      "recue": {
+        "joursAvant": 2,
+        "heure": "09:05"
+      }
+    },
+    {
+      "fichier": "H04_tissus_golfe.jpg",
+      "clientId": "client-awa",
+      "canal": "whatsapp",
+      "recue": {
+        "joursAvant": 4,
+        "heure": "11:20"
+      }
+    },
+    {
+      "fichier": "H05_eaux_cocody.jpg",
+      "clientId": "client-awa",
+      "canal": "email",
+      "recue": {
+        "joursAvant": 3,
+        "heure": "08:47"
+      }
+    },
+    {
+      "fichier": "H06_grossiste_adjame.jpg",
+      "clientId": "client-baobab",
+      "canal": "whatsapp",
+      "recue": "fin_mois_precedent"
+    }
+  ],
+  "boiteDeReception": [
+    {
+      "fichier": "I01_energie_awa_fne.jpg",
+      "clientId": "client-awa",
+      "canal": "whatsapp"
+    },
+    {
+      "fichier": "I02_bureau_plus_0412.jpg",
+      "clientId": "client-awa",
+      "canal": "whatsapp"
+    },
+    {
+      "fichier": "I03_bureau_plus_0457.pdf",
+      "clientId": "client-awa",
+      "canal": "email"
+    },
+    {
+      "fichier": "I04_tissus_golfe_avoir.jpg",
+      "clientId": "client-awa",
+      "canal": "whatsapp"
+    },
+    {
+      "fichier": "I05_vente_awa_hotel.pdf",
+      "clientId": "client-awa",
+      "canal": "email"
+    },
+    {
+      "fichier": "I06_carbu_lagune_ticket.jpg",
+      "clientId": "client-awa",
+      "canal": "whatsapp"
+    },
+    {
+      "fichier": "I07_carbu_lagune_energies.jpg",
+      "clientId": "client-awa",
+      "canal": "whatsapp"
+    },
+    {
+      "fichier": "I08_eaux_cocody_floue.jpg",
+      "clientId": "client-awa",
+      "canal": "whatsapp"
+    },
+    {
+      "fichier": "I01_energie_awa_fne.jpg",
+      "clientId": "client-awa",
+      "canal": "whatsapp"
+    },
+    {
+      "fichier": "I10_papier_lagune_4_pages.pdf",
+      "clientId": "client-lagune",
+      "canal": "papier"
+    },
+    {
+      "fichier": "I11_ocean_line_usd.pdf",
+      "clientId": "client-lagune",
+      "canal": "email"
+    },
+    {
+      "fichier": "I12_garage_ecart.jpg",
+      "clientId": "client-lagune",
+      "canal": "email"
+    },
+    {
+      "fichier": "I13_maquis_manuscrit.jpg",
+      "clientId": "client-lagune",
+      "canal": "whatsapp"
+    },
+    {
+      "fichier": "I14_conseil_ancienne.jpg",
+      "clientId": "client-lagune",
+      "canal": "whatsapp"
+    },
+    {
+      "fichier": "I15_telecom_lagune_fne.jpg",
+      "clientId": "client-lagune",
+      "canal": "whatsapp"
+    }
+  ],
+  "aDeposer": [
+    "D01_imprimerie_express.jpg",
+    "D02_clim_service.pdf"
+  ],
+  "regles": [
+    {
+      "id": "regle-demo-awa-energie",
+      "clientId": "client-awa",
+      "fournisseurNormalise": "energie lagunes",
+      "sens": "achat",
+      "compteChargeOuProduit": "6052",
+      "compteTiers": "4011",
+      "tauxTva": 18,
+      "joursAvant": 20,
+      "utilisations": 3
+    },
+    {
+      "id": "regle-demo-lagune-telecom",
+      "clientId": "client-lagune",
+      "fournisseurNormalise": "telecom lagunes",
+      "sens": "achat",
+      "compteChargeOuProduit": "6281",
+      "compteTiers": "4011",
+      "tauxTva": 18,
+      "joursAvant": 35,
+      "utilisations": 2
+    }
+  ]
+}

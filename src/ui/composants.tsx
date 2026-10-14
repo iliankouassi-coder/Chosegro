@@ -143,19 +143,23 @@ const ENCARTS: Record<'bon' | 'attention' | 'critique' | 'info', { classe: strin
 export function Encart({
   ton,
   icone,
+  compact = false,
   children,
   className = '',
 }: {
   ton: keyof typeof ENCARTS
   icone?: LucideIcon
+  /** Plus serré, pour les écrans où chaque ligne compte (Validation). */
+  compact?: boolean
   children: ReactNode
   className?: string
 }) {
   const e = ENCARTS[ton]
   const Icone = icone ?? e.icone
+  const tailles = compact ? 'gap-2 rounded-lg px-3 py-2 text-[13.5px] leading-snug' : 'gap-2.5 rounded-xl px-3.5 py-2.5 text-sm leading-relaxed'
   return (
-    <div className={`flex items-start gap-2.5 rounded-xl border px-3.5 py-2.5 text-sm leading-relaxed text-texte ${e.classe} ${className}`}>
-      <Icone className={`mt-[3px] h-4 w-4 shrink-0 ${e.couleurIcone}`} strokeWidth={2.25} aria-hidden />
+    <div className={`flex items-start border text-texte ${tailles} ${e.classe} ${className}`}>
+      <Icone className={`${compact ? 'mt-px' : 'mt-[3px]'} h-4 w-4 shrink-0 ${e.couleurIcone}`} strokeWidth={2.25} aria-hidden />
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   )
@@ -167,15 +171,15 @@ const ALERTE: Record<Alerte['niveau'], { ton: 'critique' | 'attention' | 'info';
   info: { ton: 'info', libelle: 'Info' },
 }
 
-export function ListeAlertes({ alertes }: { alertes: readonly Alerte[] }) {
+export function ListeAlertes({ alertes, compact = false }: { alertes: readonly Alerte[]; compact?: boolean }) {
   if (alertes.length === 0) return null
   return (
-    <ul className="grid gap-2">
+    <ul className={`grid ${compact ? 'gap-1.5' : 'gap-2'}`}>
       {alertes.map((a, i) => {
         const s = ALERTE[a.niveau]
         return (
           <li key={`${a.code}-${i}`}>
-            <Encart ton={s.ton}>
+            <Encart ton={s.ton} compact={compact}>
               <span className="font-semibold">{s.libelle} : </span>
               {a.message}
             </Encart>

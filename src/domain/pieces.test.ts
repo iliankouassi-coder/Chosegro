@@ -17,6 +17,7 @@ import {
   piecesAValider,
   piecesArriveesDepuisLaVeille,
   progressionDecoupage,
+  annulerValidationPiece,
   rejeterPiece,
   rouvrirPiece,
   separerGroupe,
@@ -679,5 +680,30 @@ describe('progressionDecoupage', () => {
     expect(progressionDecoupage(-5, 20).pourcentage).toBe(0)
     expect(progressionDecoupage(25, 20).termine).toBe(true)
     expect(() => progressionDecoupage(0, 0)).toThrow('Nombre de pages invalide')
+  })
+})
+
+describe('annulerValidationPiece', () => {
+  it('une pièce validée revient « à valider », sans écriture, avec l’auteur de l’annulation', () => {
+    const validee = valeur(validerPiece(fabriquerPiece(), { ...action, ecritureId: 'ecriture-1' }))
+    const piece = valeur(annulerValidationPiece(validee, { par: 'Aya', le: '2026-10-13T10:00:00.000Z' }))
+    expect(piece.statut).toBe('a_valider')
+    expect(piece.ecritureId).toBeNull()
+    expect(piece.extraction).toEqual(validee.extraction)
+    expect(piece.traiteePar).toBe('Aya')
+    expect(piece.traiteeLe).toBe('2026-10-13T10:00:00.000Z')
+  })
+
+  it.each<StatutPiece>(['a_lire', 'a_valider', 'rejetee', 'doublon'])('refuse une pièce « %s » : il n’y a rien à annuler', (statut) => {
+    expect(erreur(annulerValidationPiece(fabriquerPiece({ statut }), action))).toBe(
+      "La pièce n'est pas validée : il n'y a pas de validation à annuler.",
+    )
+  })
+
+  it('exige le nom du collaborateur', () => {
+    const validee = valeur(validerPiece(fabriquerPiece(), { ...action, ecritureId: 'ecriture-1' }))
+    expect(erreur(annulerValidationPiece(validee, { par: ' ', le: LE }))).toBe(
+      'Annulation de la validation refusée : le nom du collaborateur est obligatoire.',
+    )
   })
 })

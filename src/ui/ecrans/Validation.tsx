@@ -1,12 +1,12 @@
 // Écran 3 — Validation d'une pièce : la file à gauche, la pièce posée sur la table, la saisie à droite.
 // Deux gestes pour une pièce sans correction : l'ouvrir, puis Entrée. Flèche droite : pièce suivante. C : corriger.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { ArrowRight, Ban, BookOpenCheck, Check, CircleCheck, Copy, OctagonAlert, PartyPopper, Pencil, RotateCcw, Sparkles, TriangleAlert } from 'lucide-react'
+import { ArrowRight, Ban, BookOpenCheck, Check, CircleCheck, Copy, OctagonAlert, PartyPopper, Pencil, RotateCcw, Sparkles, TriangleAlert, Undo2 } from 'lucide-react'
 import { allerA, lienVers } from '../../app/routeur'
 import { useApp } from '../../app/store'
 import { formatDate, formatDateHeure, lireDate } from '../../domain/dates'
 import { texteEquilibre, totaux } from '../../domain/ecritures'
-import { LIBELLES_JOURNAL } from '../../domain/export'
+import { exportDeLEcriture, LIBELLES_JOURNAL } from '../../domain/export'
 import { LIBELLES_STATUT, pieceSuivante } from '../../domain/pieces'
 import { fileDeValidation, type LignePiece } from '../../domain/tableaux'
 import { libelleCompte, rechercherComptes } from '../../domain/plan'
@@ -319,6 +319,18 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
     setTamponAnime(true)
     const sobre = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
     minuterie.current = window.setTimeout(apres, sobre ? 250 : 650)
+  }
+
+  // Une validation s'annule tant que l'écriture n'a pas été exportée (le domaine le vérifie aussi).
+  const ecritureValidee = piece.ecritureId ? etat.donnees.ecritures.find((e) => e.id === piece.ecritureId) : undefined
+  const exportee = ecritureValidee ? exportDeLEcriture(ecritureValidee, etat.exports) : null
+  const annulerValidation = async (): Promise<void> => {
+    setOccupe(true)
+    setErreurs([])
+    const r = await actions.annulerValidation(piece.id)
+    setOccupe(false)
+    setTamponAnime(false)
+    if (!r.ok) setErreurs([r.erreur])
   }
 
   const valider = (): void => {
@@ -774,6 +786,23 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                     <RotateCcw className="h-4 w-4" aria-hidden />
                     Rouvrir
                   </Bouton>
+                )}
+                {piece.statut === 'validee' && (
+                  <Bouton
+                    variante="discret"
+                    disabled={occupe || exportee !== null}
+                    title={exportee ? 'Écriture déjà exportée : corrigez-la dans le logiciel comptable.' : 'La pièce revient « à valider », son écriture est supprimée.'}
+                    onClick={() => void annulerValidation()}
+                  >
+                    <Undo2 className="h-4 w-4" aria-hidden />
+                    Annuler la validation
+                  </Bouton>
+                )}
+                {piece.statut === 'validee' && exportee && (
+                  <Raison>
+                    Écriture exportée le {formatDateHeure(exportee.date)} ({exportee.format === 'xlsx' ? 'Excel' : 'CSV'}) : à corriger dans le
+                    logiciel comptable.
+                  </Raison>
                 )}
               </div>
             )}

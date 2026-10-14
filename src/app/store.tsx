@@ -37,6 +37,7 @@ import type {
   StatutRelance,
 } from '../domain/types'
 import {
+  annulerLaValidation,
   confirmerDoublon,
   preparerValidation,
   rejeterIllisible,
@@ -206,6 +207,7 @@ export interface Actions {
   rejeterIllisible: (pieceId: string) => Promise<Resultat<null>>
   marquerDoublon: (pieceId: string) => Promise<Resultat<null>>
   rouvrir: (pieceId: string) => Promise<Resultat<null>>
+  annulerValidation: (pieceId: string) => Promise<Resultat<null>>
   modifierClient: (client: Client) => Promise<void>
   modifierRegle: (regleId: string, changements: Partial<Pick<RegleFournisseur, 'compteChargeOuProduit' | 'compteTiers' | 'tauxTva'>>) => Promise<Resultat<null, string[]>>
   supprimerRegle: (regleId: string) => Promise<void>
@@ -607,6 +609,23 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
           const r = rouvrirPiece(piece, { par: parametres().collaborateur, le: maintenant() })
           if (!r.ok) return r
           await db.pieces.put(r.valeur)
+          return ok()
+        }),
+
+      annulerValidation: (pieceId) =>
+        action(async () => {
+          const piece = await db.pieces.get(pieceId)
+          const ecriture = piece?.ecritureId ? await db.ecritures.get(piece.ecritureId) : undefined
+          if (!piece || !ecriture) return { ok: false, erreur: 'Pièce ou écriture introuvable.' }
+          const r = annulerLaValidation(
+            { piece, ecriture, exports: await db.exports.toArray() },
+            { par: parametres().collaborateur, le: maintenant() },
+          )
+          if (!r.ok) return r
+          await db.transaction('rw', db.pieces, db.ecritures, async () => {
+            await db.ecritures.delete(ecriture.id)
+            await db.pieces.put(r.valeur)
+          })
           return ok()
         }),
 

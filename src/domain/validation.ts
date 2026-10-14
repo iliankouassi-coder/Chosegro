@@ -2,13 +2,14 @@
 // rejeter (illisible) ou marquer comme doublon. Chaque action exige un geste du collaborateur.
 import { alertesPiece } from './alertes'
 import { controlerMontants, type ControleMontants } from './controle'
-import { dateAbidjan, moisDe } from './dates'
+import { dateAbidjan, formatDateHeure, moisDe } from './dates'
 import { chercherDoublon, type CandidatDoublon } from './doublons'
 import { determinerType, proposerEcriture, validerEcriture, type PropositionEcriture } from './ecritures'
 import { confianceGlobale, corrigerExtraction, type CorrectionsExtraction } from './extraction'
 import { resoudreFournisseur } from './fournisseurs'
 import { tauxApparent } from './montants'
-import { marquerDoublon, rejeterPiece, validerPiece } from './pieces'
+import { exportDeLEcriture } from './export'
+import { annulerValidationPiece, marquerDoublon, rejeterPiece, validerPiece, type ActionHumaine } from './pieces'
 import type { PlanComptable } from './plan'
 import { redigerRelanceIllisible } from './relances'
 import { apprendreRegle, enregistrerUtilisation, type Apprentissage } from './regles'
@@ -19,6 +20,7 @@ import {
   type Client,
   type Confiance,
   type Ecriture,
+  type ExportRealise,
   type Extraction,
   type FusionFournisseur,
   type IsoDate,
@@ -197,6 +199,25 @@ export function validerLaPiece(
     regles = enregistrerUtilisation(regles, proposition.regle.id)
   }
   return succes({ piece: piece.valeur, ecriture: ecriture.valeur, regles, apprentissage })
+}
+
+/**
+ * Annule la validation d'une pièce, sur action du collaborateur, tant que son écriture n'a pas été exportée :
+ * la pièce revient « à valider », l'appelant supprime l'écriture. Les règles apprises sont gardées
+ * (elles viennent d'une correction humaine et se modifient dans la fiche client).
+ */
+export function annulerLaValidation(
+  ctx: { piece: Piece; ecriture: Ecriture; exports: readonly ExportRealise[] },
+  action: ActionHumaine,
+): Resultat<Piece> {
+  if (ctx.piece.ecritureId !== ctx.ecriture.id) return echec("Annulation impossible : l'écriture ne correspond pas à cette pièce.")
+  const exporte = exportDeLEcriture(ctx.ecriture, ctx.exports)
+  if (exporte !== null) {
+    return echec(
+      `Annulation impossible : l'écriture a été exportée le ${formatDateHeure(exporte.date)} (${exporte.format === 'xlsx' ? 'Excel' : 'CSV'}). Corrigez-la dans le logiciel comptable.`,
+    )
+  }
+  return annulerValidationPiece(ctx.piece, action)
 }
 
 /** Rejet d'une pièce illisible : la relance « Pouvez-vous renvoyer la photo de… » est préparée, pas envoyée. */

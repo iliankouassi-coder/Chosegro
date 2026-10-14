@@ -396,5 +396,48 @@ export function resumeExport(
     nombreLignes: apercu.lignes.length,
     totalDebit: apercu.totalDebit,
     totalCredit: apercu.totalCredit,
+    ecritureIds: [...new Set(apercu.lignes.map((l) => l.ecritureId))],
   }
+}
+
+/**
+ * Les exports qui contiennent l'écriture, du plus ancien au plus récent. Un export enregistré sans sa liste
+ * d'écritures (avant cette information) couvre, par prudence, les écritures de son client, de sa période
+ * et de son journal validées avant lui.
+ */
+function exportsDeLEcriture(e: Ecriture, exports: readonly ExportRealise[]): ExportRealise[] {
+  const contient = (x: ExportRealise): boolean =>
+    x.ecritureIds !== undefined
+      ? x.ecritureIds.includes(e.id)
+      : x.clientId === e.clientId &&
+        (x.journal === 'tous' || x.journal === e.journal) &&
+        estIsoDate(e.date) &&
+        estDansPeriode(e.date, x.periode) &&
+        e.valideeLe !== null &&
+        e.valideeLe <= x.date
+  return exports.filter(contient).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+}
+
+/** Le premier export qui contient l'écriture, ou null si elle n'est jamais partie. */
+export function exportDeLEcriture(e: Ecriture, exports: readonly ExportRealise[]): ExportRealise | null {
+  return exportsDeLEcriture(e, exports)[0] ?? null
+}
+
+/** Écritures de l'aperçu déjà parties dans un export, et la date du plus récent : l'export n'est pas bloqué, c'est dit. */
+export function dejaExportees(
+  apercu: Pick<ApercuExport, 'lignes'>,
+  exports: readonly ExportRealise[],
+  ecritures: readonly Ecriture[],
+): { nombre: number; derniere: IsoDateHeure | null } {
+  let nombre = 0
+  let derniere: IsoDateHeure | null = null
+  for (const id of new Set(apercu.lignes.map((l) => l.ecritureId))) {
+    const e = ecritures.find((x) => x.id === id)
+    const parties = e ? exportsDeLEcriture(e, exports) : []
+    const plusRecent = parties[parties.length - 1]
+    if (plusRecent === undefined) continue
+    nombre += 1
+    if (derniere === null || plusRecent.date > derniere) derniere = plusRecent.date
+  }
+  return { nombre, derniere }
 }

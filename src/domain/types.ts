@@ -186,6 +186,8 @@ export interface ExportRealise {
   nombreLignes: number
   totalDebit: number
   totalCredit: number
+  /** Écritures parties dans ce fichier. Absent sur les exports enregistrés avant cette information. */
+  ecritureIds?: string[]
 }
 
 export interface ComptesParDefaut {

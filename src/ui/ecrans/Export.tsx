@@ -7,6 +7,7 @@ import {
   COLONNES_EXPORT,
   COLONNES_PAR_DEFAUT,
   controlerExport,
+  dejaExportees,
   genererCsv,
   LIBELLES_JOURNAL,
   nomFichierExport,
@@ -69,6 +70,7 @@ export function Export() {
   const options = { clientId: client.id, periode, journal }
   const apercu = preparerExport(ecritures, clients, options)
   const problemes = controlerExport(apercu, { colonnes, separateur })
+  const dejaParties = dejaExportees(apercu, etat.exports, ecritures)
   const tableau = problemes.some((p) => p.startsWith('Colonne') || p.startsWith('Choisissez') || p.startsWith('La colonne'))
     ? null
     : tableauExport(apercu, colonnes)
@@ -240,6 +242,13 @@ export function Export() {
             </Encart>
           )}
           {texteNonValidees(apercu) && <Encart ton="attention">{texteNonValidees(apercu)}</Encart>}
+          {dejaParties.nombre > 0 && dejaParties.derniere && (
+            <Encart ton="attention">
+              {dejaParties.nombre === 1 ? '1 écriture de cet aperçu est déjà partie' : `${dejaParties.nombre} écritures de cet aperçu sont déjà parties`}{' '}
+              dans un export (le dernier le {formatDateHeure(dejaParties.derniere)}). Vérifiez avant de{' '}
+              {dejaParties.nombre === 1 ? 'la réimporter' : 'les réimporter'} dans le logiciel comptable.
+            </Encart>
+          )}
           {tableau && apercu.lignes.length > 0 ? (
             <div className="relative overflow-x-auto rounded-xl border border-bord">
               <table className="w-full text-sm">

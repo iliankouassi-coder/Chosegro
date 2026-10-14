@@ -76,9 +76,10 @@ const comparerReception = (a: Piece, b: Piece): number => {
 
 // --- Transitions ---
 
-type Transition = 'lecture' | 'validation' | 'rejet' | 'doublon' | 'reouverture'
+type Transition = 'lecture' | 'validation' | 'rejet' | 'doublon' | 'reouverture' | 'annulation'
 
 const NON_LUE = "La pièce n'a pas encore été lue : elle ne peut pas être validée."
+const PAS_VALIDEE = "La pièce n'est pas validée : il n'y a pas de validation à annuler."
 
 /** Pour chaque transition et chaque statut de départ : le motif du refus, ou null si elle est permise. */
 const REFUS: Record<Transition, Record<StatutPiece, string | null>> = {
@@ -117,6 +118,13 @@ const REFUS: Record<Transition, Record<StatutPiece, string | null>> = {
     rejetee: null,
     doublon: null,
   },
+  annulation: {
+    a_lire: PAS_VALIDEE,
+    a_valider: PAS_VALIDEE,
+    validee: null,
+    rejetee: PAS_VALIDEE,
+    doublon: PAS_VALIDEE,
+  },
 }
 
 /** Début du message d'erreur d'une action humaine refusée, accordé avec le nom de l'action. */
@@ -125,6 +133,7 @@ const REFUSEE: Record<Exclude<Transition, 'lecture'>, string> = {
   rejet: 'Rejet refusé',
   doublon: 'Marquage comme doublon refusé',
   reouverture: 'Réouverture refusée',
+  annulation: 'Annulation de la validation refusée',
 }
 
 const verifierStatut = (piece: Piece, transition: Transition): string | null => {
@@ -218,6 +227,18 @@ export function rouvrirPiece(piece: Piece, p: ActionHumaine): Resultat<Piece> {
     traiteePar: par.valeur,
     traiteeLe: p.le,
   })
+}
+
+/**
+ * Annule une validation : la pièce revient « à valider » et perd son écriture (que l'appelant supprime).
+ * Le cas d'usage (validation.ts) vérifie d'abord que l'écriture n'a pas été exportée.
+ */
+export function annulerValidationPiece(piece: Piece, p: ActionHumaine): Resultat<Piece> {
+  const refus = verifierStatut(piece, 'annulation')
+  if (refus !== null) return echec(refus)
+  const par = verifierAction(p, 'annulation')
+  if (!par.ok) return par
+  return succes({ ...piece, statut: 'a_valider', ecritureId: null, traiteePar: par.valeur, traiteeLe: p.le })
 }
 
 // --- Listes ---

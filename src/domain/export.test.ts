@@ -6,6 +6,8 @@ import {
   COLONNES_EXPORT,
   COLONNES_PAR_DEFAUT,
   controlerExport,
+  dejaExportees,
+  exportDeLEcriture,
   genererCsv,
   LIBELLES_JOURNAL,
   nomFichierExport,
@@ -20,7 +22,7 @@ import {
   type OptionsExport,
   type Separateur,
 } from './export'
-import type { Ecriture, LigneEcriture } from './types'
+import type { Ecriture, ExportRealise, LigneEcriture } from './types'
 
 const nb = (texte: string): string => texte.replace(/\u00A0/g, ' ')
 
@@ -702,6 +704,7 @@ describe('resumeExport', () => {
       nombreLignes: 6,
       totalDebit: 177_000,
       totalCredit: 177_000,
+      ecritureIds: ['ecr-1', vente().id],
     })
     expect(resume.periode).not.toBe(o.periode)
   })
@@ -709,5 +712,46 @@ describe('resumeExport', () => {
   it('refuse d’enregistrer un export bloqué', () => {
     const bloque = preparerExport([], clients, options())
     expect(() => resumeExport(bloque, options(), 'xlsx', 'export-2', '2026-10-31T17:45:00.000Z')).toThrow('Export bloqué')
+  })
+})
+
+describe('écritures déjà exportées', () => {
+  const exporte = (partiel: Partial<ExportRealise> = {}): ExportRealise => ({
+    id: 'export-1',
+    date: '2026-10-31T17:45:00.000Z',
+    clientId: boutique.id,
+    periode: octobre,
+    journal: 'tous',
+    format: 'xlsx',
+    nombreLignes: 3,
+    totalDebit: 118_000,
+    totalCredit: 118_000,
+    ecritureIds: ['ecr-1'],
+    ...partiel,
+  })
+
+  it("retrouve l'export qui contient l'écriture", () => {
+    expect(exportDeLEcriture(ecriture(), [exporte({ ecritureIds: ['autre'] }), exporte({ id: 'export-2' })])?.id).toBe('export-2')
+    expect(exportDeLEcriture(ecriture(), [exporte({ ecritureIds: ['autre'] })])).toBeNull()
+  })
+
+  it("prend le plus ancien export quand l'écriture est partie plusieurs fois", () => {
+    const premier = exporte({ id: 'premier', date: '2026-10-20T08:00:00.000Z' })
+    expect(exportDeLEcriture(ecriture(), [exporte(), premier])?.id).toBe('premier')
+  })
+
+  it("un ancien export sans liste d'écritures couvre, par prudence, ce qui était validé avant lui sur son périmètre", () => {
+    const ancien = { ...exporte(), ecritureIds: undefined }
+    expect(exportDeLEcriture(ecriture(), [ancien])?.id).toBe('export-1')
+    expect(exportDeLEcriture(ecriture({ valideeLe: '2026-11-02T08:00:00.000Z' }), [ancien])).toBeNull()
+    expect(exportDeLEcriture(ecriture({ clientId: transit.id }), [ancien])).toBeNull()
+    expect(exportDeLEcriture(ecriture({ date: '2026-09-30' }), [ancien])).toBeNull()
+    expect(exportDeLEcriture(ecriture(), [{ ...ancien, journal: 'ventes' }])).toBeNull()
+  })
+
+  it("compte les écritures de l'aperçu déjà exportées, avec la date du dernier export", () => {
+    const apercu = preparerExport([ecriture(), vente()], clients, options())
+    expect(dejaExportees(apercu, [exporte()], [ecriture(), vente()])).toEqual({ nombre: 1, derniere: '2026-10-31T17:45:00.000Z' })
+    expect(dejaExportees(apercu, [], [ecriture(), vente()])).toEqual({ nombre: 0, derniere: null })
   })
 })

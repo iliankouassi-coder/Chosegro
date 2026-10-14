@@ -3,7 +3,7 @@ import { fabriquerClient, fabriquerExtraction, fabriquerPiece, fabriquerRegle } 
 import { planReel } from '../test/planReel'
 import { PARAMETRES_DEFAUT } from './parametres'
 import type { Piece } from './types'
-import { confirmerDoublon, numeroPieceInterne, preparerValidation, rejeterIllisible, validerLaPiece, type ContexteValidation } from './validation'
+import { annulerLaValidation, confirmerDoublon, numeroPieceInterne, preparerValidation, rejeterIllisible, validerLaPiece, type ContexteValidation } from './validation'
 
 const plan = planReel()
 const client = fabriquerClient()
@@ -258,5 +258,48 @@ describe('facture sans QR code FNE', () => {
     const p = preparer(ctx(sansFne(), { parametres: { ...PARAMETRES_DEFAUT, fneExigeeDepuis: null } }))
     expect(p.alertes.find((a) => a.code === 'fne_absente')?.niveau).toBe('info')
     expect(p.proposition.ecriture.lignes.map((l) => l.compte)).toEqual(['6052', '4452', '4011'])
+  })
+})
+
+describe('annulerLaValidation', () => {
+  const validee = () => {
+    const c = ctx(fabriquerPiece())
+    const r = validerLaPiece(c, preparer(c), action)
+    if (!r.ok) throw new Error(r.erreur.join(' '))
+    return r.valeur
+  }
+  const annulation = { par: 'Aya', le: '2026-10-13T11:00:00.000Z' }
+
+  it("remet la pièce « à valider » tant que l'écriture n'a pas été exportée", () => {
+    const { piece, ecriture } = validee()
+    const r = annulerLaValidation({ piece, ecriture, exports: [] }, annulation)
+    expect(r.ok && r.valeur.statut).toBe('a_valider')
+    expect(r.ok && r.valeur.ecritureId).toBeNull()
+  })
+
+  it("refuse si l'écriture a déjà été exportée, en disant quand", () => {
+    const { piece, ecriture } = validee()
+    const exporte = {
+      id: 'x',
+      date: '2026-10-13T10:30:00.000Z',
+      clientId: client.id,
+      periode: { debut: '2026-10-01', fin: '2026-10-31' },
+      journal: 'tous' as const,
+      format: 'xlsx' as const,
+      nombreLignes: 3,
+      totalDebit: 118_000,
+      totalCredit: 118_000,
+      ecritureIds: [ecriture.id],
+    }
+    const r = annulerLaValidation({ piece, ecriture, exports: [exporte] }, annulation)
+    expect(r.ok ? '' : r.erreur).toBe(
+      "Annulation impossible : l'écriture a été exportée le 13/10/2026 10:30 (Excel). Corrigez-la dans le logiciel comptable.",
+    )
+  })
+
+  it("refuse une écriture qui n'est pas celle de la pièce", () => {
+    const { piece, ecriture } = validee()
+    const r = annulerLaValidation({ piece, ecriture: { ...ecriture, id: 'autre' }, exports: [] }, annulation)
+    expect(r.ok ? '' : r.erreur).toBe("Annulation impossible : l'écriture ne correspond pas à cette pièce.")
   })
 })

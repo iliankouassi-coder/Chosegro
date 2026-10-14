@@ -145,7 +145,11 @@ function Tampon({ piece, anime }: { piece: Piece; anime: boolean }) {
 /** La file des pièces à valider, à gauche de l'écran : la pièce en cours est marquée, un clic ouvre une autre pièce. */
 function FileValidation({ lignes, courante }: { lignes: LignePiece[]; courante: string }) {
   const refCourante = useRef<HTMLAnchorElement>(null)
-  useEffect(() => refCourante.current?.scrollIntoView?.({ block: 'nearest' }), [courante])
+  // Les accolades comptent : les navigateurs récents renvoient une promesse depuis scrollIntoView,
+  // et React plante si un effet renvoie autre chose qu'une fonction de nettoyage.
+  useEffect(() => {
+    refCourante.current?.scrollIntoView?.({ block: 'nearest' })
+  }, [courante])
   return (
     <nav aria-label="Pièces à valider" className="hidden min-h-0 flex-col border-r border-trait xl:flex">
       <div className="flex items-baseline justify-between px-5 pb-3 pt-6">

@@ -111,6 +111,7 @@ export function preparerValidation(ctx: ContexteValidation, corrections: Correct
       ...(corrections.compteChargeOuProduit !== undefined ? { compteChargeOuProduit: corrections.compteChargeOuProduit } : {}),
       ...(corrections.date !== undefined ? { date: corrections.date } : {}),
     },
+    exigenceFne: p.fneExigeeDepuis,
   })
 
   const m = proposition.montants
@@ -121,6 +122,7 @@ export function preparerValidation(ctx: ContexteValidation, corrections: Correct
     tauxTvaHabituel: proposition.regle?.tauxTva ?? null,
     type: proposition.determination.type,
     emetteurEstLeClient: proposition.determination.emetteurEstLeClient,
+    alerteFne: proposition.fne.alerte,
   })
   const doublon = chercherDoublon({ ...piece, extraction }, ctx.pieces, { fusions: ctx.fusions, motsCourants: mots, clients: [client] })
   const bloquants = [...proposition.bloquants]

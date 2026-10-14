@@ -230,3 +230,33 @@ describe('rejet et doublon', () => {
     expect(numeroPieceInterne(fabriquerPiece({ id: 'piece-3f2a', recueLe: '2026-10-12T09:00:00.000Z' }))).toBe('P-2610-3F2A')
   })
 })
+
+describe('facture sans QR code FNE', () => {
+  const sansFne = (): Piece => fabriquerPiece({ extraction: fabriquerExtraction({ qrFne: 'non' }) })
+
+  it('est signalée une seule fois, en attention, et sa TVA va en charge', () => {
+    const p = preparer(ctx(sansFne()))
+    const fne = p.alertes.filter((a) => a.code.startsWith('fne_'))
+    expect(fne).toHaveLength(1)
+    expect(fne[0]?.niveau).toBe('attention')
+    expect(p.proposition.ecriture.lignes.map((l) => l.compte)).toEqual(['6052', '4011'])
+  })
+
+  it("compte avec la date corrigée par le collaborateur : avant l'obligation, la TVA reste déductible", () => {
+    const p = preparer(ctx(sansFne()), { date: '2025-11-20' })
+    expect(p.proposition.fne.statut).toBe('non_exigee')
+    expect(p.proposition.ecriture.lignes.map((l) => l.compte)).toEqual(['6052', '4452', '4011'])
+  })
+
+  it('le collaborateur peut corriger la présence du QR code lue par l’IA', () => {
+    const p = preparer(ctx(sansFne()), { champs: { qrFne: 'oui' } })
+    expect(p.proposition.fne.statut).toBe('presente')
+    expect(p.alertes.some((a) => a.code.startsWith('fne_'))).toBe(false)
+  })
+
+  it("suit le paramètre du cabinet : règle désactivée, l'absence n'est qu'une information", () => {
+    const p = preparer(ctx(sansFne(), { parametres: { ...PARAMETRES_DEFAUT, fneExigeeDepuis: null } }))
+    expect(p.alertes.find((a) => a.code === 'fne_absente')?.niveau).toBe('info')
+    expect(p.proposition.ecriture.lignes.map((l) => l.compte)).toEqual(['6052', '4452', '4011'])
+  })
+})

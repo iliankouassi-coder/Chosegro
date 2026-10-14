@@ -1,6 +1,6 @@
 {
   "avertissement": "Lectures pré-enregistrées des pièces fictives, au format de la sortie de Claude Code. Elles permettent la démo sans Claude Code. Généré par npm run seed.",
-  "reference": "2026-10-13",
+  "reference": "2026-10-14",
   "lectures": {
     "H01_manutention_vridi.jpg": {
       "lisible": true,
@@ -15,7 +15,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "07/10/2026",
+        "valeur": "08/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -43,7 +43,7 @@
         "confiance": "haut"
       },
       "qr_fne": {
-        "valeur": "non",
+        "valeur": "oui",
         "confiance": "haut"
       },
       "compte_propose": {
@@ -65,7 +65,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "09/10/2026",
+        "valeur": "10/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -115,7 +115,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "10/10/2026",
+        "valeur": "11/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -143,7 +143,7 @@
         "confiance": "haut"
       },
       "qr_fne": {
-        "valeur": "non",
+        "valeur": "oui",
         "confiance": "haut"
       },
       "compte_propose": {
@@ -165,7 +165,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "08/10/2026",
+        "valeur": "09/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -193,7 +193,7 @@
         "confiance": "haut"
       },
       "qr_fne": {
-        "valeur": "non",
+        "valeur": "oui",
         "confiance": "haut"
       },
       "compte_propose": {
@@ -215,7 +215,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "07/10/2026",
+        "valeur": "08/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -243,7 +243,7 @@
         "confiance": "haut"
       },
       "qr_fne": {
-        "valeur": "non",
+        "valeur": "oui",
         "confiance": "haut"
       },
       "compte_propose": {
@@ -315,7 +315,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "10/10/2026",
+        "valeur": "11/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -415,7 +415,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "12/10/2026",
+        "valeur": "13/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -443,7 +443,7 @@
         "confiance": "haut"
       },
       "qr_fne": {
-        "valeur": "non",
+        "valeur": "oui",
         "confiance": "haut"
       },
       "compte_propose": {
@@ -465,7 +465,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "09/10/2026",
+        "valeur": "10/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -493,7 +493,7 @@
         "confiance": "haut"
       },
       "qr_fne": {
-        "valeur": "non",
+        "valeur": "oui",
         "confiance": "haut"
       },
       "compte_propose": {
@@ -515,7 +515,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "11/10/2026",
+        "valeur": "12/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -565,7 +565,7 @@
         "confiance": "bas"
       },
       "date": {
-        "valeur": "11/10/2026",
+        "valeur": "12/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -615,7 +615,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "12/10/2026",
+        "valeur": "13/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -643,7 +643,7 @@
         "confiance": "haut"
       },
       "qr_fne": {
-        "valeur": "non",
+        "valeur": "oui",
         "confiance": "haut"
       },
       "compte_propose": {
@@ -743,8 +743,8 @@
         "confiance": "haut"
       },
       "qr_fne": {
-        "valeur": "non",
-        "confiance": "moyen"
+        "valeur": "oui",
+        "confiance": "haut"
       },
       "compte_propose": {
         "valeur": "613",
@@ -793,7 +793,7 @@
         "confiance": "haut"
       },
       "qr_fne": {
-        "valeur": "non",
+        "valeur": "oui",
         "confiance": "haut"
       },
       "compte_propose": {
@@ -843,7 +843,7 @@
         "confiance": "haut"
       },
       "qr_fne": {
-        "valeur": "non",
+        "valeur": "oui",
         "confiance": "haut"
       },
       "compte_propose": {
@@ -893,7 +893,7 @@
         "confiance": "haut"
       },
       "qr_fne": {
-        "valeur": "non",
+        "valeur": "oui",
         "confiance": "haut"
       },
       "compte_propose": {
@@ -943,7 +943,7 @@
         "confiance": "haut"
       },
       "qr_fne": {
-        "valeur": "non",
+        "valeur": "oui",
         "confiance": "haut"
       },
       "compte_propose": {
@@ -965,7 +965,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "08/10/2026",
+        "valeur": "09/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -1015,7 +1015,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "10/10/2026",
+        "valeur": "11/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -1043,7 +1043,7 @@
         "confiance": "haut"
       },
       "qr_fne": {
-        "valeur": "non",
+        "valeur": "oui",
         "confiance": "haut"
       },
       "compte_propose": {
@@ -1065,7 +1065,7 @@
         "confiance": "bas"
       },
       "date": {
-        "valeur": "11/10/2026",
+        "valeur": "12/10/2026",
         "confiance": "moyen"
       },
       "numero_facture": {
@@ -1115,7 +1115,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "13/08/2025",
+        "valeur": "14/08/2025",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -1165,7 +1165,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "12/10/2026",
+        "valeur": "13/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -1215,7 +1215,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "12/10/2026",
+        "valeur": "13/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {
@@ -1265,7 +1265,7 @@
         "confiance": "haut"
       },
       "date": {
-        "valeur": "11/10/2026",
+        "valeur": "12/10/2026",
         "confiance": "haut"
       },
       "numero_facture": {

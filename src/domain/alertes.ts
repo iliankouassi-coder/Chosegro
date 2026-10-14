@@ -16,6 +16,8 @@ export interface ContexteAlertes {
   type: TypePiece | null
   /** Le client du cabinet est l'émetteur de la pièce. */
   emetteurEstLeClient: boolean
+  /** Alerte sur la facture normalisée électronique, préparée par fne.ts avec l'écriture. */
+  alerteFne?: Alerte | null
 }
 
 export type CodeAlerte =
@@ -176,14 +178,8 @@ export function alertesPiece(e: Extraction, contexte: ContexteAlertes): Alerte[]
   }
   if (contexte.type === 'avoir') ajouter('avoir', 'info', "Avoir : l'écriture d'origine est inversée.")
 
-  // QR code de facture normalisée électronique.
-  if (e.nature.valeur === 'facture') {
-    if (e.qrFne.valeur === 'non') {
-      ajouter('fne_absente', 'info', 'Pas de QR code de facture électronique (FNE) sur cette facture.')
-    } else if (e.qrFne.valeur === 'incertain') {
-      ajouter('fne_incertaine', 'info', 'Présence du QR code FNE incertaine.')
-    }
-  }
+  // QR code de facture normalisée électronique : l'analyse (fne.ts) va avec l'écriture, elle est reprise ici.
+  if (contexte.alerteFne) alertes.push(contexte.alerteFne)
 
   // Problèmes relevés pendant la normalisation de la lecture.
   for (const probleme of e.problemes) {

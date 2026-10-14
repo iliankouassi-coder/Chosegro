@@ -1,6 +1,6 @@
 {
-  "version": "28f153c1b40cbc9c",
-  "reference": "2026-10-13",
+  "version": "e00668a10076f501",
+  "reference": "2026-10-14",
   "avertissement": "Données fictives de démonstration. Généré par npm run seed : ne pas modifier à la main.",
   "clients": [
     {

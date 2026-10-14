@@ -232,3 +232,60 @@ describe('fileDeValidation', () => {
     expect(file[0]?.client?.raisonSociale).toBe('Restaurant Le Baobab Doré')
   })
 })
+
+describe('factures sans QR code FNE', () => {
+  const sansFne = (id: string, partiel: Partial<Piece> = {}): Piece =>
+    piece(id, { extraction: fabriquerExtraction({ qrFne: 'non', tva: 9_000, ht: 50_000, ttc: 59_000, fournisseur: 'Bureau Plus Cocody' }), ...partiel })
+
+  it("l'accueil compte les achats du mois sans FNE et la TVA qui n'est pas déductible", () => {
+    const d = donnees([
+      sansFne('a'),
+      sansFne('b', { statut: 'validee' }),
+      sansFne('rejetee', { statut: 'rejetee' }),
+      sansFne('mois-dernier', { recueLe: '2026-09-30T10:00:00.000Z' }),
+      piece('avec-fne'),
+    ])
+    expect(tableauAccueil(d, MAINTENANT).fne).toEqual({ pieces: 2, tvaNonDeductible: 18_000, clients: 1 })
+  })
+
+  it('marque la ligne de la pièce dans la file', () => {
+    const d = donnees([sansFne('a'), piece('avec-fne', { recueLe: '2026-10-13T09:00:00.000Z' })])
+    expect(fileDeValidation(d).map((l) => [l.piece.id, l.sansFne])).toEqual([
+      ['a', true],
+      ['avec-fne', false],
+    ])
+  })
+
+  it('suit le paramètre du cabinet : règle désactivée, rien n’est compté', () => {
+    const d = donnees([sansFne('a')], { parametres: { ...PARAMETRES_DEFAUT, fneExigeeDepuis: null } })
+    expect(tableauAccueil(d, MAINTENANT).fne).toEqual({ pieces: 0, tvaNonDeductible: 0, clients: 0 })
+  })
+
+  it('prépare une relance par client, avec les pièces et la TVA à récupérer', () => {
+    const d = donnees([sansFne('a'), sansFne('b', { statut: 'validee' })])
+    const r = relancesAPreparer(d, MAINTENANT).filter((x) => x.motif === 'fne')
+    expect(r).toHaveLength(1)
+    expect(r[0]?.client.id).toBe('awa')
+    expect(r[0]?.pieces.map((p) => p.id)).toEqual(['a', 'b'])
+    expect(r[0]?.raison.replace(/\u00A0/g, ' ')).toBe('2 pièces d’achat sans QR code FNE ce mois : 18 000 FCFA de TVA non déductible.')
+    expect(r[0]?.texte).toContain('la facture Bureau Plus Cocody du 05/10/2026')
+    expect(r[0]?.lien.ok).toBe(true)
+    expect(r[0]?.statut).toBe('a_faire')
+  })
+
+  it('reprend le texte et l’état d’une relance FNE déjà envoyée', () => {
+    const envoyee: Relance = {
+      id: 'r-fne',
+      clientId: 'awa',
+      mois: '2026-10',
+      texte: 'Texte déjà envoyé',
+      statut: 'envoyee_main',
+      date: MAINTENANT,
+      motif: 'fne',
+      pieceId: null,
+    }
+    const r = relancesAPreparer(donnees([sansFne('a')], { relances: [envoyee] }), MAINTENANT).find((x) => x.motif === 'fne')
+    expect(r?.texte).toBe('Texte déjà envoyé')
+    expect(r?.statut).toBe('envoyee_main')
+  })
+})

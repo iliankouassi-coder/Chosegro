@@ -1,10 +1,11 @@
 // Écran 1 — Accueil : pièces à valider, clients en retard, échéances de la semaine (dans cet ordre).
 // En tête, trois cartes chiffrées qui mènent chacune à son bloc ; dessous, la file des pièces regroupée par client.
-import { AlarmClock, ArrowRight, CalendarDays, CircleCheck, FileCheck2, Inbox, OctagonAlert, type LucideIcon } from 'lucide-react'
+import { AlarmClock, ArrowRight, CalendarDays, CircleCheck, FileCheck2, Inbox, OctagonAlert, QrCode, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { lienVers } from '../../app/routeur'
 import { useApp } from '../../app/store'
 import { formatDate, formatDateHeure } from '../../domain/dates'
+import { formatFcfa } from '../../domain/montants'
 import { regrouperParClient, tableauAccueil } from '../../domain/tableaux'
 import {
   Avatar,
@@ -14,6 +15,7 @@ import {
   EnTetePage,
   Jauge,
   Montant,
+  Pastille,
   PastilleConfiance,
   PastilleRelance,
   PuceCanal,
@@ -35,6 +37,7 @@ const TEINTES = {
   critique: 'bg-critique-pale text-critique',
   bon: 'bg-bon-pale text-bon',
   info: 'bg-info-pale text-info',
+  attention: 'bg-attention-pale text-attention',
 }
 
 /** Carte chiffrée du haut de l'accueil : toute la carte est un lien vers le bloc ou l'écran qui la détaille. */
@@ -80,7 +83,7 @@ export function Accueil() {
   const { etat } = useApp()
   const maintenant = new Date().toISOString()
   const accueil = tableauAccueil(etat.donnees, maintenant)
-  const { piecesAValider, clientsEnRetard, echeancesDeLaSemaine } = accueil
+  const { piecesAValider, clientsEnRetard, echeancesDeLaSemaine, fne } = accueil
   const groupes = regrouperParClient(piecesAValider.arriveesDepuisLaVeille)
   const jour = JOUR.format(new Date(maintenant))
   const prochaine = echeancesDeLaSemaine[0]
@@ -105,7 +108,7 @@ export function Accueil() {
       />
 
       {/* Le point du jour, en trois cartes */}
-      <div className="-mt-2 grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="-mt-2 grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-4">
         <CarteChiffre
           href={piecesAValider.nombre > 0 ? lienVers({ ecran: 'validation', pieceId: null }) : lienVers({ ecran: 'reception' })}
           icone={FileCheck2}
@@ -165,6 +168,19 @@ export function Accueil() {
             )
           }
           appel="Voir les échéances"
+        />
+        <CarteChiffre
+          href={fne.pieces > 0 ? lienVers({ ecran: 'relances' }) : lienVers({ ecran: 'parametres' })}
+          icone={QrCode}
+          teinte={fne.pieces > 0 ? 'attention' : 'bon'}
+          libelle="TVA non déductible (sans FNE)"
+          valeur={<span className="text-[28px]">{formatFcfa(fne.tvaNonDeductible)}</span>}
+          detail={
+            fne.pieces === 0
+              ? 'Tous les achats du mois ont leur QR code de facture normalisée (FNE).'
+              : `${pluriel(fne.pieces, 'pièce d’achat', 'pièces d’achat')} du mois sans QR code FNE, chez ${pluriel(fne.clients, 'client', 'clients')}.`
+          }
+          appel={fne.pieces > 0 ? 'Demander les FNE' : 'Voir la règle'}
         />
       </div>
 
@@ -235,7 +251,14 @@ export function Accueil() {
                           ) : l.piece.statut === 'a_lire' ? (
                             <span className="text-xs text-texte-3">en attente de lecture</span>
                           ) : (
-                            <PastilleConfiance confiance={l.confiance} />
+                            <span className="flex flex-wrap items-center gap-1">
+                              <PastilleConfiance confiance={l.confiance} />
+                              {l.sansFne && (
+                                <Pastille ton="attention" icone={QrCode} title="Pas de QR code FNE : TVA non déductible">
+                                  Sans FNE
+                                </Pastille>
+                              )}
+                            </span>
                           )}
                         </td>
                       </tr>

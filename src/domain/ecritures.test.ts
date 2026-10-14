@@ -398,3 +398,48 @@ describe('raisonRegle', () => {
     )
   })
 })
+
+describe('facture sans QR code FNE (obligation depuis le 01/12/2025)', () => {
+  const sansFne = (autres: Parameters<typeof fabriquerExtraction>[0] = {}): Extraction => fabriquerExtraction({ qrFne: 'non', ...autres })
+
+  it("la TVA n'est pas récupérable : elle est ajoutée à la charge, et c'est dit", () => {
+    const p = proposerEcriture(entree(sansFne(), { exigenceFne: '2025-12-01' }))
+    expect(lignes(p.ecriture.lignes)).toEqual([
+      ['6052', 118_000, 0],
+      ['4011', 0, 118_000],
+    ])
+    expect(p.fne.statut).toBe('absente')
+    expect(p.fne.tvaNonDeductible).toBe(18_000)
+    expect(p.avertissements.map(nb)).toContain(
+      'TVA de 18 000 FCFA non déductible (pas de QR code FNE) : ajoutée au compte 6052. À confirmer par un expert-comptable.',
+    )
+    expect(p.bloquants).toEqual([])
+  })
+
+  it("un avoir sans FNE inverse l'écriture sans ligne de TVA", () => {
+    const p = proposerEcriture(entree(sansFne({ nature: 'avoir' }), { exigenceFne: '2025-12-01' }))
+    expect(lignes(p.ecriture.lignes)).toEqual([
+      ['6052', 0, 118_000],
+      ['4011', 118_000, 0],
+    ])
+  })
+
+  it('avec le QR code FNE, la TVA reste récupérable', () => {
+    const p = proposerEcriture(entree(fabriquerExtraction({ qrFne: 'oui' }), { exigenceFne: '2025-12-01' }))
+    expect(lignes(p.ecriture.lignes).map(([c]) => c)).toEqual(['6052', '4452', '4011'])
+    expect(p.fne.statut).toBe('presente')
+  })
+
+  it("sans date d'obligation (règle désactivée), l'écriture reste celle d'avant", () => {
+    const p = proposerEcriture(entree(sansFne()))
+    expect(lignes(p.ecriture.lignes).map(([c]) => c)).toEqual(['6052', '4452', '4011'])
+    expect(p.fne.statut).toBe('non_exigee')
+  })
+
+  it("une vente sans FNE garde sa TVA facturée : elle reste due", () => {
+    const vente = fabriquerExtraction({ qrFne: 'non', fournisseur: 'Boutique Awa Mode SARL', destinataire: 'Hôtel Ivoire', compteIa: '7011' })
+    const p = proposerEcriture(entree(vente, { exigenceFne: '2025-12-01' }))
+    expect(p.determination.sens).toBe('vente')
+    expect(lignes(p.ecriture.lignes).map(([c]) => c)).toContain('4431')
+  })
+})

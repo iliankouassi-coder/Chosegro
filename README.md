@@ -85,6 +85,8 @@ La vérification a été faite le 13/10/2026 dans l'environnement de développem
 
 `npm run seed` régénère les pièces avec des dates calculées à partir d'aujourd'hui. Avec `npm run seed -- --date 2026-11-20`, elles sont calculées à partir d'une autre date. L'application recharge la démo d'elle-même au lancement suivant. L'écran Paramètres permet aussi de réinitialiser la démo, d'importer un autre plan comptable ou d'autres échéances.
 
+**Facture normalisée électronique (FNE).** Depuis le 01/12/2025, seules les FNE permettent de déduire la TVA (DGI). Un achat sans QR code FNE voit sa TVA ajoutée à la charge, avec une alerte ; l'accueil chiffre la TVA non déductible du mois et l'écran Relances prépare le message « demandez une facture normalisée à ces fournisseurs ». Dans la démo, la plupart des factures portent un QR code FNE ; Bureau Plus BP-0412, le ticket de carburant, le reçu manuscrit et D01 n'en ont pas, et la facture de conseil de 2025 est antérieure à l'obligation. La date d'obligation se règle dans Paramètres. Traitement à confirmer par un expert-comptable.
+
 Les numéros de compte ne sont jamais écrits de mémoire. Ceux de la démo sont retrouvés dans `data/plan_syscohada.xlsx` par leur libellé exact (`scripts/demo/catalogue.ts`). Les comptes par défaut (4011, 4111, 4452, 4431) ont été choisis dans ce fichier d'après leur libellé, et un test vérifie qu'ils y figurent.
 
 ## Limites connues

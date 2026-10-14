@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import { fabriquerClient, fabriquerExtraction, fabriquerPiece } from '../test/fabriques'
-import { MODELE_RELANCE_DEFAUT, MODELE_RELANCE_ILLISIBLE_DEFAUT } from './parametres'
+import { MODELE_RELANCE_DEFAUT, MODELE_RELANCE_FNE_DEFAUT, MODELE_RELANCE_ILLISIBLE_DEFAUT } from './parametres'
 import {
   LIBELLES_STATUT_RELANCE,
   changerStatutRelance,
   designationPiece,
   lienWhatsApp,
   normaliserTelephone,
+  redigerRelanceFne,
   redigerRelanceIllisible,
   redigerRelanceRetard,
   relanceDuMois,
@@ -496,5 +497,44 @@ describe('relanceDuMois et statutRelance', () => {
       relance({ id: 'onze-heures-moins-deux', date: '2026-10-12T11:00:00-02:00' }),
     ]
     expect(relanceDuMois(r, 'client-boutique', '2026-10')?.id).toBe('onze-heures-moins-deux')
+  })
+})
+
+describe('redigerRelanceFne', () => {
+  const client = fabriquerClient()
+  const nb = (t: string): string => t.replace(/\u00A0/g, ' ')
+  const sansFne = (id: string, fournisseur: string, date: string, nature: NaturePiece = 'facture') =>
+    fabriquerPiece({ id, extraction: fabriquerExtraction({ fournisseur, date, nature, qrFne: 'non' }) })
+
+  it('liste les pièces sans QR code FNE et la TVA qui n’est pas déductible', () => {
+    const texte = redigerRelanceFne({
+      modele: MODELE_RELANCE_FNE_DEFAUT,
+      nomCabinet: CABINET,
+      client,
+      pieces: [sansFne('a', 'Bureau Plus Cocody', '2026-09-28'), sansFne('b', 'Carbu Lagune', '2026-10-12', 'ticket')],
+      tva: 12_771,
+    })
+    expect(nb(texte)).toBe(
+      'Bonjour, ici Kouadio & Associés. Ces factures n\'ont pas de QR code FNE : la facture Bureau Plus Cocody du 28/09/2026 ' +
+        'et le ticket Carbu Lagune du 12/10/2026. Sans facture normalisée électronique, 12 771 FCFA de TVA ne sont pas déductibles. ' +
+        'Pouvez-vous demander à ces fournisseurs une facture normalisée ? Merci.',
+    )
+  })
+
+  it('sépare par des virgules quand il y a plus de deux pièces', () => {
+    const texte = redigerRelanceFne({
+      modele: '{pieces}',
+      nomCabinet: CABINET,
+      client,
+      pieces: [sansFne('a', 'A', '2026-10-01'), sansFne('b', 'B', '2026-10-02'), sansFne('c', 'C', '2026-10-03')],
+      tva: 1,
+    })
+    expect(texte).toBe('la facture A du 01/10/2026, la facture B du 02/10/2026 et la facture C du 03/10/2026')
+  })
+
+  it('refuse une pièce d’un autre client', () => {
+    expect(() =>
+      redigerRelanceFne({ modele: '{pieces}', nomCabinet: CABINET, client, pieces: [fabriquerPiece({ clientId: 'autre' })], tva: 0 }),
+    ).toThrow('n\'appartient pas au client')
   })
 })

@@ -157,9 +157,12 @@ export interface Relance {
   statut: StatutRelance
   /** Date du dernier changement de statut. */
   date: IsoDateHeure | null
-  motif: 'retard' | 'illisible'
+  motif: MotifRelance
   pieceId: string | null
 }
+
+/** Client en retard, photo illisible, ou factures d'achat sans QR code FNE. */
+export type MotifRelance = 'retard' | 'illisible' | 'fne'
 
 export interface Echeance {
   id: string
@@ -208,6 +211,10 @@ export interface Parametres {
   ratioVolumeMinimum: number
   modeleRelance: string
   modeleRelanceIllisible: string
+  /** Relance d'un client dont des factures d'achat n'ont pas de QR code FNE. */
+  modeleRelanceFne: string
+  /** Date à partir de laquelle la FNE est exigée pour déduire la TVA, ou null pour désactiver la règle. */
+  fneExigeeDepuis: IsoDate | null
   comptesParDefaut: ComptesParDefaut
   /** Mots retirés lors de la normalisation des noms de fournisseurs. */
   motsCourantsFournisseur: string[]

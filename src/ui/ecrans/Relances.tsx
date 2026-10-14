@@ -2,7 +2,7 @@
 // Rien ne part automatiquement : « Ouvrir WhatsApp » ouvre un lien wa.me, « Copier » copie le texte,
 // puis le collaborateur coche « envoyée » lui-même.
 import { useEffect, useState } from 'react'
-import { BellRing, Check, Copy, ImageOff, Phone, ShieldCheck } from 'lucide-react'
+import { BellRing, Check, Copy, ImageOff, Phone, QrCode, ShieldCheck } from 'lucide-react'
 import { lienVers } from '../../app/routeur'
 import { useApp } from '../../app/store'
 import { formatDateHeure, nomMois } from '../../domain/dates'
@@ -47,6 +47,10 @@ function CarteRelance({ r }: { r: RelanceAPreparer }) {
               {r.motif === 'retard' ? (
                 <Pastille ton="critique" icone={BellRing}>
                   Retard de {nomMois(r.mois)}
+                </Pastille>
+              ) : r.motif === 'fne' ? (
+                <Pastille ton="violet" icone={QrCode}>
+                  Factures sans FNE
                 </Pastille>
               ) : (
                 <Pastille ton="attention" icone={ImageOff}>
@@ -142,7 +146,7 @@ export function Relances() {
       </div>
       {relances.length === 0 ? (
         <div className="rounded-2xl border border-bord bg-surface shadow-carte">
-          <Vide icone={BellRing}>Aucune relance à préparer : pas de client en retard ni de photo illisible.</Vide>
+          <Vide icone={BellRing}>Aucune relance à préparer : pas de client en retard, de photo illisible ni de facture sans FNE.</Vide>
         </div>
       ) : (
         <ul className="grid grid-cols-1 gap-5 xl:grid-cols-2">

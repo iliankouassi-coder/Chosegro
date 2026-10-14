@@ -372,24 +372,15 @@ describe('alertesPiece : type de pièce', () => {
 })
 
 describe('alertesPiece : QR code FNE', () => {
-  it('informe quand une facture n’a pas de QR code FNE', () => {
-    const a = alertesPiece(extraction({ qrFne: 'non' }), contexte())
-    expect(a).toEqual([
-      { code: 'fne_absente', niveau: 'info', message: 'Pas de QR code de facture électronique (FNE) sur cette facture.' },
-    ])
+  const alerteFne: Alerte = { code: 'fne_absente', niveau: 'attention', message: 'Pas de QR code FNE : TVA non déductible.' }
+
+  it("reprend l'alerte FNE préparée avec l'écriture (fne.ts), à son rang", () => {
+    expect(alertesPiece(extraction({ qrFne: 'non' }), contexte({ alerteFne }))).toEqual([alerteFne])
   })
 
-  it('informe quand la présence du QR code est incertaine', () => {
-    const a = alertesPiece(extraction({ qrFne: 'incertain' }), contexte())
-    expect(a).toEqual([{ code: 'fne_incertaine', niveau: 'info', message: 'Présence du QR code FNE incertaine.' }])
-  })
-
-  it("ne dit rien pour un ticket, un reçu, ou un QR code non lu", () => {
-    const ticket = extraction({ ht: 5_000, tva: 0, ttc: 5_000, nature: 'ticket', qrFne: 'non' })
-    expect(alertesPiece(ticket, contexte())).toEqual([])
-    const recu = extraction({ ht: 5_000, tva: 0, ttc: 5_000, nature: 'recu', qrFne: 'incertain' })
-    expect(alertesPiece(recu, contexte())).toEqual([])
-    expect(alertesPiece(extraction({ qrFne: null }), contexte())).toEqual([])
+  it("ne dit rien de la FNE quand aucune alerte n'a été préparée", () => {
+    expect(alertesPiece(extraction({ qrFne: 'non' }), contexte())).toEqual([])
+    expect(alertesPiece(extraction({ qrFne: 'incertain' }), contexte({ alerteFne: null }))).toEqual([])
   })
 })
 
@@ -413,15 +404,16 @@ describe('alertesPiece : ordre du résultat', () => {
       { date: '2026-12-01', devise: 'USD', ttc: 118_002, qrFne: 'incertain' },
       { lisible: false, motifIllisible: 'photo coupée', problemes: ['Numéro de facture coupé.'] },
     )
-    const a = alertesPiece(e, contexte({ type: 'vente', emetteurEstLeClient: true }))
+    const alerteFne: Alerte = { code: 'fne_incertaine', niveau: 'attention', message: 'Présence du QR code FNE incertaine.' }
+    const a = alertesPiece(e, contexte({ type: 'vente', emetteurEstLeClient: true, alerteFne }))
     expect(codes(a)).toEqual([
       'illisible',
       'date_future',
       'devise_etrangere',
+      'fne_incertaine',
       'probleme_lecture',
       'ecart_tolere',
       'vente_emetteur_client',
-      'fne_incertaine',
     ])
     const rangs = a.map((x) => ['bloquant', 'attention', 'info'].indexOf(x.niveau))
     expect(rangs).toEqual([...rangs].sort((x, y) => x - y))
@@ -487,7 +479,8 @@ describe('niveauMaximal', () => {
 
   it("s'accorde avec alertesPiece", () => {
     expect(niveauMaximal(alertesPiece(extraction(), contexte()))).toBeNull()
-    expect(niveauMaximal(alertesPiece(extraction({ qrFne: 'non' }), contexte()))).toBe('info')
-    expect(niveauMaximal(alertesPiece(extraction({ devise: 'USD', qrFne: 'non' }), contexte()))).toBe('attention')
+    const info: Alerte = { code: 'fne_absente', niveau: 'info', message: 'Pas de QR code FNE.' }
+    expect(niveauMaximal(alertesPiece(extraction({ qrFne: 'non' }), contexte({ alerteFne: info })))).toBe('info')
+    expect(niveauMaximal(alertesPiece(extraction({ devise: 'USD', qrFne: 'non' }), contexte({ alerteFne: info })))).toBe('attention')
   })
 })

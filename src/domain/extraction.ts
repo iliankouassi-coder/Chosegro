@@ -502,6 +502,8 @@ export interface CorrectionsExtraction {
   ttc?: number
   devise?: string
   nature?: NaturePiece
+  /** Présence du QR code FNE, vérifiée par le collaborateur sur la pièce. */
+  qrFne?: PresenceQr
 }
 
 /** « 12,5 » plutôt que « 12.5 » dans un message. */
@@ -570,6 +572,12 @@ export function corrigerExtraction(e: Extraction, corrections: CorrectionsExtrac
     } else {
       corrigee.nature = saisi(nature)
     }
+  }
+
+  if (corrections.qrFne !== undefined) {
+    const qr = PRESENCES_QR.find((q) => q === corrections.qrFne)
+    if (qr === undefined) erreurs.push(`Présence du QR code FNE inconnue : « ${String(corrections.qrFne)} » (attendu : ${listeOu(PRESENCES_QR)}).`)
+    else corrigee.qrFne = saisi(qr)
   }
 
   if (erreurs.length > 0) return echec(erreurs)

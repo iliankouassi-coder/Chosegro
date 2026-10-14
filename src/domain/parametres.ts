@@ -1,6 +1,8 @@
 // Paramètres par défaut du cabinet. Tous se modifient dans l'écran Paramètres.
 import { MOTS_COURANTS_DEFAUT } from './fournisseurs'
 import { TOLERANCE_ECART_DEFAUT } from './controle'
+import { estIsoDate } from './dates'
+import { DATE_OBLIGATION_FNE_DEFAUT } from './fne'
 import type { ComptesParDefaut, Parametres } from './types'
 
 /**
@@ -31,9 +33,14 @@ export const MODELE_RELANCE_ILLISIBLE_DEFAUT =
   'Bonjour, ici {cabinet}. Nous ne parvenons pas à lire {piece} : la photo est floue ou coupée. ' +
   'Pouvez-vous renvoyer la photo {de_piece} ? Merci.'
 
+export const MODELE_RELANCE_FNE_DEFAUT =
+  "Bonjour, ici {cabinet}. Ces factures n'ont pas de QR code FNE : {pieces}. Sans facture normalisée électronique, " +
+  '{tva} de TVA ne sont pas déductibles. Pouvez-vous demander à ces fournisseurs une facture normalisée ? Merci.'
+
 /** Clés utilisables dans chaque modèle de relance. */
 export const CLES_MODELE_RELANCE = ['cabinet', 'client', 'mois', 'de_mois', 'nombre', 'recues'] as const
 export const CLES_MODELE_RELANCE_ILLISIBLE = ['cabinet', 'client', 'piece', 'de_piece'] as const
+export const CLES_MODELE_RELANCE_FNE = ['cabinet', 'client', 'pieces', 'tva'] as const
 
 const clesInconnues = (modele: string, connues: readonly string[]): string[] =>
   [...modele.matchAll(/\{([A-Za-z0-9_]+)\}/g)].map((m) => m[1] ?? '').filter((cle) => !connues.includes(cle))
@@ -46,6 +53,8 @@ export const PARAMETRES_DEFAUT: Readonly<Parametres> = {
   ratioVolumeMinimum: 0.5,
   modeleRelance: MODELE_RELANCE_DEFAUT,
   modeleRelanceIllisible: MODELE_RELANCE_ILLISIBLE_DEFAUT,
+  modeleRelanceFne: MODELE_RELANCE_FNE_DEFAUT,
+  fneExigeeDepuis: DATE_OBLIGATION_FNE_DEFAUT,
   comptesParDefaut: COMPTES_PAR_DEFAUT,
   motsCourantsFournisseur: [...MOTS_COURANTS_DEFAUT],
   collaborateur: 'Collaborateur DÉMO',
@@ -76,6 +85,15 @@ export function verifierParametres(p: Parametres): string[] {
     erreurs.push(
       `Texte de la relance « photo illisible » : {${cle}} n'est pas une clé connue (${CLES_MODELE_RELANCE_ILLISIBLE.map((c) => `{${c}}`).join(', ')}).`,
     )
+  }
+  if (p.modeleRelanceFne.trim() === '') erreurs.push('Le texte de la relance « factures sans FNE » est obligatoire.')
+  for (const cle of clesInconnues(p.modeleRelanceFne, CLES_MODELE_RELANCE_FNE)) {
+    erreurs.push(
+      `Texte de la relance « factures sans FNE » : {${cle}} n'est pas une clé connue (${CLES_MODELE_RELANCE_FNE.map((c) => `{${c}}`).join(', ')}).`,
+    )
+  }
+  if (p.fneExigeeDepuis !== null && !estIsoDate(p.fneExigeeDepuis)) {
+    erreurs.push('La date d’obligation de la FNE est invalide : une date réelle est attendue, ou rien pour désactiver la règle.')
   }
   if (p.collaborateur.trim() === '') erreurs.push('Le nom du collaborateur est obligatoire.')
   return erreurs

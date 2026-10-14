@@ -254,7 +254,7 @@ export function construireCatalogue(reference: IsoDate): CatalogueDemo {
 
   // ——— Historique : pièces déjà validées plus tôt dans le mois (et le mois dernier pour le restaurant) ———
   const [h1] = doc('H01_manutention_vridi.jpg', 'jpg', 'photo', page({
-    emetteur: P.manutention, destinataire: P.lagune, numero: 'MVS-2187', date: j(-6),
+    emetteur: P.manutention, destinataire: P.lagune, numero: 'MVS-2187', date: j(-6), qrFne: true, mentions: mentionsFne,
     lignes: [{ designation: "Manutention conteneur 20' — BL DÉMO-77102", quantite: 4, prixUnitaire: 45_000 }],
   }))
   const [h2] = doc('H02_vente_lagune_negoce.pdf', 'pdf', 'aucun', page({
@@ -265,15 +265,15 @@ export function construireCatalogue(reference: IsoDate): CatalogueDemo {
     ],
   }))
   const [h3] = doc('H03_energie_lagune.jpg', 'jpg', 'photo', page({
-    emetteur: P.energie, destinataire: P.lagune, numero: 'EL-2026-4402', date: j(-3),
+    emetteur: P.energie, destinataire: P.lagune, numero: 'EL-2026-4402', date: j(-3), qrFne: true, mentions: mentionsFne,
     lignes: [{ designation: 'Consommation électricité — entrepôt de Vridi', quantite: 1, prixUnitaire: 98_000 }],
   }))
   const [h4] = doc('H04_tissus_golfe.jpg', 'jpg', 'photo', page({
-    emetteur: P.tissus, destinataire: P.awa, numero: 'TG-1288', date: j(-5),
+    emetteur: P.tissus, destinataire: P.awa, numero: 'TG-1288', date: j(-5), qrFne: true, mentions: mentionsFne,
     lignes: [{ designation: 'Pagnes wax 6 yards', quantite: 40, prixUnitaire: 9_000 }],
   }))
   const [h5] = doc('H05_eaux_cocody.jpg', 'jpg', 'photo', page({
-    emetteur: P.eaux, destinataire: P.awa, numero: 'EC-7702', date: j(-6),
+    emetteur: P.eaux, destinataire: P.awa, numero: 'EC-7702', date: j(-6), qrFne: true, mentions: mentionsFne,
     lignes: [{ designation: 'Consommation eau — boutique de Cocody', quantite: 1, prixUnitaire: 18_500 }],
   }))
   const [h6] = doc('H06_grossiste_adjame.jpg', 'jpg', 'photo', page({
@@ -309,16 +309,16 @@ export function construireCatalogue(reference: IsoDate): CatalogueDemo {
     ],
   }))
   const [i3] = doc('I03_bureau_plus_0457.pdf', 'pdf', 'aucun', page({
-    emetteur: P.bureau, destinataire: P.awa, numero: 'BP-0457', date: j(-1),
+    emetteur: P.bureau, destinataire: P.awa, numero: 'BP-0457', date: j(-1), qrFne: true, mentions: mentionsFne,
     lignes: [
       { designation: "Cartouches d'encre", quantite: 2, prixUnitaire: 18_000 },
       { designation: 'Agrafeuse de bureau', quantite: 1, prixUnitaire: 6_500 },
     ],
   }))
   const [i4] = doc('I04_tissus_golfe_avoir.jpg', 'jpg', 'photo', page({
-    titre: 'AVOIR', emetteur: P.tissus, destinataire: P.awa, numero: 'AV-031', date: j(-4),
+    titre: 'AVOIR', emetteur: P.tissus, destinataire: P.awa, numero: 'AV-031', date: j(-4), qrFne: true,
     lignes: [{ designation: 'Retour de pagnes wax défectueux (facture TG-1288)', quantite: 5, prixUnitaire: 9_000 }],
-    mentions: ['Avoir à déduire de votre prochain règlement'],
+    mentions: [...mentionsFne, 'Avoir à déduire de votre prochain règlement'],
   }))
   const [i5] = doc('I05_vente_awa_hotel.pdf', 'pdf', 'aucun', page({
     emetteur: P.awa, destinataire: P.hotel, numero: 'AWA-2026-118', date: j(-2), qrFne: true, mentions: mentionsFne,
@@ -333,7 +333,7 @@ export function construireCatalogue(reference: IsoDate): CatalogueDemo {
     totaux: { ht: 16_949, tva: 3_051, ttc: 20_000 },
   }))
   const [i7] = doc('I07_carbu_lagune_energies.jpg', 'jpg', 'photo', page({
-    emetteur: P.carbuEnergies, destinataire: P.awa, numero: 'CLE-5521', date: j(-1),
+    emetteur: P.carbuEnergies, destinataire: P.awa, numero: 'CLE-5521', date: j(-1), qrFne: true, mentions: mentionsFne,
     lignes: [{ designation: 'Carburant véhicule de livraison — relevé mensuel', quantite: 1, prixUnitaire: 120_000 }],
   }))
   doc('I08_eaux_cocody_floue.jpg', 'jpg', 'flou', page({
@@ -342,24 +342,24 @@ export function construireCatalogue(reference: IsoDate): CatalogueDemo {
   }))
   const papier = doc('I10_papier_lagune_4_pages.pdf', 'pdf', 'scan',
     page({
-      emetteur: P.manutention, destinataire: P.lagune, numero: 'MVS-2210', date: finMoisDernier(5), pagination: 'Page 1/2',
+      emetteur: P.manutention, destinataire: P.lagune, numero: 'MVS-2210', date: finMoisDernier(5), pagination: 'Page 1/2', qrFne: true,
       lignes: [
         { designation: "Manutention conteneur 40' — BL DÉMO-77881", quantite: 3, prixUnitaire: 65_000 },
         { designation: 'Gerbage et dégerbage', quantite: 2, prixUnitaire: 22_500 },
       ],
-      totaux: null, mentions: ['Suite et totaux en page 2'],
+      totaux: null, mentions: [...mentionsFne, 'Suite et totaux en page 2'],
     }),
     page({
-      emetteur: P.manutention, destinataire: P.lagune, numero: 'MVS-2210', date: finMoisDernier(5), pagination: 'Page 2/2',
+      emetteur: P.manutention, destinataire: P.lagune, numero: 'MVS-2210', date: finMoisDernier(5), pagination: 'Page 2/2', qrFne: true,
       lignes: [], totaux: { ht: 240_000, tva: 43_200, ttc: 283_200 },
-      mentions: ['Arrêtée la présente facture à la somme de deux cent quatre-vingt-trois mille deux cents francs CFA.'],
+      mentions: [...mentionsFne, 'Arrêtée la présente facture à la somme de deux cent quatre-vingt-trois mille deux cents francs CFA.'],
     }),
     page({
-      emetteur: P.telecom, destinataire: P.lagune, numero: 'TL-90012', date: finMoisDernier(1),
+      emetteur: P.telecom, destinataire: P.lagune, numero: 'TL-90012', date: finMoisDernier(1), qrFne: true, mentions: mentionsFne,
       lignes: [{ designation: 'Forfait mobile — flotte de 8 lignes', quantite: 8, prixUnitaire: 8_000 }],
     }),
     page({
-      emetteur: P.energie, destinataire: P.lagune, numero: 'EL-2026-3302', date: finMoisDernier(3),
+      emetteur: P.energie, destinataire: P.lagune, numero: 'EL-2026-3302', date: finMoisDernier(3), qrFne: true, mentions: mentionsFne,
       lignes: [{ designation: 'Consommation électricité — bureaux de Vridi', quantite: 1, prixUnitaire: 132_000 }],
     }),
   )
@@ -372,7 +372,7 @@ export function construireCatalogue(reference: IsoDate): CatalogueDemo {
     totaux: { ht: 2_080, tva: 0, ttc: 2_080 }, mentions: ['VAT not applicable — export service'],
   }))
   const [i12] = doc('I12_garage_ecart.jpg', 'jpg', 'photo', page({
-    emetteur: P.garage, destinataire: P.lagune, numero: 'GAT-3390', date: j(-3),
+    emetteur: P.garage, destinataire: P.lagune, numero: 'GAT-3390', date: j(-3), qrFne: true, mentions: mentionsFne,
     lignes: [{ designation: 'Vidange et filtres — camionnette de livraison', quantite: 1, prixUnitaire: 85_000 }],
     totaux: { ht: 85_000, tva: 15_300, ttc: 103_000 },
   }))
@@ -406,7 +406,7 @@ export function construireCatalogue(reference: IsoDate): CatalogueDemo {
       compte: [null, 'bas'], raisonCompte: null,
     },
     { ...lectureNette(fichierPapier, p1!, 'transportsTiers', 'Prestations de manutention portuaire'), pages: [1],
-      ht: [null, 'bas'], tva: [null, 'bas'], ttc: [null, 'bas'], qrFne: ['non', 'moyen'] },
+      ht: [null, 'bas'], tva: [null, 'bas'], ttc: [null, 'bas'] },
     { ...lectureNette(fichierPapier, p2!, 'transportsTiers', 'Prestations de manutention portuaire'), pages: [2],
       fournisseur: [P.manutention.nom, 'moyen'] },
     { ...lectureNette(fichierPapier, { ...p1!, totaux: p2!.totaux }, 'transportsTiers', 'Prestations de manutention portuaire'), pages: [1, 2] },

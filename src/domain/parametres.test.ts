@@ -57,3 +57,27 @@ describe('verifierParametres', () => {
     expect(PARAMETRES_DEFAUT.modeleRelance.replace('{cabinet}', PARAMETRES_DEFAUT.nomCabinet)).not.toMatch(/cabinet le cabinet|cabinet Cabinet/i)
   })
 })
+
+describe('FNE dans les paramètres', () => {
+  it('exige la FNE depuis le 01/12/2025 par défaut, avec un texte de relance', () => {
+    expect(PARAMETRES_DEFAUT.fneExigeeDepuis).toBe('2025-12-01')
+    expect(PARAMETRES_DEFAUT.modeleRelanceFne).toContain('{pieces}')
+    expect(verifierParametres({ ...PARAMETRES_DEFAUT })).toEqual([])
+  })
+
+  it('accepte une règle désactivée (date vide)', () => {
+    expect(verifierParametres({ ...PARAMETRES_DEFAUT, fneExigeeDepuis: null })).toEqual([])
+  })
+
+  it('refuse une date impossible', () => {
+    expect(verifierParametres({ ...PARAMETRES_DEFAUT, fneExigeeDepuis: '2025-13-01' })).toEqual([
+      'La date d’obligation de la FNE est invalide : une date réelle est attendue, ou rien pour désactiver la règle.',
+    ])
+  })
+
+  it('refuse une clé inconnue dans le texte de la relance FNE', () => {
+    expect(verifierParametres({ ...PARAMETRES_DEFAUT, modeleRelanceFne: 'Bonjour {inconnue}' })).toEqual([
+      "Texte de la relance « factures sans FNE » : {inconnue} n'est pas une clé connue ({cabinet}, {client}, {pieces}, {tva}).",
+    ])
+  })
+})

@@ -3,7 +3,8 @@
 import { useState, type ReactNode } from 'react'
 import { BookMarked, Bot, Building2, CalendarDays, CircleCheck, MessageSquareText, RotateCcw, TriangleAlert, Upload, Wallet } from 'lucide-react'
 import { useApp } from '../../app/store'
-import { CLES_MODELE_RELANCE, CLES_MODELE_RELANCE_ILLISIBLE, PARAMETRES_DEFAUT } from '../../domain/parametres'
+import { CLES_MODELE_RELANCE, CLES_MODELE_RELANCE_FNE, CLES_MODELE_RELANCE_ILLISIBLE, PARAMETRES_DEFAUT } from '../../domain/parametres'
+import { formatDate, lireDate } from '../../domain/dates'
 import { verifierCompteImputable } from '../../domain/plan'
 import type { ComptesParDefaut, Parametres as TypeParametres } from '../../domain/types'
 import { BadgeDemo, Bouton, Carte, classesBouton, Encart, EnTetePage, Erreur, Raison } from '../composants'
@@ -25,6 +26,41 @@ function Champ({ libelle, aide, children }: { libelle: ReactNode; aide?: ReactNo
       {children}
       {aide && <Raison>{aide}</Raison>}
     </label>
+  )
+}
+
+/**
+ * Date d'obligation de la FNE, saisie en JJ/MM/AAAA. Vide : la règle est désactivée et la TVA d'un achat
+ * sans QR code FNE reste déductible. Une saisie incomplète n'est pas enregistrée : la valeur précédente reste.
+ */
+function ChampDateFne({ valeur, surChangement }: { valeur: string | null; surChangement: (iso: string | null) => void }) {
+  const [texte, setTexte] = useState(valeur ? formatDate(valeur) : '')
+  const invalide = texte.trim() !== '' && lireDate(texte) === null
+  return (
+    <Champ
+      libelle="FNE exigée pour les factures datées à partir du"
+      aide={
+        <>
+          Sans QR code FNE, la TVA d’un achat n’est pas déductible : elle est ajoutée à la charge. 01/12/2025 pour le régime réel (DGI),
+          à confirmer par un expert-comptable. Laissez vide pour désactiver la règle.
+        </>
+      }
+    >
+      <input
+        className={`${CHAMP} chiffres !w-44 ${invalide ? '!border-critique' : ''}`}
+        aria-invalid={invalide}
+        placeholder="JJ/MM/AAAA"
+        value={texte}
+        onChange={(e) => {
+          setTexte(e.target.value)
+          if (e.target.value.trim() === '') surChangement(null)
+          else {
+            const iso = lireDate(e.target.value)
+            if (iso) surChangement(iso)
+          }
+        }}
+      />
+    </Champ>
   )
 }
 
@@ -132,6 +168,7 @@ export function Parametres() {
                   />
                 </Champ>
               </div>
+              <ChampDateFne valeur={p.fneExigeeDepuis} surChangement={(fneExigeeDepuis) => setP({ ...p, fneExigeeDepuis })} />
               <Champ
                 libelle="Volume minimal attendu (%)"
                 aide={
@@ -162,6 +199,9 @@ export function Parametres() {
                   value={p.modeleRelanceIllisible}
                   onChange={(e) => setP({ ...p, modeleRelanceIllisible: e.target.value })}
                 />
+              </Champ>
+              <Champ libelle="Factures sans QR code FNE" aide={<>Clés : {CLES_MODELE_RELANCE_FNE.map((c) => `{${c}}`).join(', ')}.</>}>
+                <textarea rows={4} className={CHAMP} value={p.modeleRelanceFne} onChange={(e) => setP({ ...p, modeleRelanceFne: e.target.value })} />
               </Champ>
             </div>
           </Carte>

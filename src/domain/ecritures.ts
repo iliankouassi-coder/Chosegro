@@ -3,6 +3,7 @@
 // des règles apprises et des corrections du collaborateur. Rien n'est validé sans action humaine.
 import { montantsRetenus, type MontantsRetenus } from './controle'
 import { dateAbidjan, estIsoDate, formatJourMois } from './dates'
+import { analyserFne, type AnalyseFne } from './fne'
 import { normaliserFournisseur, resoudreFournisseur } from './fournisseurs'
 import { formatFcfa, formatMontant, somme } from './montants'
 import { verifierCompteImputable, type PlanComptable } from './plan'
@@ -163,6 +164,8 @@ export interface EntreeProposition {
   numeroPieceRepli: string
   /** Corrections du collaborateur sur l'écran de validation. */
   corrections?: { compteChargeOuProduit?: string; date?: IsoDate }
+  /** Date à partir de laquelle la FNE est exigée (paramètre du cabinet). Absente ou null : règle désactivée. */
+  exigenceFne?: IsoDate | null
 }
 
 export interface PropositionEcriture {
@@ -176,6 +179,8 @@ export interface PropositionEcriture {
   compteInitial: string | null
   compteCorrige: boolean
   montants: MontantsRetenus
+  /** Facture normalisée électronique : présente, absente (TVA non déductible), incertaine ou non exigée. */
+  fne: AnalyseFne
   bloquants: string[]
   avertissements: string[]
 }
@@ -265,9 +270,17 @@ export function proposerEcriture(entree: EntreeProposition): PropositionEcriture
   const compteTiers = regle !== null && regle.compteChargeOuProduit === compteChargeOuProduit ? regle.compteTiers : tiersParDefaut
   const compteTva =
     sens === 'vente' ? comptesParDefaut.tvaFacturee : immobilisation ? comptesParDefaut.tvaRecuperableImmobilisations : comptesParDefaut.tvaRecuperable
+
+  // Sans QR code FNE, la TVA d'un achat n'est pas déductible : elle est ajoutée à la charge (fne.ts).
+  const dateRetenue = entree.corrections?.date ?? e.date.valeur
+  const fne = analyserFne({ ...e, date: { ...e.date, valeur: dateRetenue } }, { sens, exigeeDepuis: entree.exigenceFne ?? null })
+  const tvaIntegree = sens === 'achat' && fne.tvaNonDeductible > 0
+
   if (immobilisation) {
     avertissements.push(
-      `Achat d'immobilisation (compte ${compteChargeOuProduit}) : TVA sur ${compteTva} et fournisseur d'investissements ${compteTiers}.`,
+      tvaIntegree
+        ? `Achat d'immobilisation (compte ${compteChargeOuProduit}) : fournisseur d'investissements ${compteTiers}.`
+        : `Achat d'immobilisation (compte ${compteChargeOuProduit}) : TVA sur ${compteTva} et fournisseur d'investissements ${compteTiers}.`,
     )
   }
 
@@ -305,11 +318,16 @@ export function proposerEcriture(entree: EntreeProposition): PropositionEcriture
     debit,
     credit,
   })
-  const avecTva = tva !== 0 || montants.tva === null
+  const avecTva = (tva !== 0 || montants.tva === null) && !tvaIntegree
+  if (tvaIntegree) {
+    avertissements.push(
+      `TVA de ${formatFcfa(tva)} non déductible (pas de QR code FNE) : ajoutée au compte ${compteChargeOuProduit ?? `${nature} à choisir`}. À confirmer par un expert-comptable.`,
+    )
+  }
   let lignes: LigneEcriture[] =
     sens === 'achat'
       ? [
-          ligne(compteChargeOuProduit, ht, 0),
+          ligne(compteChargeOuProduit, tvaIntegree ? ht + tva : ht, 0),
           ...(avecTva ? [ligne(compteTva, tva, 0)] : []),
           ligne(compteTiers, 0, ttc),
         ]
@@ -348,6 +366,7 @@ export function proposerEcriture(entree: EntreeProposition): PropositionEcriture
     compteInitial,
     compteCorrige,
     montants,
+    fne,
     bloquants: [...new Set(bloquants)],
     avertissements: [...new Set(avertissements)],
   }

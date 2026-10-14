@@ -1,11 +1,13 @@
 // Relances des clients : le message est préparé, puis ouvert dans WhatsApp (lien wa.me) ou copié.
 // Rien n'est envoyé d'ici : le collaborateur envoie lui-même, puis il coche « envoyée ».
 import { dateAbidjan, deMois, estIsoDate, formatDate, nomMois } from './dates'
+import { formatFcfa } from './montants'
 import { echec, succes } from './types'
 import type {
   Client,
   IsoDateHeure,
   IsoMois,
+  MotifRelance,
   NaturePiece,
   Piece,
   Relance,
@@ -123,6 +125,34 @@ export function redigerRelanceIllisible(p: {
   })
 }
 
+/** « A », « A et B », « A, B et C ». */
+const listeEt = (elements: readonly string[]): string =>
+  elements.length <= 1 ? (elements[0] ?? '') : `${elements.slice(0, -1).join(', ')} et ${elements[elements.length - 1] ?? ''}`
+
+/**
+ * Message pour des pièces d'achat sans QR code FNE : la TVA n'est pas déductible tant que le fournisseur
+ * n'a pas remis une facture normalisée. Clés : {cabinet}, {client}, {pieces} et {tva} (total en FCFA).
+ */
+export function redigerRelanceFne(p: {
+  modele: string
+  nomCabinet: string
+  client: Client
+  pieces: readonly Piece[]
+  tva: number
+}): string {
+  for (const piece of p.pieces) {
+    if (piece.clientId !== p.client.id) {
+      throw new Error(`La pièce « ${piece.id} » n'appartient pas au client « ${p.client.raisonSociale} ».`)
+    }
+  }
+  return remplirModele(p.modele, {
+    cabinet: p.nomCabinet.trim(),
+    client: p.client.raisonSociale.trim(),
+    pieces: listeEt(p.pieces.map((piece) => designationPiece(piece).piece)),
+    tva: formatFcfa(p.tva),
+  })
+}
+
 /** Espaces (insécables comprises), points, parenthèses et tirets de toutes sortes. */
 const SEPARATEURS_TELEPHONE = /[\s.()\-‐-―\u2212]/g
 
@@ -211,7 +241,7 @@ export function relanceDuMois(
   relances: readonly Relance[],
   clientId: string,
   mois: IsoMois,
-  motif: 'retard' | 'illisible' = 'retard',
+  motif: MotifRelance = 'retard',
 ): Relance | null {
   let retenue: Relance | null = null
   for (const r of relances) {

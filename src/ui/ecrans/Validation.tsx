@@ -11,7 +11,7 @@ import { LIBELLES_STATUT, pieceSuivante } from '../../domain/pieces'
 import { fileDeValidation, type LignePiece } from '../../domain/tableaux'
 import { libelleCompte, rechercherComptes } from '../../domain/plan'
 import { formatMontant, lireMontant } from '../../domain/montants'
-import type { ChampLu, NaturePiece, Piece } from '../../domain/types'
+import type { ChampLu, NaturePiece, Piece, PresenceQr } from '../../domain/types'
 import { preparerValidation, type Corrections } from '../../domain/validation'
 import { ApercuPiece } from '../ApercuPiece'
 import { CHAMP } from '../styles'
@@ -43,9 +43,10 @@ interface Saisie {
   ttc: string
   fournisseur: string
   devise: string
+  qrFne: '' | PresenceQr
 }
 
-const SAISIE_VIDE: Saisie = { nature: '', compte: '', date: '', ht: '', tva: '', ttc: '', fournisseur: '', devise: '' }
+const SAISIE_VIDE: Saisie = { nature: '', compte: '', date: '', ht: '', tva: '', ttc: '', fournisseur: '', devise: '', qrFne: '' }
 
 const LIBELLES_NATURE: Record<NaturePiece, string> = { facture: 'Facture', avoir: 'Avoir', ticket: 'Ticket', recu: 'Reçu', autre: 'Autre' }
 
@@ -69,6 +70,7 @@ function versCorrections(s: Saisie): { corrections: Corrections; erreurs: string
   if (s.fournisseur.trim() !== '') champs.fournisseur = s.fournisseur.trim()
   if (s.devise.trim() !== '') champs.devise = s.devise.trim().toUpperCase() === 'FCFA' ? 'XOF' : s.devise.trim().toUpperCase()
   if (s.nature !== '') champs.nature = s.nature
+  if (s.qrFne !== '') champs.qrFne = s.qrFne
   return {
     corrections: {
       champs,
@@ -199,6 +201,10 @@ function FileValidation({ lignes, courante }: { lignes: LignePiece[]; courante: 
                   <span className="text-right text-xs">
                     {l.confiance === 'moyen' || l.confiance === 'bas' ? (
                       <MarqueConfiance confiance={l.confiance} />
+                    ) : l.sansFne ? (
+                      <span className="font-semibold text-attention" title="Pas de QR code FNE : TVA non déductible">
+                        sans FNE
+                      </span>
                     ) : (
                       <span className="chiffres text-texte-3">{formatDateHeure(l.piece.recueLe).slice(-5)}</span>
                     )}
@@ -635,6 +641,19 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                             {LIBELLES_NATURE[n]}
                           </option>
                         ))}
+                      </select>
+                    </label>
+                    <label className="grid grid-cols-1 gap-1.5 text-sm">
+                      <span className="font-medium text-texte">QR code de facture normalisée (FNE) sur la pièce</span>
+                      <select
+                        className={champSaisie}
+                        value={saisie.qrFne}
+                        onChange={(e) => setSaisie({ ...saisie, qrFne: e.target.value as Saisie['qrFne'] })}
+                      >
+                        <option value="">{`Tel que lu : ${p.extraction.qrFne.valeur ? LIBELLES_QR[p.extraction.qrFne.valeur] : 'non lu'}`}</option>
+                        <option value="oui">Oui, il y a un QR code FNE</option>
+                        <option value="non">Non, pas de QR code FNE</option>
+                        <option value="incertain">Incertain</option>
                       </select>
                     </label>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

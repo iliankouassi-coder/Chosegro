@@ -1,60 +1,184 @@
 // Petits composants d'affichage partagés. Ils ne calculent rien : ils affichent ce que le domaine a préparé.
-// Identité « surligneur » : page blanche, encre noire, un trait jaune sur ce qui demande l'œil, états toujours libellés.
+// Identité « claire et accueillante » : cartes blanches, pastilles colorées toujours libellées, icônes lucide.
 import type { ReactNode } from 'react'
+import {
+  Ban,
+  CircleAlert,
+  CircleCheck,
+  Clock,
+  Copy,
+  FileText,
+  Info,
+  Mail,
+  MessageCircle,
+  OctagonAlert,
+  TriangleAlert,
+  type LucideIcon,
+} from 'lucide-react'
 import { formatFcfa, formatMontant } from '../domain/montants'
-import type { Alerte, Canal, Confiance } from '../domain/types'
+import { LIBELLES_CANAL, LIBELLES_STATUT } from '../domain/pieces'
+import { LIBELLES_STATUT_RELANCE } from '../domain/relances'
+import type { Alerte, Canal, Confiance, StatutPiece, StatutRelance } from '../domain/types'
 
-/** Mention « fictif » discrète : la mention DÉMO principale est portée une seule fois par la coquille. */
+// ——— Tons ———
+
+export type Ton = 'bon' | 'attention' | 'critique' | 'info' | 'neutre' | 'marque' | 'violet'
+
+const TONS_PASTILLE: Record<Ton, string> = {
+  bon: 'bg-bon-pale text-bon',
+  attention: 'bg-attention-pale text-attention',
+  critique: 'bg-critique-pale text-critique',
+  info: 'bg-info-pale text-info',
+  neutre: 'bg-surface-2 text-texte-2 ring-1 ring-inset ring-bord',
+  marque: 'bg-marque-pale text-marque-fonce',
+  violet: 'bg-violet-pale text-violet',
+}
+
+/** Pastille d'état : un libellé court, sa couleur, et une icône si elle aide à lire. */
+export function Pastille({ ton, icone: Icone, children, title }: { ton: Ton; icone?: LucideIcon; children: ReactNode; title?: string }) {
+  return (
+    <span
+      title={title}
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium leading-5 ${TONS_PASTILLE[ton]}`}
+    >
+      {Icone && <Icone className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} aria-hidden />}
+      {children}
+    </span>
+  )
+}
+
+/** Mention « fictif » : la mention DÉMO principale est portée par la barre latérale. */
 export function BadgeDemo({ texte = 'DÉMO' }: { texte?: string }) {
   return (
-    <span className="inline-flex items-center rounded-[4px] border border-trait-fort px-1.5 text-[11px] font-medium leading-5 text-texte-2">
+    <span className="inline-flex items-center whitespace-nowrap rounded-md bg-violet-pale px-1.5 text-[11px] font-semibold leading-5 text-violet">
       {texte}
     </span>
   )
 }
 
-const CONFIANCE: Record<Exclude<Confiance, 'haut'>, { texte: string; classe: string }> = {
-  moyen: { texte: 'à vérifier', classe: 'fluo text-texte' },
-  bas: { texte: 'douteux', classe: 'fluo text-critique' },
+// ——— Confiance, statuts ———
+
+const CONFIANCE: Record<Confiance, { texte: string; ton: Ton; icone: LucideIcon; titre: string }> = {
+  haut: { texte: 'Fiable', ton: 'bon', icone: CircleCheck, titre: 'Confiance haute' },
+  moyen: { texte: 'À vérifier', ton: 'attention', icone: TriangleAlert, titre: 'Confiance moyenne' },
+  bas: { texte: 'Douteux', ton: 'critique', icone: CircleAlert, titre: 'Confiance basse' },
 }
 
-/** La confiance n'est signalée que lorsqu'elle n'est pas haute : une lecture sûre n'a pas besoin d'étiquette. */
+/** Le niveau de confiance d'une lecture, en pastille : fiable, à vérifier ou douteux. */
 export function PastilleConfiance({ confiance }: { confiance: Confiance | null }) {
   if (confiance === null) return <span className="text-xs text-texte-3">non lu</span>
-  if (confiance === 'haut') return <span className="sr-only">confiance haute</span>
   const c = CONFIANCE[confiance]
   return (
-    <span className={`whitespace-nowrap text-xs font-semibold ${c.classe}`} title={`Confiance ${confiance === 'moyen' ? 'moyenne' : 'basse'}`}>
+    <Pastille ton={c.ton} icone={c.icone} title={c.titre}>
       {c.texte}
+    </Pastille>
+  )
+}
+
+/** Variante discrète, à côté d'un champ lu : une icône seule si la lecture est sûre, un mot sinon. */
+export function MarqueConfiance({ confiance }: { confiance: Confiance }) {
+  const c = CONFIANCE[confiance]
+  if (confiance === 'haut')
+    return (
+      <span title={c.titre} className="inline-flex text-bon">
+        <c.icone className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden />
+        <span className="sr-only">{c.titre}</span>
+      </span>
+    )
+  return (
+    <span title={c.titre} className={`inline-flex items-center gap-1 text-xs font-semibold ${confiance === 'bas' ? 'text-critique' : 'text-attention'}`}>
+      <c.icone className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden />
+      {c.texte.toLowerCase()}
     </span>
   )
 }
 
+const STATUTS_PIECE: Record<StatutPiece, { ton: Ton; icone: LucideIcon }> = {
+  a_lire: { ton: 'neutre', icone: Clock },
+  a_valider: { ton: 'info', icone: FileText },
+  validee: { ton: 'bon', icone: CircleCheck },
+  rejetee: { ton: 'critique', icone: Ban },
+  doublon: { ton: 'neutre', icone: Copy },
+}
+
+export function PastilleStatutPiece({ statut }: { statut: StatutPiece }) {
+  const s = STATUTS_PIECE[statut]
+  return (
+    <Pastille ton={s.ton} icone={s.icone}>
+      {LIBELLES_STATUT[statut]}
+    </Pastille>
+  )
+}
+
+const STATUTS_RELANCE: Record<StatutRelance, Ton> = { a_faire: 'attention', preparee: 'info', envoyee_main: 'bon' }
+
+/** État de la relance du mois. `neutre` : le client est à jour, l'état est donné sans couleur d'alerte. */
+export function PastilleRelance({ statut, suffixe = '', neutre = false }: { statut: StatutRelance; suffixe?: string; neutre?: boolean }) {
+  return (
+    <Pastille ton={neutre && statut !== 'envoyee_main' ? 'neutre' : STATUTS_RELANCE[statut]} icone={statut === 'envoyee_main' ? CircleCheck : statut === 'a_faire' ? Clock : MessageCircle}>
+      {LIBELLES_STATUT_RELANCE[statut]}
+      {suffixe}
+    </Pastille>
+  )
+}
+
+// ——— Montants ———
+
 export function Montant({ valeur, devise }: { valeur: number | null; devise?: string | null }) {
   if (valeur === null) return <span className="text-texte-3">non lu</span>
-  if (devise && devise !== 'XOF') return <span className="chiffres">{`${formatMontant(valeur)} ${devise}`}</span>
+  if (devise && devise !== 'XOF') return <span className="chiffres">{`${formatMontant(valeur)} ${devise}`}</span>
   return <span className="chiffres">{formatFcfa(valeur)}</span>
 }
 
-const ALERTE: Record<Alerte['niveau'], { classe: string; signe: string; libelle: string }> = {
-  bloquant: { classe: 'border-critique text-critique', signe: '■', libelle: 'Bloquant' },
-  attention: { classe: 'border-attention text-attention', signe: '▲', libelle: 'À vérifier' },
-  info: { classe: 'border-trait-fort text-texte-2', signe: 'i', libelle: 'Info' },
+// ——— Encarts ———
+
+const ENCARTS: Record<'bon' | 'attention' | 'critique' | 'info', { classe: string; icone: LucideIcon; couleurIcone: string }> = {
+  bon: { classe: 'bg-bon-pale/70 border-bon/20', icone: CircleCheck, couleurIcone: 'text-bon' },
+  attention: { classe: 'bg-attention-pale/70 border-attention-vif/30', icone: TriangleAlert, couleurIcone: 'text-attention' },
+  critique: { classe: 'bg-critique-pale/80 border-critique/20', icone: OctagonAlert, couleurIcone: 'text-critique' },
+  info: { classe: 'bg-info-pale/70 border-info/15', icone: Info, couleurIcone: 'text-info' },
+}
+
+/** Encart coloré : une icône, puis le message. Sert aux contrôles, alertes, raisons et erreurs. */
+export function Encart({
+  ton,
+  icone,
+  children,
+  className = '',
+}: {
+  ton: keyof typeof ENCARTS
+  icone?: LucideIcon
+  children: ReactNode
+  className?: string
+}) {
+  const e = ENCARTS[ton]
+  const Icone = icone ?? e.icone
+  return (
+    <div className={`flex items-start gap-2.5 rounded-xl border px-3.5 py-2.5 text-sm leading-relaxed text-texte ${e.classe} ${className}`}>
+      <Icone className={`mt-[3px] h-4 w-4 shrink-0 ${e.couleurIcone}`} strokeWidth={2.25} aria-hidden />
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  )
+}
+
+const ALERTE: Record<Alerte['niveau'], { ton: 'critique' | 'attention' | 'info'; libelle: string }> = {
+  bloquant: { ton: 'critique', libelle: 'Bloquant' },
+  attention: { ton: 'attention', libelle: 'À vérifier' },
+  info: { ton: 'info', libelle: 'Info' },
 }
 
 export function ListeAlertes({ alertes }: { alertes: readonly Alerte[] }) {
   if (alertes.length === 0) return null
   return (
-    <ul className="space-y-1.5">
+    <ul className="grid gap-2">
       {alertes.map((a, i) => {
         const s = ALERTE[a.niveau]
         return (
-          <li key={`${a.code}-${i}`} className={`border-l-2 pl-3 text-sm ${s.classe}`}>
-            <span className="font-semibold">
-              <span aria-hidden>{s.signe} </span>
-              {s.libelle} :{' '}
-            </span>
-            <span className="text-texte">{a.message}</span>
+          <li key={`${a.code}-${i}`}>
+            <Encart ton={s.ton}>
+              <span className="font-semibold">{s.libelle} : </span>
+              {a.message}
+            </Encart>
           </li>
         )
       })}
@@ -62,73 +186,147 @@ export function ListeAlertes({ alertes }: { alertes: readonly Alerte[] }) {
   )
 }
 
-/** Une section : titre, filet encre dessous, contenu. Pas de boîte : l'espace et le filet suffisent. */
-export function Carte({
+export function Erreur({ children }: { children: ReactNode }) {
+  return <Encart ton="critique">{children}</Encart>
+}
+
+// ——— Mise en page ———
+
+/** Titre de l'écran, sa phrase d'explication et ses actions. */
+export function EnTetePage({
   titre,
-  action,
-  children,
-  className = '',
+  description,
+  actions,
+  avant,
 }: {
   titre: ReactNode
-  action?: ReactNode
-  children: ReactNode
-  className?: string
+  description?: ReactNode
+  actions?: ReactNode
+  avant?: ReactNode
 }) {
   return (
-    <section className={className}>
-      <header className="flex min-h-9 flex-wrap items-end justify-between gap-3 border-b border-encre pb-2">
-        <h2 className="text-[17px] font-semibold tracking-[-0.01em]">{titre}</h2>
-        {action}
-      </header>
-      <div className="pt-4">{children}</div>
+    <header className="mb-7 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+      <div className="min-w-0">
+        {avant}
+        <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-texte">{titre}</h1>
+        {description && <p className="mt-1.5 max-w-[70ch] text-[15px] leading-relaxed text-texte-2">{description}</p>}
+      </div>
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </header>
+  )
+}
+
+/** Une carte blanche : titre (avec icône), action à droite, contenu. */
+export function Carte({
+  titre,
+  icone: Icone,
+  action,
+  sousTitre,
+  children,
+  className = '',
+  plein = false,
+  id,
+}: {
+  titre?: ReactNode
+  icone?: LucideIcon
+  action?: ReactNode
+  sousTitre?: ReactNode
+  children: ReactNode
+  className?: string
+  /** Contenu collé aux bords (tableaux, listes) : pas de marge intérieure. */
+  plein?: boolean
+  id?: string
+}) {
+  return (
+    <section id={id} className={`min-w-0 rounded-2xl border border-bord bg-surface shadow-carte ${className}`}>
+      {titre && (
+        <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 pb-3 pt-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            {Icone && (
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-marque-pale text-marque-fonce">
+                <Icone className="h-[17px] w-[17px]" strokeWidth={2} aria-hidden />
+              </span>
+            )}
+            <div className="min-w-0">
+              <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-texte">{titre}</h2>
+              {sousTitre && <p className="text-[13px] text-texte-2">{sousTitre}</p>}
+            </div>
+          </div>
+          {action}
+        </header>
+      )}
+      <div className={plein ? '' : `px-5 pb-5 ${titre ? '' : 'pt-5'}`}>{children}</div>
     </section>
   )
 }
 
-type VarianteBouton = 'principal' | 'secondaire' | 'danger' | 'discret'
+// ——— Boutons ———
+
+type VarianteBouton = 'principal' | 'secondaire' | 'danger' | 'discret' | 'whatsapp'
+type TailleBouton = 'petit' | 'normal' | 'grand'
 
 const STYLES_BOUTON: Record<VarianteBouton, string> = {
-  principal: 'bg-encre text-white hover:bg-black disabled:bg-encre/35',
-  secondaire:
-    'bg-feuille text-texte border border-trait-fort hover:border-encre hover:text-encre disabled:text-texte-3 disabled:hover:border-trait-fort',
-  danger: 'bg-feuille text-critique border border-critique/40 hover:bg-critique-pale disabled:opacity-40',
-  discret: 'text-texte-2 hover:bg-encre-pale hover:text-encre disabled:text-texte-3',
+  principal: 'bg-marque text-white shadow-[0_1px_2px_rgb(10_111_80/0.35)] hover:bg-marque-fonce disabled:bg-marque/40 disabled:shadow-none',
+  secondaire: 'bg-surface text-texte border border-bord-fort shadow-[0_1px_1px_rgb(15_38_33/0.04)] hover:bg-surface-2 hover:border-texte-3 disabled:text-texte-3 disabled:hover:bg-surface',
+  danger: 'bg-surface text-critique border border-critique/30 hover:bg-critique-pale disabled:opacity-40',
+  discret: 'text-texte-2 hover:bg-texte/[0.05] hover:text-texte disabled:text-texte-3 disabled:hover:bg-transparent',
+  whatsapp: 'bg-whatsapp text-white shadow-[0_1px_2px_rgb(23_138_74/0.35)] hover:bg-[#127a40]',
+}
+
+const TAILLES_BOUTON: Record<TailleBouton, string> = {
+  petit: 'gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px]',
+  normal: 'gap-2 rounded-[10px] px-4 py-2.5 text-sm',
+  grand: 'gap-2.5 rounded-xl px-5 py-3 text-[15px]',
+}
+
+/** Les classes d'un bouton, aussi pour un lien qui en a l'allure. */
+export function classesBouton(variante: VarianteBouton = 'secondaire', taille: TailleBouton = 'normal'): string {
+  return `inline-flex items-center justify-center font-semibold transition-colors disabled:cursor-not-allowed ${TAILLES_BOUTON[taille]} ${STYLES_BOUTON[variante]}`
 }
 
 export function Bouton({
   variante = 'secondaire',
+  taille = 'normal',
   className = '',
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variante?: VarianteBouton }) {
-  return (
-    <button
-      type="button"
-      className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed ${STYLES_BOUTON[variante]} ${className}`}
-      {...props}
-    />
-  )
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variante?: VarianteBouton; taille?: TailleBouton }) {
+  return <button type="button" className={`${classesBouton(variante, taille)} ${className}`} {...props} />
 }
 
 /** Touche clavier affichée dans un bouton ou une aide. */
 export function Touche({ children, sombre = false }: { children: ReactNode; sombre?: boolean }) {
   return (
-    <kbd className={`rounded-[4px] px-1.5 text-[11px] font-medium leading-5 ${sombre ? 'bg-white/15 text-white/85' : 'bg-encre-pale text-texte-2'}`}>
+    <kbd
+      className={`inline-flex min-w-[1.5em] items-center justify-center rounded-md px-1.5 font-sans text-[11px] font-semibold leading-5 ${
+        sombre ? 'bg-white/20 text-white' : 'border border-bord bg-surface text-texte-2 shadow-[0_1px_0_var(--color-bord)]'
+      }`}
+    >
       {children}
     </kbd>
   )
 }
 
-export function Vide({ children }: { children: ReactNode }) {
-  return <p className="py-3 text-sm text-texte-2">{children}</p>
+// ——— Textes ———
+
+/** État vide : une icône, une phrase, et l'action qui permet d'en sortir. */
+export function Vide({ children, icone: Icone, action }: { children: ReactNode; icone?: LucideIcon; action?: ReactNode }) {
+  if (!Icone) return <p className="py-3 text-sm text-texte-2">{children}</p>
+  return (
+    <div className="flex flex-col items-center px-6 py-10 text-center">
+      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-marque-pale text-marque">
+        <Icone className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+      </span>
+      <p className="mt-3 max-w-[46ch] text-sm leading-relaxed text-texte-2">{children}</p>
+      {action && <div className="mt-4">{action}</div>}
+    </div>
+  )
 }
 
 export function Raison({ children }: { children: ReactNode }) {
-  return <p className="text-xs leading-snug text-texte-2">{children}</p>
+  return <p className="text-[13px] leading-snug text-texte-2">{children}</p>
 }
 
-export function Erreur({ children }: { children: ReactNode }) {
-  return <p className="border-l-2 border-critique bg-critique-pale px-3 py-2 text-sm text-critique">{children}</p>
-}
+// ——— Jauge, canal, avatar ———
 
 /** Jauge « reçu / attendu » : le remplissage porte l'état, la piste est la même teinte diluée. */
 export function Jauge({ valeur, max, largeur = 'w-28' }: { valeur: number; max: number; largeur?: string }) {
@@ -137,51 +335,78 @@ export function Jauge({ valeur, max, largeur = 'w-28' }: { valeur: number; max: 
     ratio >= 1
       ? { plein: 'bg-bon', piste: 'bg-bon-pale' }
       : ratio >= 0.5
-        ? { plein: 'bg-attention', piste: 'bg-attention-pale' }
+        ? { plein: 'bg-attention-vif', piste: 'bg-attention-pale' }
         : { plein: 'bg-critique', piste: 'bg-critique-pale' }
   return (
     <span
-      className={`relative inline-block h-1.5 ${largeur} overflow-hidden rounded-full align-middle ${etat.piste}`}
+      className={`relative inline-block h-2 ${largeur} overflow-hidden rounded-full align-middle ${etat.piste}`}
       role="meter"
       aria-valuenow={valeur}
       aria-valuemin={0}
       aria-valuemax={max}
       aria-label={`${valeur} sur ${max}`}
     >
-      <span className={`absolute inset-y-0 left-0 rounded-full ${etat.plein}`} style={{ width: `${Math.min(100, Math.round(ratio * 100))}%` }} />
+      <span
+        className={`absolute inset-y-0 left-0 rounded-full ${etat.plein}`}
+        style={{ width: `${Math.max(valeur > 0 ? 6 : 0, Math.min(100, Math.round(ratio * 100)))}%` }}
+      />
     </span>
   )
 }
 
-/** Pictogramme du canal d'arrivée (dessins génériques, sans logo de marque), toujours suivi de son libellé. */
+const ICONES_CANAL: Record<Canal, LucideIcon> = { whatsapp: MessageCircle, email: Mail, papier: FileText }
+const TONS_CANAL: Record<Canal, string> = {
+  whatsapp: 'bg-whatsapp-pale text-whatsapp',
+  email: 'bg-info-pale text-info',
+  papier: 'bg-violet-pale text-violet',
+}
+
+/** Pictogramme du canal d'arrivée (dessins génériques, sans logo de marque). */
 export function IconeCanal({ canal, className = 'h-4 w-4' }: { canal: Canal; className?: string }) {
-  const commun = {
-    className,
-    viewBox: '0 0 20 20',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.6,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-    'aria-hidden': true,
-  }
-  if (canal === 'whatsapp')
-    return (
-      <svg {...commun}>
-        <path d="M4 15.5 4.8 12.6A6.5 6.5 0 1 1 7.4 15l-3.4.5Z" />
-      </svg>
-    )
-  if (canal === 'email')
-    return (
-      <svg {...commun}>
-        <rect x="2.75" y="4.75" width="14.5" height="10.5" rx="1.5" />
-        <path d="m3.5 5.5 6.5 5 6.5-5" />
-      </svg>
-    )
+  const Icone = ICONES_CANAL[canal]
+  return <Icone className={className} strokeWidth={2} aria-hidden />
+}
+
+/** Le canal en pastille colorée : icône et libellé. */
+export function PuceCanal({ canal }: { canal: Canal }) {
   return (
-    <svg {...commun}>
-      <path d="M5.25 2.75h6.5l3 3v11.5h-9.5Z" />
-      <path d="M11.75 2.75v3h3M7.75 9.5h4.5M7.75 12.5h4.5" />
-    </svg>
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium leading-5 ${TONS_CANAL[canal]}`}>
+      <IconeCanal canal={canal} className="h-3.5 w-3.5" />
+      {LIBELLES_CANAL[canal]}
+    </span>
+  )
+}
+
+/** Le canal en tuile carrée colorée, pour les listes. */
+export function TuileCanal({ canal }: { canal: Canal }) {
+  return (
+    <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${TONS_CANAL[canal]}`} title={LIBELLES_CANAL[canal]}>
+      <IconeCanal canal={canal} className="h-[18px] w-[18px]" />
+    </span>
+  )
+}
+
+const TEINTES_AVATAR = [
+  'bg-marque-pale text-marque-fonce',
+  'bg-info-pale text-info',
+  'bg-violet-pale text-violet',
+  'bg-attention-pale text-attention',
+  'bg-critique-pale text-critique',
+]
+
+/** Initiales sur une pastille de couleur, toujours la même pour un même nom. */
+export function Avatar({ nom, taille = 'normal' }: { nom: string; taille?: 'petit' | 'normal' | 'grand' }) {
+  const mots = nom
+    .replace(/\b(SARL|SA|SAS|SUARL|CI|Le|La|Les|Du|De|Des)\b/g, '')
+    .split(/\s+/)
+    .filter(Boolean)
+  const initiales = (mots.length > 1 ? `${mots[0]![0]}${mots[1]![0]}` : (mots[0] ?? nom).slice(0, 2)).toUpperCase()
+  let code = 0
+  for (const c of nom) code = (code * 31 + c.charCodeAt(0)) >>> 0
+  const tailles = { petit: 'h-7 w-7 text-[11px] rounded-lg', normal: 'h-10 w-10 text-[13px] rounded-xl', grand: 'h-14 w-14 text-lg rounded-2xl' }
+  return (
+    <span aria-hidden className={`grid shrink-0 place-items-center font-semibold ${tailles[taille]} ${TEINTES_AVATAR[code % TEINTES_AVATAR.length]}`}>
+      {initiales}
+    </span>
   )
 }

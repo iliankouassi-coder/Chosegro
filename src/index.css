@@ -2,40 +2,60 @@
 @import "tailwindcss";
 
 /*
-  Identité « surligneur » : page blanche, encre noire, et un seul accent, le trait de surligneur jaune
-  que les comptables passent sur ce qui demande l'œil (montant à passer, valeur à vérifier, pièce en cours).
-  Une seule famille (Instrument Sans, axe de largeur) : titres condensés, texte normal, chiffres tabulaires.
+  Identité « claire et accueillante » : fond gris très clair, contenu rangé dans des cartes blanches arrondies,
+  une barre latérale vert nuit, un vert émeraude pour l'action principale et ce qui est validé.
+  Chaque état a sa couleur (vert à jour, ambre à vérifier, rouge bloquant, bleu information),
+  toujours accompagnée d'un libellé ou d'une icône : la couleur ne porte jamais seule le sens.
 */
 @theme {
   --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, sans-serif;
 
-  --color-papier: #ffffff; /* fond de l'application */
-  --color-feuille: #ffffff; /* surfaces */
-  --color-bureau: #e8eaed; /* la table sous la pièce à valider */
-  --color-trait: #e3e5e9; /* filets */
-  --color-trait-fort: #c9cdd4; /* bords des champs et boutons secondaires */
-  --color-encre: #14161a; /* texte fort, action principale */
-  --color-encre-pale: #f1f2f4; /* survol, sélection, zones calmes */
-  --color-fluo: #ffe24a; /* le surligneur : seul accent de couleur */
-  --color-tampon: #157a4a; /* le tampon « Saisi » et ce qui est validé */
-  --color-texte: #14161a;
-  --color-texte-2: #5b6270;
-  --color-texte-3: #646a76;
+  --color-fond: #f3f5f4; /* fond de l'application */
+  --color-surface: #ffffff; /* cartes */
+  --color-surface-2: #f7f9f8; /* zones calmes dans une carte, en-têtes de tableau */
+  --color-bord: #e3e8e5; /* filets et bords de carte */
+  --color-bord-fort: #c9d1cc; /* bords des champs */
+  --color-bureau: #e3e7e5; /* la table sous la pièce à valider */
 
-  /* États, réservés : toujours accompagnés d'un libellé ou d'un signe */
-  --color-bon: #157a4a;
-  --color-bon-pale: #e3f1e9;
-  --color-attention: #8a5a00;
-  --color-attention-pale: #fff4c2;
-  --color-critique: #b42318;
-  --color-critique-pale: #fbe6e3;
+  --color-texte: #16201b;
+  --color-texte-2: #4f5b55;
+  --color-texte-3: #66726c;
+
+  --color-marque: #0e8a64; /* action principale, validé */
+  --color-marque-fonce: #0a6f50;
+  --color-marque-pale: #e5f5ee;
+  --color-marque-pale-2: #cdeadb;
+
+  --color-nuit: #0f2621; /* barre latérale */
+  --color-nuit-2: #19392f;
+  --color-nuit-texte: #a9c2b8;
+
+  --color-orange: #e8741a; /* compteurs à traiter */
+
+  --color-bon: #12805c;
+  --color-bon-pale: #e4f5ec;
+  --color-attention: #9a5300;
+  --color-attention-vif: #f2a01f;
+  --color-attention-pale: #fef3d9;
+  --color-critique: #c0352b;
+  --color-critique-pale: #fdecea;
+  --color-info: #2260c4;
+  --color-info-pale: #e9f0fc;
+  --color-violet: #6a4bd3;
+  --color-violet-pale: #efebfc;
+  --color-whatsapp: #178a4a;
+  --color-whatsapp-pale: #e2f5e9;
+
+  --shadow-carte: 0 1px 2px rgb(15 38 33 / 0.04), 0 2px 10px -3px rgb(15 38 33 / 0.07);
+  --shadow-flottant: 0 12px 32px -12px rgb(15 38 33 / 0.28);
 }
 
 html {
   font-feature-settings: "kern";
+  -webkit-font-smoothing: antialiased;
 }
 body {
-  background: var(--color-papier);
+  background: var(--color-fond);
   color: var(--color-texte);
 }
 
@@ -44,31 +64,8 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Titres : condensés, gras, serrés */
-.titre {
-  font-weight: 700;
-  font-stretch: 78%;
-  letter-spacing: -0.015em;
-  line-height: 1;
-}
-
-/* Le trait de surligneur : un peu irrégulier, comme un vrai feutre */
-.fluo {
-  background: linear-gradient(transparent 10%, var(--color-fluo) 10%, var(--color-fluo) 90%, transparent 90%);
-  border-radius: 3px 8px 4px 9px;
-  padding: 0 0.3em;
-  margin: 0 -0.3em;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-}
-
-/* Totaux comptables : double soulignement */
-.double-trait {
-  border-bottom: 3px double var(--color-texte);
-}
-
 :focus-visible {
-  outline: 2px solid var(--color-encre);
+  outline: 2px solid var(--color-marque);
   outline-offset: 2px;
 }
 
@@ -83,7 +80,7 @@ body {
     transform: translate(-50%, -50%) rotate(-8deg) scale(0.96);
   }
   100% {
-    opacity: 0.9;
+    opacity: 0.92;
     transform: translate(-50%, -50%) rotate(-8deg) scale(1);
   }
 }
@@ -92,34 +89,48 @@ body {
   left: 50%;
   top: 38%;
   transform: translate(-50%, -50%) rotate(-8deg);
-  opacity: 0.9;
-  color: var(--color-tampon);
-  border: 4px double var(--color-tampon);
-  border-radius: 10px;
+  opacity: 0.92;
+  color: var(--color-marque);
+  border: 4px solid currentColor;
+  border-radius: 14px;
   padding: 0.35em 0.9em 0.45em;
   text-align: center;
-  background: rgb(255 255 255 / 0.55);
-  mix-blend-mode: multiply;
+  background: rgb(255 255 255 / 0.7);
   pointer-events: none;
 }
 .tampon-rejet {
   color: var(--color-critique);
-  border-color: var(--color-critique);
 }
 .tampon-neutre {
   color: var(--color-texte-2);
-  border-color: var(--color-texte-2);
 }
 .tampon-anime {
   animation: tamponner 320ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
+
+/* Apparition douce des écrans */
+@keyframes apparaitre {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.apparaitre {
+  animation: apparaitre 180ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .tampon-anime {
+  .tampon-anime,
+  .apparaitre {
     animation: none;
   }
 }
 
 input[type="checkbox"],
 input[type="radio"] {
-  accent-color: var(--color-encre);
+  accent-color: var(--color-marque);
 }

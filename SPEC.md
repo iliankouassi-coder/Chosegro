@@ -85,6 +85,7 @@
 - **Montants en FCFA**, sans décimales. Le format lu « 1 250 000 » ou « 1.250.000 » est normalisé, et l'affichage se fait avec une espace pour séparer les milliers.
 - **Écriture d'achat** : débit sur le compte de charge (HT), débit sur le compte de TVA récupérable (TVA), crédit sur le compte fournisseur (TTC). Les numéros de compte viennent exclusivement du plan importé et des règles.
 - **Vente** : c'est l'écriture inverse, sur les comptes client et de produit. **Avoir** : l'écriture d'origine, inversée.
+- **Facture sans QR code FNE** (décidé avec Adam le 14/10/2026) : depuis le 01/12/2025, seules les factures normalisées électroniques permettent de déduire la TVA (DGI). Pour un achat sans QR code FNE daté à partir de cette date, la TVA n'est pas mise en TVA récupérable : elle est ajoutée au compte de charge, avec l'alerte et la raison affichées. La date d'obligation est un paramètre (vide : règle désactivée). À confirmer par un expert-comptable (PLAN.md, interprétation 15).
 - **Règle apprise** : quand un collaborateur corrige le compte d'un fournisseur, la règle est créée ou mise à jour. Elle s'applique aux pièces suivantes de ce fournisseur chez ce client, et sa raison est affichée.
 - **Doublon** : même empreinte de fichier, ou même fournisseur, même date et même TTC chez le même client. La pièce est proposée comme doublon, sans être supprimée.
 - **Retard** : un client est en retard s'il a reçu 0 pièce depuis le 1er du mois à la date seuil, ou moins de 50 % de son volume attendu (en paramètre).

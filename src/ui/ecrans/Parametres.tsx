@@ -194,7 +194,7 @@ export function Parametres() {
                 <input className={CHAMP} value={p.collaborateur} onChange={(e) => setP({ ...p, collaborateur: e.target.value })} />
               </Champ>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <Champ libelle="TVA par défaut (%)" aide={<>18{' '}%, à confirmer.</>}>
+                <Champ libelle="TVA par défaut (%)" aide={<>18{'\u00A0'}%, à confirmer.</>}>
                   <input className={`${CHAMP} chiffres`} value={String(p.tauxTvaDefaut)} onChange={(e) => nombre('tauxTvaDefaut', e.target.value)} />
                 </Champ>
                 <Champ libelle="Tolérance HT + TVA = TTC (FCFA)">
@@ -214,7 +214,7 @@ export function Parametres() {
                 aide={
                   <>
                     En retard : aucune pièce depuis le 1er du mois au jour seuil, ou moins de {Math.round(p.ratioVolumeMinimum * 100)}
-                    {' '}% des pièces attendues.
+                    {'\u00A0'}% des pièces attendues.
                   </>
                 }
               >

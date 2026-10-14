@@ -190,7 +190,7 @@ function LigneRegle({ regle }: { regle: RegleFournisseur }) {
               <dt className="text-texte-2">TVA</dt>
               <dd className="chiffres">
                 {regle.tauxTva}
-                {' '}%
+                {'\u00A0'}%
               </dd>
             </div>
           </dl>

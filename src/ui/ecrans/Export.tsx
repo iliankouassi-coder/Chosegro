@@ -1,6 +1,7 @@
 // Écran 6 — Export : client, période, journal ; aperçu avec contrôle débit = crédit ; CSV ou Excel générique.
 import { useEffect, useState } from 'react'
 import { ArrowDown, ArrowUp, CircleCheck, Columns3, FileDown, FileSpreadsheet, History, SlidersHorizontal } from 'lucide-react'
+import { maintenant } from '../../app/horloge'
 import { useApp } from '../../app/store'
 import { bornesMois, dateAbidjan, formatDate, formatDateHeure, lireDate, moisDe, moisPrecedent, nomMois } from '../../domain/dates'
 import {
@@ -56,7 +57,7 @@ const ENTETES = new Map(COLONNES_EXPORT.map((c) => [c.cle, c.entete]))
 export function Export() {
   const { etat, actions } = useApp()
   const { clients, ecritures } = etat.donnees
-  const moisCourant = moisDe(dateAbidjan(new Date()))
+  const moisCourant = moisDe(dateAbidjan(maintenant()))
   const [clientId, setClientId] = useState(clients[0]?.id ?? '')
   const [periode, setPeriode] = useState(bornesMois(moisCourant))
   const [journal, setJournal] = useState<Journal | 'tous'>('tous')

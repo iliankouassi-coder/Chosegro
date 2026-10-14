@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { clientsEnRetard, evaluerRetard } from './retards'
+import { avantSeuilRetard, clientsEnRetard, dateDemoConseillee, evaluerRetard } from './retards'
 import { PARAMETRES_DEFAUT } from './parametres'
 import type { Client, IsoDateHeure, Piece, StatutPiece } from './types'
 
@@ -387,5 +387,18 @@ describe('clientsEnRetard', () => {
     expect(() => clientsEnRetard([client('a', 3)], [], '2026-10-13', { ...PARAMS, jourSeuilRetard: 31 })).toThrow(
       'Jour seuil de retard invalide',
     )
+  })
+})
+
+describe('début de mois et démo', () => {
+  it('avant le jour seuil, aucun retard ne peut être constaté', () => {
+    expect(avantSeuilRetard('2026-11-03', 10)).toBe(true)
+    expect(avantSeuilRetard('2026-11-09', 10)).toBe(true)
+    expect(avantSeuilRetard('2026-11-10', 10)).toBe(false)
+  })
+
+  it('conseille de caler la démo quatre jours après le seuil, dans le même mois, au plus tard le 28', () => {
+    expect(dateDemoConseillee('2026-11-03', 10)).toBe('2026-11-14')
+    expect(dateDemoConseillee('2026-11-03', 25)).toBe('2026-11-28')
   })
 })

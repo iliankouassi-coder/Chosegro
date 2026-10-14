@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { ArrowLeft, BookOpenCheck, CircleCheck, Contact, FileText, Merge, NotebookText, OctagonAlert, Pencil, Trash2 } from 'lucide-react'
 import { lienVers } from '../../app/routeur'
+import { maintenant } from '../../app/horloge'
 import { useApp } from '../../app/store'
 import { formatDate, formatDateHeure, formatJourMois } from '../../domain/dates'
 import { totaux } from '../../domain/ecritures'
@@ -29,7 +30,7 @@ import { CHAMP, CHAMP_COMPACT, ENTETE_TABLEAU } from '../styles'
 
 export function Clients() {
   const { etat } = useApp()
-  const lignes = listeClients(etat.donnees, new Date().toISOString())
+  const lignes = listeClients(etat.donnees, maintenant())
   const enRetard = lignes.filter((l) => l.retard.enRetard).length
   return (
     <section aria-labelledby="titre-clients">

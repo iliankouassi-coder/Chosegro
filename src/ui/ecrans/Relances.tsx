@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react'
 import { BellRing, Check, Copy, ImageOff, Phone, QrCode, ShieldCheck } from 'lucide-react'
 import { lienVers } from '../../app/routeur'
+import { maintenant } from '../../app/horloge'
 import { useApp } from '../../app/store'
 import { formatDateHeure, nomMois } from '../../domain/dates'
 import { relancesAPreparer, type RelanceAPreparer } from '../../domain/tableaux'
@@ -123,7 +124,7 @@ function CarteRelance({ r }: { r: RelanceAPreparer }) {
 
 export function Relances() {
   const { etat } = useApp()
-  const relances = relancesAPreparer(etat.donnees, new Date().toISOString())
+  const relances = relancesAPreparer(etat.donnees, maintenant())
   const restantes = relances.filter((r) => r.statut !== 'envoyee_main').length
   return (
     <section aria-labelledby="titre-relances">

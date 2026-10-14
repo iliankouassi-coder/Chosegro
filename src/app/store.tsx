@@ -29,6 +29,7 @@ import type {
   Echeance,
   ExportRealise,
   FormatExport,
+  IsoDate,
   IsoDateHeure,
   Parametres,
   Piece,
@@ -49,6 +50,7 @@ import { empreinteSha256, genreFichier, nouvelId } from '../infra/fichiers'
 import { attendreLecture, convertirHeic, sante as lireSante, soumettreLecture, type Sante } from '../infra/lectureClient'
 import { decouperEnImages } from '../infra/pdf'
 import { chargerPieceDemo, lectureDemo, SEED, typeMime } from './demo'
+import { definirDateDemo, lireDateDemo, maintenant } from './horloge'
 import { construireHistorique, type FichierDemo } from './historiqueDemo'
 
 export interface Progression {
@@ -72,6 +74,8 @@ export interface EtatApp {
   boiteDemoChargee: boolean
   /** Exports déjà réalisés, du plus récent au plus ancien. */
   exports: ExportRealise[]
+  /** Date sur laquelle la démo est calée, ou null : l'application vit au jour réel. */
+  dateDemo: IsoDate | null
 }
 
 const DONNEES_VIDES: Donnees = {
@@ -85,7 +89,6 @@ const DONNEES_VIDES: Donnees = {
   parametres: { ...PARAMETRES_DEFAUT },
 }
 
-const maintenant = (): IsoDateHeure => new Date().toISOString()
 
 const decaler = (instant: IsoDateHeure, ms: number): IsoDateHeure => new Date(new Date(instant).getTime() + ms).toISOString()
 
@@ -188,6 +191,7 @@ let demarrage: Promise<{ plan: PlanComptable; source: 'fichier' | 'importe' }> |
 
 function demarrer(): Promise<{ plan: PlanComptable; source: 'fichier' | 'importe' }> {
   demarrage ??= (async () => {
+    definirDateDemo((await lireMeta<IsoDate>(CLES_META.dateDemo)) ?? null)
     const lu = await lirePlan()
     if ((await lireMeta<string>(CLES_META.versionDemo)) !== SEED.version) await chargerDemo(lu.plan)
     return lu
@@ -221,6 +225,8 @@ export interface Actions {
   importerEcheances: (fichier: File) => Promise<Resultat<number, string[]>>
   revenirAuxEcheancesFournies: () => Promise<void>
   reinitialiserDemo: () => Promise<void>
+  /** Cale la démo sur une date (ou la remet au jour réel avec null), puis la recharge. */
+  calerDemo: (jour: IsoDate | null) => Promise<void>
   fichierDe: (pieceId: string) => Promise<FichierStocke | undefined>
 }
 
@@ -247,6 +253,7 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
     sante: null,
     boiteDemoChargee: false,
     exports: [],
+    dateDemo: null,
   })
   const planRef = useRef<PlanComptable | null>(null)
   const donneesRef = useRef<Donnees>(DONNEES_VIDES)
@@ -260,7 +267,14 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
     ])
     const complet: Donnees = { ...donnees, echeances: echeances.echeances }
     donneesRef.current = complet
-    setEtat((e) => ({ ...e, donnees: complet, erreursEcheances: echeances.erreurs, boiteDemoChargee: boiteDemoChargee === true, exports }))
+    setEtat((e) => ({
+      ...e,
+      donnees: complet,
+      erreursEcheances: echeances.erreurs,
+      boiteDemoChargee: boiteDemoChargee === true,
+      exports,
+      dateDemo: lireDateDemo(),
+    }))
   }, [])
 
   const majLecture = useCallback((pieceId: string, message: string | null) => {
@@ -464,7 +478,7 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
 
       chargerBoiteDemo: () =>
         action(async () => {
-          const debut = new Date().getTime()
+          const debut = Date.parse(maintenant())
           const entrees = SEED.boiteDeReception
           for (const [i, entree] of entrees.entries()) {
             const contenu = await chargerPieceDemo(entree.fichier)
@@ -745,6 +759,15 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
 
       reinitialiserDemo: () =>
         action(async () => {
+          const plan = planRef.current
+          if (plan) await chargerDemo(plan)
+        }),
+
+      calerDemo: (jour) =>
+        action(async () => {
+          if (jour === null) await db.meta.delete(CLES_META.dateDemo)
+          else await ecrireMeta(CLES_META.dateDemo, jour)
+          definirDateDemo(jour)
           const plan = planRef.current
           if (plan) await chargerDemo(plan)
         }),

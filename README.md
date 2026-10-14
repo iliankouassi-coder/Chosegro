@@ -91,7 +91,7 @@ Les numéros de compte ne sont jamais écrits de mémoire. Ceux de la démo sont
 
 ## Limites connues
 
-- **Avant le 10 du mois**, aucun client n'est en retard : c'est la règle de la spec. Pour montrer un retard en début de mois, baissez le seuil dans Paramètres.
+- **Avant le 10 du mois**, aucun client n'est en retard : c'est la règle de la spec. Pour une démo en début de mois, l'accueil propose « Caler la démo au 14/MM » : l'application vit alors ce jour-là (à l'heure réelle) et la démo est rechargée autour de cette date. Paramètres, carte Démo, permet de choisir une autre date ou de revenir au jour réel ; la barre latérale affiche « Démo calée au … ».
 - **SheetJS** est la version 0.18.5 publiée sur npm. Des failles connues concernent la lecture de fichiers Excel piégés. La démo ne lit que le plan comptable fourni ou importé par Adam ; pour un vrai produit, il faudra installer la version à jour depuis le site de SheetJS.
 - La lecture par Claude Code demande `npm run dev` : un site construit par `npm run build` et servi en statique n'a pas de serveur de lecture.
 - **CSV ouvert dans Excel** : Excel transforme en nombre ou en date un numéro de pièce comme « 000245 » ou « 3/12 ». Le CSV reste brut, pour l'import dans un logiciel comptable ; pour ouvrir l'export dans Excel, choisissez « Exporter en Excel », qui garde ces numéros en texte.

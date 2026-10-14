@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ArrowRight, Ban, BookOpenCheck, Check, CircleCheck, Copy, OctagonAlert, PartyPopper, Pencil, RotateCcw, Sparkles, TriangleAlert, Undo2 } from 'lucide-react'
 import { allerA, lienVers } from '../../app/routeur'
+import { maintenant } from '../../app/horloge'
 import { useApp } from '../../app/store'
 import { formatDate, formatDateHeure, lireDate } from '../../domain/dates'
 import { texteEquilibre, totaux } from '../../domain/ecritures'
@@ -284,7 +285,7 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
         parametres: etat.donnees.parametres,
         regles: etat.donnees.regles,
         fusions: etat.donnees.fusions,
-        maintenant: new Date().toISOString(),
+        maintenant: maintenant(),
       },
       corrections,
     )

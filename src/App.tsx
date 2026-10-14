@@ -1,4 +1,5 @@
 import { useRoute } from './app/routeur'
+import { maintenant } from './app/horloge'
 import { FournisseurApp, nombreAValider, useApp } from './app/store'
 import { relancesAPreparer } from './domain/tableaux'
 import { Erreur } from './ui/composants'
@@ -30,13 +31,14 @@ function Ecran() {
         </p>
       </div>
     )
-  const relancesAEnvoyer = relancesAPreparer(etat.donnees, new Date().toISOString()).filter((r) => r.statut !== 'envoyee_main').length
+  const relancesAEnvoyer = relancesAPreparer(etat.donnees, maintenant()).filter((r) => r.statut !== 'envoyee_main').length
   return (
     <Coquille
       route={route}
       nomCabinet={etat.donnees.parametres.nomCabinet}
       piecesAValider={nombreAValider(etat.donnees)}
       relancesAEnvoyer={relancesAEnvoyer}
+      dateDemo={etat.dateDemo}
     >
       {route.ecran === 'accueil' && <Accueil />}
       {route.ecran === 'reception' && <Reception />}

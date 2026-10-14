@@ -1,10 +1,12 @@
 // Écran 1 — Accueil : pièces à valider, clients en retard, échéances de la semaine (dans cet ordre).
 // En tête, trois cartes chiffrées qui mènent chacune à son bloc ; dessous, la file des pièces regroupée par client.
-import { AlarmClock, ArrowRight, CalendarDays, CircleCheck, FileCheck2, Inbox, OctagonAlert, QrCode, type LucideIcon } from 'lucide-react'
+import { AlarmClock, ArrowRight, CalendarClock, CalendarDays, CircleCheck, FileCheck2, Inbox, OctagonAlert, QrCode, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { lienVers } from '../../app/routeur'
+import { maintenant } from '../../app/horloge'
 import { useApp } from '../../app/store'
-import { formatDate, formatDateHeure } from '../../domain/dates'
+import { dateAbidjan, formatDate, formatDateHeure } from '../../domain/dates'
+import { avantSeuilRetard, dateDemoConseillee } from '../../domain/retards'
 import { formatFcfa } from '../../domain/montants'
 import { regrouperParClient, tableauAccueil } from '../../domain/tableaux'
 import {
@@ -80,12 +82,15 @@ function CarteChiffre({
 }
 
 export function Accueil() {
-  const { etat } = useApp()
-  const maintenant = new Date().toISOString()
-  const accueil = tableauAccueil(etat.donnees, maintenant)
+  const { etat, actions } = useApp()
+  const instant = maintenant()
+  const aujourdhui = dateAbidjan(instant)
+  const seuil = etat.donnees.parametres.jourSeuilRetard
+  const debutDeMois = avantSeuilRetard(aujourdhui, seuil)
+  const accueil = tableauAccueil(etat.donnees, instant)
   const { piecesAValider, clientsEnRetard, echeancesDeLaSemaine, fne } = accueil
   const groupes = regrouperParClient(piecesAValider.arriveesDepuisLaVeille)
-  const jour = JOUR.format(new Date(maintenant))
+  const jour = JOUR.format(new Date(instant))
   const prochaine = echeancesDeLaSemaine[0]
   const allerA = (pieceId: string): void => {
     window.location.hash = lienVers({ ecran: 'validation', pieceId })
@@ -135,7 +140,13 @@ export function Accueil() {
           teinte={clientsEnRetard.length > 0 ? 'critique' : 'bon'}
           libelle="Clients en retard"
           valeur={clientsEnRetard.length}
-          detail={clientsEnRetard.length === 0 ? 'Tous les clients ont envoyé leurs pièces.' : clientsEnRetard.map((c) => c.client.raisonSociale).join(', ')}
+          detail={
+            clientsEnRetard.length > 0
+              ? clientsEnRetard.map((c) => c.client.raisonSociale).join(', ')
+              : debutDeMois
+                ? `Aucun retard possible avant le ${seuil} du mois.`
+                : 'Tous les clients ont envoyé leurs pièces.'
+          }
           appel={clientsEnRetard.length > 0 ? 'Préparer les relances' : 'Voir le détail'}
         />
         <CarteChiffre
@@ -273,7 +284,23 @@ export function Accueil() {
         <div className="grid grid-cols-1 content-start gap-6">
           {/* Bloc 2 : clients en retard */}
           <Carte id="retards" titre="Clients en retard" icone={AlarmClock} plein>
-            {clientsEnRetard.length === 0 ? (
+            {clientsEnRetard.length === 0 && debutDeMois ? (
+              <Vide
+                icone={CalendarClock}
+                action={
+                  <button
+                    type="button"
+                    className={classesBouton('secondaire')}
+                    onClick={() => void actions.calerDemo(dateDemoConseillee(aujourdhui, seuil))}
+                  >
+                    Caler la démo au {formatDate(dateDemoConseillee(aujourdhui, seuil))}
+                  </button>
+                }
+              >
+                Avant le {seuil} du mois, aucun client n’est en retard : c’est la règle. Pour montrer un retard pendant la démo, calez-la sur une
+                date après le seuil (la démo est rechargée, tout reste fictif).
+              </Vide>
+            ) : clientsEnRetard.length === 0 ? (
               <Vide icone={CircleCheck}>Aucun client en retard aujourd’hui.</Vide>
             ) : (
               <ul className="divide-y divide-bord border-t border-bord">

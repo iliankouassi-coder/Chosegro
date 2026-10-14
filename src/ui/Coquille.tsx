@@ -93,7 +93,7 @@ function LienOnglet({
   )
 }
 
-function MentionDemo() {
+function MentionDemo({ dateDemo }: { dateDemo: string | null }) {
   return (
     <div
       className="rounded-xl bg-white/[0.06] px-3.5 py-3 text-xs leading-relaxed text-nuit-texte"
@@ -104,6 +104,11 @@ function MentionDemo() {
         Démonstration
       </p>
       <p className="mt-1">Clients, pièces et échéances fictifs. Plan SYSCOHADA provisoire.</p>
+      {dateDemo && (
+        <p className="mt-1.5 font-semibold text-[#f2c14e]">
+          Démo calée au {dateDemo.slice(8, 10)}/{dateDemo.slice(5, 7)}/{dateDemo.slice(0, 4)}
+        </p>
+      )}
     </div>
   )
 }
@@ -113,12 +118,14 @@ export function Coquille({
   nomCabinet,
   piecesAValider,
   relancesAEnvoyer,
+  dateDemo,
   children,
 }: {
   route: Route
   nomCabinet: string
   piecesAValider: number
   relancesAEnvoyer: number
+  dateDemo: string | null
   children: ReactNode
 }) {
   const pleineHauteur = route.ecran === 'validation'
@@ -160,7 +167,7 @@ export function Coquille({
             </div>
           </nav>
           <div className="mt-3">
-            <MentionDemo />
+            <MentionDemo dateDemo={dateDemo} />
           </div>
         </aside>
       )}

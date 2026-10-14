@@ -155,3 +155,17 @@ export function clientsEnRetard(
   )
   return enRetard.map(({ etat }) => etat)
 }
+
+/** Avant le jour seuil du mois, aucun client ne peut être en retard (règle de la spec). */
+export function avantSeuilRetard(aujourdhui: IsoDate, jourSeuilRetard: number): boolean {
+  return Number(aujourdhui.slice(8, 10)) < jourSeuilRetard
+}
+
+/**
+ * Date conseillée pour caler une démo faite en début de mois : quatre jours après le seuil, dans le même mois
+ * (au plus tard le 28), pour que le client sans pièce apparaisse en retard.
+ */
+export function dateDemoConseillee(aujourdhui: IsoDate, jourSeuilRetard: number): IsoDate {
+  const jour = Math.min(28, jourSeuilRetard + 4)
+  return `${aujourdhui.slice(0, 8)}${String(jour).padStart(2, '0')}`
+}

@@ -64,6 +64,46 @@ function ChampDateFne({ valeur, surChangement }: { valeur: string | null; surCha
   )
 }
 
+/**
+ * Date sur laquelle la démo est calée. Utile en début de mois : avant le jour seuil, aucun client n'est en retard.
+ * Caler la démo recharge les données de démonstration autour de cette date.
+ */
+function DateDeDemo() {
+  const { etat, actions } = useApp()
+  const [texte, setTexte] = useState(etat.dateDemo ? formatDate(etat.dateDemo) : '')
+  const iso = lireDate(texte)
+  return (
+    <div className="grid gap-2">
+      <Champ
+        libelle="Date de la démo"
+        aide={
+          etat.dateDemo
+            ? `La démo est calée au ${formatDate(etat.dateDemo)}, à l’heure réelle.`
+            : 'La démo vit au jour réel. En début de mois, calez-la après le jour seuil pour montrer un client en retard.'
+        }
+      >
+        <input className={`${CHAMP} chiffres !w-44`} placeholder="JJ/MM/AAAA" value={texte} onChange={(e) => setTexte(e.target.value)} />
+      </Champ>
+      <div className="flex flex-wrap gap-2">
+        <Bouton disabled={iso === null} onClick={() => iso && void actions.calerDemo(iso)}>
+          Caler la démo et la recharger
+        </Bouton>
+        {etat.dateDemo && (
+          <Bouton
+            variante="discret"
+            onClick={() => {
+              setTexte('')
+              void actions.calerDemo(null)
+            }}
+          >
+            Revenir au jour réel
+          </Bouton>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /** Bouton d'import : un champ fichier caché derrière l'allure d'un bouton. */
 function BoutonImport({ libelle, accept, surFichier }: { libelle: string; accept: string; surFichier: (f: File) => void }) {
   return (
@@ -322,7 +362,8 @@ export function Parametres() {
           </Carte>
 
           <Carte titre="Démo" icone={RotateCcw}>
-            <p className="text-sm text-texte-2">Remet les clients, l’historique, les règles et la boîte de réception démo dans leur état de départ.</p>
+            <DateDeDemo />
+            <p className="mt-5 text-sm text-texte-2">Remet les clients, l’historique, les règles et la boîte de réception démo dans leur état de départ.</p>
             <div className="mt-4 flex flex-wrap items-center gap-2">
               {confirmer ? (
                 <>

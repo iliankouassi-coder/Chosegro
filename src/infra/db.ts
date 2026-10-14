@@ -72,6 +72,8 @@ export const CLES_META = {
   echeancesImportees: 'echeancesImportees',
   /** La boîte de réception démo a-t-elle déjà été chargée depuis la dernière remise à zéro ? */
   boiteDemoChargee: 'boiteDemoChargee',
+  /** Date sur laquelle la démo est calée (AAAA-MM-JJ), ou absente pour vivre au jour réel. */
+  dateDemo: 'dateDemo',
 } as const
 
 export async function lireMeta<T>(cle: string): Promise<T | undefined> {

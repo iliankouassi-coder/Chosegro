@@ -425,7 +425,7 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
           {piece.statut === 'a_lire' && (
             <section className="grid grid-cols-1 gap-3 py-6">
               <h2 className="text-[17px] font-semibold">Pièce pas encore lue</h2>
-              <p className="text-sm text-texte">{etat.lectures[piece.id] ?? 'En attente de lecture par Claude Code.'}</p>
+              <p className="text-sm text-texte">{etat.lectures[piece.id] ?? 'En attente de lecture.'}</p>
               {piece.erreurLecture && <Erreur>{piece.erreurLecture}</Erreur>}
               {!etat.lectures[piece.id] && (
                 <div className="flex flex-wrap gap-2">

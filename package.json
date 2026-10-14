@@ -9,12 +9,14 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:locale": "LECTURE_MOTEUR=ollama vite",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.domain.json",
     "build": "npm run typecheck && vite build",
     "seed": "tsx scripts/seed.ts",
-    "recette": "node scripts/recette/recette.cjs"
+    "recette": "node scripts/recette/recette.cjs",
+    "banc": "tsx scripts/banc/banc.ts"
   },
   "dependencies": {
     "@fontsource-variable/instrument-sans": "^5.3.0",

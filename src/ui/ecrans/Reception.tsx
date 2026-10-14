@@ -181,18 +181,21 @@ export function Reception() {
                         <TriangleAlert className="h-4 w-4" aria-hidden />
                         Serveur local de lecture injoignable : lancez « npm run dev ».
                       </span>
-                    ) : etat.sante.claude ? (
+                    ) : etat.sante.disponible ? (
                       <span className="inline-flex items-center gap-1.5 font-medium text-bon">
                         <CircleCheck className="h-4 w-4" aria-hidden />
-                        Claude Code détecté ({etat.sante.version ?? 'version inconnue'}).
+                        {etat.sante.detail}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 font-medium text-attention">
                         <TriangleAlert className="h-4 w-4" aria-hidden />
-                        Claude Code introuvable sur cet ordinateur : les pièces resteront « à lire ».
+                        {etat.sante.detail}
                       </span>
                     )}
-                    <span>Lecture sur cet ordinateur, une pièce à la fois, 2 minutes au plus chacune.</span>
+                    <span>
+                      Lecture par {etat.sante?.nom ?? 'Claude Code'} sur cet ordinateur, une pièce à la fois,{' '}
+                      {etat.sante?.moteur === 'ollama' ? '5 minutes' : '2 minutes'} au plus chacune.
+                    </span>
                   </div>
                 </div>
               </Etape>

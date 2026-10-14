@@ -1,6 +1,8 @@
 // Serveur local de l'API, branché sur le serveur de développement de Vite (npm run dev).
+// Le moteur de lecture se choisit au lancement : Claude Code par défaut, ou un modèle local servi par Ollama
+// avec LECTURE_MOTEUR=ollama (npm run dev:locale ; OLLAMA_MODELE et OLLAMA_URL facultatifs).
 // Routes :
-//   GET  /api/sante              Claude Code est-il installé ? état de la file
+//   GET  /api/sante              le moteur de lecture est-il prêt ? état de la file
 //   POST /api/lectures           soumet une pièce à lire  → { id }
 //   GET  /api/lectures/:id       état de la lecture
 //   POST /api/conversion-heic    convertit une photo HEIC en JPG (sips, sur macOS)
@@ -11,10 +13,14 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Plugin } from 'vite'
-import { FileDeLecture, type DemandeLecture } from './fileLecture'
+import { DELAI_LECTURE_MS, FileDeLecture, type DemandeLecture } from './fileLecture'
+import { MODELE_OLLAMA_DEFAUT, moteurOllama, santeOllama, URL_OLLAMA_DEFAUT } from './moteurOllama'
 
 const TAILLE_MAX = 60 * 1024 * 1024
 const CHEMIN_PROMPT = fileURLToPath(new URL('../prompts/extraction.md', import.meta.url))
+const CHEMIN_PROMPT_LOCAL = fileURLToPath(new URL('../prompts/extraction_locale.md', import.meta.url))
+/** Un modèle local tourne sur le processeur du Mac : il a droit à 5 minutes par pièce, contre 2 pour Claude Code. */
+const DELAI_LECTURE_LOCALE_MS = 300_000
 const DOSSIER_LECTURES = fileURLToPath(new URL('../.lectures', import.meta.url))
 
 const repondre = (res: ServerResponse, statut: number, corps: unknown): void => {
@@ -86,11 +92,21 @@ const convertirHeic = (base64: string): Promise<{ ok: true; base64: string } | {
   })
 
 export function serveurLecture(options: { commande?: readonly string[] } = {}): Plugin {
-  const file = new FileDeLecture({
-    dossier: DOSSIER_LECTURES,
-    lirePrompt: () => readFileSync(CHEMIN_PROMPT, 'utf8'),
-    ...(options.commande ? { commande: options.commande } : {}),
-  })
+  const local = process.env['LECTURE_MOTEUR'] === 'ollama'
+  const modele = process.env['OLLAMA_MODELE'] || MODELE_OLLAMA_DEFAUT
+  const urlOllama = process.env['OLLAMA_URL'] || URL_OLLAMA_DEFAUT
+  const file = local
+    ? new FileDeLecture({
+        dossier: DOSSIER_LECTURES,
+        delaiMs: DELAI_LECTURE_LOCALE_MS,
+        moteur: moteurOllama({ modele, url: urlOllama, lirePrompt: () => readFileSync(CHEMIN_PROMPT_LOCAL, 'utf8') }),
+      })
+    : new FileDeLecture({
+        dossier: DOSSIER_LECTURES,
+        delaiMs: DELAI_LECTURE_MS,
+        lirePrompt: () => readFileSync(CHEMIN_PROMPT, 'utf8'),
+        ...(options.commande ? { commande: options.commande } : {}),
+      })
   return {
     name: 'pieces-cabinet-serveur-lecture',
     configureServer(serveur) {
@@ -100,8 +116,19 @@ export function serveurLecture(options: { commande?: readonly string[] } = {}): 
           const chemin = url.pathname.replace(/\/+$/, '') || '/'
           try {
             if (req.method === 'GET' && chemin === '/sante') {
+              if (local) {
+                const s = await santeOllama({ url: urlOllama, modele })
+                return repondre(res, 200, { moteur: 'ollama', nom: file.nomMoteur, disponible: s.disponible, detail: s.detail, version: s.version, file: file.charge() })
+              }
               const version = await versionClaude()
-              return repondre(res, 200, { claude: version !== null, version, file: file.charge() })
+              return repondre(res, 200, {
+                moteur: 'claude',
+                nom: file.nomMoteur,
+                disponible: version !== null,
+                detail: version !== null ? `Claude Code détecté (${version}).` : 'Claude Code introuvable sur cet ordinateur : les pièces resteront « à lire ».',
+                version,
+                file: file.charge(),
+              })
             }
             if (req.method === 'POST' && chemin === '/lectures') {
               const corps = await lireCorps(req)

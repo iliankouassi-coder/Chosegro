@@ -286,7 +286,10 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  /** Lecture par Claude Code, via le serveur local. La pièce reste « à lire » en cas d'échec, avec l'erreur. */
+  /** Nom du moteur de lecture (Claude Code ou modèle local), pour les messages d'attente. */
+  const nomMoteur = useRef('Claude Code')
+
+  /** Lecture par le moteur du serveur local. La pièce reste « à lire » en cas d'échec, avec l'erreur. */
   const lancerLecture = useCallback(
     async (pieceId: string) => {
       const piece = await db.pieces.get(pieceId)
@@ -294,7 +297,7 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
       const plan = planRef.current
       if (!piece || !fichier || !plan) return
       const client = await db.clients.get(piece.clientId)
-      majLecture(pieceId, 'Envoi à Claude Code…')
+      majLecture(pieceId, `Envoi à ${nomMoteur.current}…`)
       const echouer = async (message: string): Promise<void> => {
         const courante = (await db.pieces.get(pieceId)) ?? piece
         const r = enregistrerEchecLecture(courante, message)
@@ -309,7 +312,7 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
         })
         const fin = await attendreLecture(id, (e) => {
           if (e.etat === 'en_attente') majLecture(pieceId, `En attente de lecture (${e.position}${e.position === 1 ? 're' : 'e'} dans la file)`)
-          if (e.etat === 'en_cours') majLecture(pieceId, `Lecture par Claude Code… ${Math.round(e.depuisMs / 1000)} s`)
+          if (e.etat === 'en_cours') majLecture(pieceId, `Lecture par ${nomMoteur.current}… ${Math.round(e.depuisMs / 1000)} s`)
         })
         if (fin.etat === 'echec') await echouer(fin.erreur)
         else {
@@ -344,6 +347,7 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
         await recharger()
         setEtat((e) => ({ ...e, pret: true }))
         const s = await lireSante()
+        if (s) nomMoteur.current = s.nom
         if (!annule) setEtat((e) => ({ ...e, sante: s }))
       } catch (erreur) {
         if (!annule) setEtat((e) => ({ ...e, erreurChargement: erreur instanceof Error ? erreur.message : String(erreur) }))

@@ -1,5 +1,5 @@
-// File de lecture des pièces par Claude Code, une à la fois.
-// Commande lancée pour chaque pièce (SPEC.md) :
+// File de lecture des pièces, une à la fois, par Claude Code (par défaut) ou par un modèle local (moteurOllama.ts).
+// Commande lancée pour chaque pièce par Claude Code (SPEC.md) :
 //   claude -p "<prompt>" --output-format json --json-schema <schéma> --allowedTools "Read"
 // Jamais --bare : ce mode ignore la connexion par abonnement. Pas de clé d'API, pas de SDK.
 import { spawn } from 'node:child_process'
@@ -30,14 +30,26 @@ export type EtatLecture =
   | { etat: 'terminee'; brut: ExtractionBrute; dureeMs: number }
   | { etat: 'echec'; erreur: string; dureeMs: number }
 
+export type ResultatMoteur = { ok: true; brut: unknown } | { ok: false; erreur: string }
+
+/** Un moteur de lecture : Claude Code (par défaut) ou un modèle local servi par Ollama. */
+export interface Moteur {
+  /** Nom affiché : « Claude Code », « Ollama · qwen3-vl:2b ». */
+  nom: string
+  /** Lit une pièce dans un dossier de travail qui lui est réservé (effacé ensuite) ; rend le JSON brut. */
+  lire(demande: DemandeLecture, contexte: { dossier: string; delaiMs: number }): Promise<ResultatMoteur>
+}
+
 export interface OptionsFile {
-  /** Commande et premiers arguments. Par défaut ['claude'] ; les tests passent un faux claude. */
+  /** Moteur de lecture. Par défaut, Claude Code lancé avec `commande`. */
+  moteur?: Moteur
+  /** Commande et premiers arguments de Claude Code. Par défaut ['claude'] ; les tests passent un faux claude. */
   commande?: readonly string[]
   delaiMs?: number
   /** Dossier de travail des lectures (fichiers copiés, puis effacés). */
   dossier: string
-  /** Texte du prompt, relu à chaque lecture : prompts/extraction.md se modifie sans redémarrer. */
-  lirePrompt: () => string
+  /** Texte du prompt de Claude Code, relu à chaque lecture : prompts/extraction.md se modifie sans redémarrer. */
+  lirePrompt?: () => string
   /** Horloge, remplaçable dans les tests. */
   maintenant?: () => number
 }
@@ -99,14 +111,19 @@ export class FileDeLecture {
   private readonly attente: string[] = []
   private enCours: string | null = null
   private compteur = 0
-  private readonly commande: readonly string[]
+  private readonly moteur: Moteur
   private readonly delaiMs: number
   private readonly maintenant: () => number
 
   constructor(private readonly options: OptionsFile) {
-    this.commande = options.commande ?? ['claude']
+    this.moteur = options.moteur ?? moteurClaude({ commande: options.commande ?? ['claude'], lirePrompt: options.lirePrompt ?? (() => '') })
     this.delaiMs = options.delaiMs ?? DELAI_LECTURE_MS
     this.maintenant = options.maintenant ?? Date.now
+  }
+
+  /** Nom du moteur de lecture, pour l'affichage. */
+  get nomMoteur(): string {
+    return this.moteur.nom
   }
 
   soumettre(demande: DemandeLecture): string {
@@ -159,18 +176,8 @@ export class FileDeLecture {
     const dossier = join(this.options.dossier, travail.id)
     mkdirSync(dossier, { recursive: true })
     try {
-      const noms = travail.demande.fichiers.map((f, i) => `${i + 1}-${f.nom.replace(NOM_SUR, '_')}`)
-      travail.demande.fichiers.forEach((f, i) => writeFileSync(join(dossier, noms[i] ?? `${i + 1}`), Buffer.from(f.base64, 'base64')))
-      writeFileSync(join(dossier, 'comptes_autorises.txt'), travail.demande.comptes)
-      const prompt = remplirPrompt(this.options.lirePrompt(), {
-        client: travail.demande.client,
-        fichiers: noms,
-        comptes: 'comptes_autorises.txt',
-      })
-      const sortie = await this.executer(prompt, dossier)
+      const lu = await this.moteur.lire(travail.demande, { dossier, delaiMs: this.delaiMs })
       const duree = this.maintenant() - travail.debut
-      if (!sortie.ok) return { etat: 'echec', erreur: sortie.erreur, dureeMs: duree }
-      const lu = lireSortieClaude(sortie.stdout)
       if (!lu.ok) return { etat: 'echec', erreur: lu.erreur, dureeMs: duree }
       const verification = normaliserExtraction(lu.brut)
       if (!verification.ok) {
@@ -181,45 +188,69 @@ export class FileDeLecture {
       rmSync(dossier, { recursive: true, force: true })
     }
   }
+}
 
-  private executer(prompt: string, dossier: string): Promise<{ ok: true; stdout: string } | { ok: false; erreur: string }> {
-    const [programme, ...prefixe] = this.commande
-    if (programme === undefined) return Promise.resolve({ ok: false, erreur: 'Commande de lecture non configurée.' })
-    return new Promise((resoudre) => {
-      let stdout = ''
-      let stderr = ''
-      let fini = false
-      const enfant = spawn(programme, [...prefixe, ...argumentsClaude(prompt)], { cwd: dossier, stdio: ['ignore', 'pipe', 'pipe'] })
-      const terminer = (r: { ok: true; stdout: string } | { ok: false; erreur: string }): void => {
-        if (fini) return
-        fini = true
-        clearTimeout(minuterie)
-        resoudre(r)
-      }
-      const minuterie = setTimeout(() => {
-        enfant.kill('SIGTERM')
-        setTimeout(() => enfant.kill('SIGKILL'), 5_000).unref()
-        terminer({ ok: false, erreur: `Délai de ${Math.round(this.delaiMs / 1000)} s dépassé : la lecture a été arrêtée.` })
-      }, this.delaiMs)
-      enfant.stdout.on('data', (d: Buffer) => (stdout += d.toString('utf8')))
-      enfant.stderr.on('data', (d: Buffer) => (stderr += d.toString('utf8')))
-      enfant.on('error', (e: NodeJS.ErrnoException) =>
-        terminer({
-          ok: false,
-          erreur:
-            e.code === 'ENOENT'
-              ? 'Claude Code est introuvable sur cette machine (commande « claude »). Installez-le et connectez-le avec l’abonnement.'
-              : `Lancement de Claude Code impossible : ${e.message}`,
-        }),
-      )
-      enfant.on('close', (code) => {
-        // Une erreur signalée par Claude Code arrive aussi en JSON (is_error) : elle est lue comme une réponse.
-        if (code === 0 || estJson(stdout)) terminer({ ok: true, stdout })
-        else {
-          const detail = (stderr.trim() || stdout.trim()).slice(0, 300)
-          terminer({ ok: false, erreur: `Claude Code s’est arrêté avec le code ${String(code)}${detail ? ` : ${detail}` : ''}` })
-        }
-      })
-    })
+/**
+ * Claude Code, avec l'abonnement : les fichiers et la liste des comptes autorisés sont copiés dans le dossier
+ * de travail, puis `claude -p … --output-format json --json-schema … --allowedTools "Read"` les lit (jamais --bare).
+ */
+export function moteurClaude(o: { commande: readonly string[]; lirePrompt: () => string }): Moteur {
+  return {
+    nom: 'Claude Code',
+    async lire(demande, { dossier, delaiMs }) {
+      const noms = demande.fichiers.map((f, i) => `${i + 1}-${f.nom.replace(NOM_SUR, '_')}`)
+      demande.fichiers.forEach((f, i) => writeFileSync(join(dossier, noms[i] ?? `${i + 1}`), Buffer.from(f.base64, 'base64')))
+      writeFileSync(join(dossier, 'comptes_autorises.txt'), demande.comptes)
+      const prompt = remplirPrompt(o.lirePrompt(), { client: demande.client, fichiers: noms, comptes: 'comptes_autorises.txt' })
+      const sortie = await executerClaude(o.commande, prompt, dossier, delaiMs)
+      if (!sortie.ok) return sortie
+      return lireSortieClaude(sortie.stdout)
+    },
   }
+}
+
+function executerClaude(
+  commande: readonly string[],
+  prompt: string,
+  dossier: string,
+  delaiMs: number,
+): Promise<{ ok: true; stdout: string } | { ok: false; erreur: string }> {
+  const [programme, ...prefixe] = commande
+  if (programme === undefined) return Promise.resolve({ ok: false, erreur: 'Commande de lecture non configurée.' })
+  return new Promise((resoudre) => {
+    let stdout = ''
+    let stderr = ''
+    let fini = false
+    const enfant = spawn(programme, [...prefixe, ...argumentsClaude(prompt)], { cwd: dossier, stdio: ['ignore', 'pipe', 'pipe'] })
+    const terminer = (r: { ok: true; stdout: string } | { ok: false; erreur: string }): void => {
+      if (fini) return
+      fini = true
+      clearTimeout(minuterie)
+      resoudre(r)
+    }
+    const minuterie = setTimeout(() => {
+      enfant.kill('SIGTERM')
+      setTimeout(() => enfant.kill('SIGKILL'), 5_000).unref()
+      terminer({ ok: false, erreur: `Délai de ${Math.round(delaiMs / 1000)} s dépassé : la lecture a été arrêtée.` })
+    }, delaiMs)
+    enfant.stdout.on('data', (d: Buffer) => (stdout += d.toString('utf8')))
+    enfant.stderr.on('data', (d: Buffer) => (stderr += d.toString('utf8')))
+    enfant.on('error', (e: NodeJS.ErrnoException) =>
+      terminer({
+        ok: false,
+        erreur:
+          e.code === 'ENOENT'
+            ? 'Claude Code est introuvable sur cette machine (commande « claude »). Installez-le et connectez-le avec l’abonnement.'
+            : `Lancement de Claude Code impossible : ${e.message}`,
+      }),
+    )
+    enfant.on('close', (code) => {
+      // Une erreur signalée par Claude Code arrive aussi en JSON (is_error) : elle est lue comme une réponse.
+      if (code === 0 || estJson(stdout)) terminer({ ok: true, stdout })
+      else {
+        const detail = (stderr.trim() || stdout.trim()).slice(0, 300)
+        terminer({ ok: false, erreur: `Claude Code s’est arrêté avec le code ${String(code)}${detail ? ` : ${detail}` : ''}` })
+      }
+    })
+  })
 }

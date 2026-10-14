@@ -8,7 +8,14 @@ export type EtatServeur =
   | { etat: 'echec'; erreur: string; dureeMs: number }
 
 export interface Sante {
-  claude: boolean
+  /** Moteur de lecture choisi au lancement du serveur local. */
+  moteur: 'claude' | 'ollama'
+  /** « Claude Code », « Ollama · qwen3-vl:2b ». */
+  nom: string
+  /** Le moteur est installé et prêt (Claude Code trouvé, ou Ollama lancé avec son modèle). */
+  disponible: boolean
+  /** Phrase d'état à afficher. */
+  detail: string
   version: string | null
   file: { enAttente: number; enCours: boolean }
 }

@@ -343,21 +343,25 @@ export function Parametres() {
           )}
           {erreursImport.length > 0 && <Erreur>{erreursImport.join(' ')}</Erreur>}
 
-          <Carte titre="Lecture par Claude Code" icone={Bot}>
-            <Encart ton={etat.sante?.claude ? 'bon' : 'attention'}>
+          <Carte titre="Lecture des pièces" icone={Bot} sousTitre={etat.sante ? `Moteur : ${etat.sante.nom}` : undefined}>
+            <Encart ton={etat.sante?.disponible ? 'bon' : 'attention'}>
               <span className="font-medium">
-                {etat.sante === null
-                  ? 'Serveur local injoignable : lancez la démo avec « npm run dev ».'
-                  : etat.sante.claude
-                    ? `Claude Code détecté : ${etat.sante.version ?? 'version inconnue'}.`
-                    : 'Claude Code introuvable : installez-le et connectez-le avec l’abonnement (pas de clé d’API).'}
+                {etat.sante === null ? 'Serveur local injoignable : lancez la démo avec « npm run dev ».' : etat.sante.detail}
               </span>
             </Encart>
-            <div className="mt-3">
-              <Raison>
-                Commande lancée pour chaque pièce : claude -p … --output-format json --json-schema … --allowedTools "Read" (sans --bare), une pièce à la
-                fois, 120 s au plus. Le prompt est dans prompts/extraction.md.
-              </Raison>
+            <div className="mt-3 grid gap-2">
+              {etat.sante?.moteur === 'ollama' ? (
+                <Raison>
+                  Modèle local servi par Ollama sur cet ordinateur : rien ne part sur Internet, pas de coût par pièce, 5 minutes au plus par pièce. Il
+                  lit la pièce mais ne propose aucun compte : le compte vient des règles apprises ou du collaborateur. Prompt :
+                  prompts/extraction_locale.md. Pour revenir à Claude Code : « npm run dev ».
+                </Raison>
+              ) : (
+                <Raison>
+                  Commande lancée pour chaque pièce : claude -p … --output-format json --json-schema … --allowedTools "Read" (sans --bare), une pièce à
+                  la fois, 120 s au plus. Le prompt est dans prompts/extraction.md. Pour lire avec un modèle local (Ollama) : « npm run dev:locale ».
+                </Raison>
+              )}
             </div>
           </Carte>
 

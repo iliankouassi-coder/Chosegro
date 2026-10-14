@@ -5,7 +5,9 @@ La démo d'un outil pour cabinets comptables d'Abidjan : les pièces sont reçue
 
 ## Commandes
 - `npm install`
-- `npm run dev` : lance le front et le serveur local de l'API
+- `npm run dev` : lance le front et le serveur local de l'API (lecture par Claude Code)
+- `npm run dev:locale` : idem, avec la lecture par un modèle local servi par Ollama
+- `npm run banc` : banc d'essai de la lecture sur les pièces de démo (modèle local par défaut)
 - `npm test` : lance les tests Vitest de `src/domain/`
 - `npm run build`
 - `npm run seed` : recharge les données de démonstration
@@ -23,7 +25,7 @@ La démo d'un outil pour cabinets comptables d'Abidjan : les pièces sont reçue
 - N'inventer **aucune date d'échéance** : elles viennent de `data/echeances.json`. Les valeurs fictives portent le badge DÉMO.
 - **Aucun envoi automatique** de message (WhatsApp, e-mail ou autre). Seuls les liens `wa.me` et la copie sont autorisés.
 - Ne jamais valider une écriture sans action de l'utilisateur.
-- Pas de clé d'API ni de SDK Anthropic. La lecture passe uniquement par `claude -p … --output-format json --json-schema … --allowedTools "Read"`, lancé par le serveur local, **sans `--bare`**. Une seule lecture à la fois.
+- Pas de clé d'API ni de SDK Anthropic. La lecture passe par `claude -p … --output-format json --json-schema … --allowedTools "Read"`, lancé par le serveur local, **sans `--bare`** ; ou, au choix d'Adam (décidé le 14/10/2026), par un modèle local servi par Ollama sur la même machine (`npm run dev:locale`), sans Internet. Une seule lecture à la fois. Le modèle local ne propose **aucun** numéro de compte : il n'a pas la liste du plan.
 - Ne pas modifier les fichiers de `data/` pour « corriger » un libellé : signaler le problème à Adam.
 
 ## Ne pas modifier sans demande explicite d'Adam

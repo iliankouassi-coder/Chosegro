@@ -8,3 +8,6 @@ coverage/
 
 # Cache de Vitest
 .vitest/
+
+# Rapports du banc d'essai de lecture (npm run banc)
+.banc/

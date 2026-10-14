@@ -20,6 +20,7 @@
   - Une pièce à la fois, dans une file d'attente. Délai maximal de 120 s par pièce, puis statut « à lire » avec un bouton Réessayer.
   - Au premier lancement, vérifier que Claude Code lit bien une photo JPG et un PDF. Si ce n'est pas le cas, l'écrire dans le README plutôt que contourner.
   - La lecture consomme le quota de l'abonnement. Pour un vrai produit, il faudra une clé d'API facturée à l'usage : hors périmètre de cette version.
+- **Option : lecture par un modèle local** (décidée par Adam le 14/10/2026). `npm run dev:locale` remplace Claude Code par un modèle de vision servi par Ollama sur la même machine : rien ne part sur Internet, pas de coût par pièce, 5 minutes au plus par pièce. Il reçoit les images de la pièce (un PDF est converti en images) et le prompt de `prompts/extraction_locale.md`, et rend le même JSON. Il ne propose aucun compte : le compte vient des règles apprises ou du collaborateur. `npm run banc` compare sa lecture, champ par champ, aux lectures de référence des pièces de démo.
 - **Pièces de démonstration pré-lues :** leurs extractions sont enregistrées dans `data/demo_extractions.json`, ce qui permet de faire la démo même sans Claude Code. Seules les pièces déposées en direct passent par `claude -p`.
 - pdf.js pour afficher et découper les PDF. SheetJS pour l'export Excel.
 - Pas de PWA ni de mode hors ligne : la démo tourne sur l'ordinateur d'Adam.

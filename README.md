@@ -74,6 +74,24 @@ La vérification a été faite le 13/10/2026 dans l'environnement de développem
 
 **Sur le Mac**, refaites le test d'acceptation 1 avec ces deux fichiers. Si Claude Code ne lit pas l'un des deux formats, notez-le ici plutôt que de contourner le problème.
 
+## Lecture locale (Ollama) et banc d'essai
+
+La lecture peut aussi se faire avec un modèle local, sans Internet ni coût par pièce. Il faut une machine assez puissante : un Mac de 8 Go fait tourner un petit modèle (`qwen3-vl:2b`, 1,9 Go), plus lent et moins précis ; 16 Go ou plus permettent `qwen3-vl:4b` (3,3 Go) ou `qwen3-vl:8b` (6,1 Go).
+
+```bash
+brew install ollama          # ou l'application depuis ollama.com
+ollama serve                 # dans un autre terminal, si l'application n'est pas lancée
+ollama pull qwen3-vl:2b
+npm run dev:locale           # la démo, avec la lecture locale
+OLLAMA_MODELE=qwen3-vl:4b npm run dev:locale   # avec un autre modèle
+```
+
+- Le modèle lit la pièce (fournisseur, date, montants, QR code FNE…) mais **ne propose aucun compte** : il n'a pas la liste du plan, et aucun numéro n'est écrit de mémoire. Le compte vient des règles apprises ou du collaborateur.
+- Un PDF est converti en images avec `qlmanage`, fourni avec macOS. Délai : 5 minutes au plus par pièce.
+- Le prompt est dans `prompts/extraction_locale.md` ; le schéma de sortie est le même que pour Claude Code.
+
+**Banc d'essai.** `npm run banc` fait lire les 26 pièces de démo par le modèle local et compare chaque champ à la lecture de référence (`data/demo_extractions.json`). Le rapport (justesse par champ, durée par pièce) s'affiche et s'enregistre dans `.banc/`. Options : `--modele qwen3-vl:4b`, `--pieces I01,I12`, `--limite 5`, `--moteur claude` (consomme le quota de l'abonnement). Les pièces de démo sont générées, donc plus nettes que de vraies photos : ajoutez de vraies pièces avant de conclure.
+
 ## Données
 
 | Fichier | Contenu | Qui le modifie |

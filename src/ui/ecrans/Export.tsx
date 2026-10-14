@@ -1,5 +1,6 @@
 // Écran 6 — Export : client, période, journal ; aperçu avec contrôle débit = crédit ; CSV ou Excel générique.
 import { useEffect, useState } from 'react'
+import { ArrowDown, ArrowUp, CircleCheck, Columns3, FileDown, FileSpreadsheet, History, SlidersHorizontal } from 'lucide-react'
 import { useApp } from '../../app/store'
 import { bornesMois, dateAbidjan, formatDate, formatDateHeure, lireDate, moisDe, moisPrecedent, nomMois } from '../../domain/dates'
 import {
@@ -22,7 +23,7 @@ import { formatMontant } from '../../domain/montants'
 import type { FormatExport, Journal } from '../../domain/types'
 import { classeurExport } from '../../infra/excel'
 import { telecharger } from '../../infra/fichiers'
-import { Bouton, Carte, Erreur, Raison, Vide } from '../composants'
+import { Bouton, Carte, Encart, EnTetePage, Erreur, Raison, Vide } from '../composants'
 import { CHAMP, CHAMP_COMPACT, ENTETE_TABLEAU } from '../styles'
 
 const JOURNAUX: (Journal | 'tous')[] = ['tous', 'achats', 'ventes', 'banque', 'caisse']
@@ -31,10 +32,12 @@ const JOURNAUX: (Journal | 'tous')[] = ['tous', 'achats', 'ventes', 'banque', 'c
 function ChampDate({ valeur, surChangement }: { valeur: string; surChangement: (iso: string) => void }) {
   const [texte, setTexte] = useState(formatDate(valeur))
   const [invalide, setInvalide] = useState(false)
-  useEffect(() => setTexte(formatDate(valeur)), [valeur])
+  useEffect(() => {
+    setTexte(formatDate(valeur))
+  }, [valeur])
   return (
     <input
-      className={`${CHAMP_COMPACT} chiffres w-28 ${invalide ? '!border-critique' : ''}`}
+      className={`${CHAMP_COMPACT} chiffres w-full py-2 ${invalide ? '!border-critique' : ''}`}
       aria-invalid={invalide}
       value={texte}
       placeholder="JJ/MM/AAAA"
@@ -101,11 +104,16 @@ export function Export() {
   const derniers = etat.exports.slice(0, 10)
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-      <Carte titre="Paramètres de l’export">
-        <div className="grid grid-cols-1 gap-4 text-sm">
-          <label className="grid grid-cols-1 gap-1">
-            <span className="font-medium">Client</span>
+    <>
+    <EnTetePage
+      titre="Exporter les écritures"
+      description="Choisissez le client, la période et le journal. L’aperçu vérifie que le débit est égal au crédit avant de créer le fichier CSV ou Excel."
+    />
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+      <Carte titre="Paramètres de l’export" icone={SlidersHorizontal} className="self-start">
+        <div className="grid grid-cols-1 gap-5 text-sm">
+          <label className="grid grid-cols-1 gap-1.5">
+            <span className="font-medium text-texte">Client</span>
             <select className={CHAMP} value={client.id} onChange={(e) => setClientId(e.target.value)}>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -114,9 +122,9 @@ export function Export() {
               ))}
             </select>
           </label>
-          <div className="grid grid-cols-1 gap-1">
-            <span className="font-medium">Période</span>
-            <div className="inline-flex w-fit rounded-lg border border-trait-fort p-0.5">
+          <div className="grid grid-cols-1 gap-1.5">
+            <span className="font-medium text-texte">Période</span>
+            <div className="grid grid-cols-2 rounded-xl bg-surface-2 p-1 ring-1 ring-inset ring-bord">
               {[moisCourant, moisPrecedent(moisCourant)].map((m) => {
                 const b = bornesMois(m)
                 const choisi = periode.debut === b.debut && periode.fin === b.fin
@@ -126,21 +134,23 @@ export function Export() {
                     type="button"
                     aria-pressed={choisi}
                     onClick={() => setPeriode(b)}
-                    className={`rounded-md px-3 py-1.5 first-letter:uppercase ${choisi ? 'bg-encre text-white' : 'text-texte-2 hover:bg-encre-pale hover:text-encre'}`}
+                    className={`rounded-lg px-3 py-1.5 font-medium first-letter:uppercase transition ${
+                      choisi ? 'bg-surface text-marque-fonce shadow-carte ring-1 ring-bord' : 'text-texte-2 hover:text-texte'
+                    }`}
                   >
                     {nomMois(m)}
                   </button>
                 )
               })}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="mt-1 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
               <ChampDate valeur={periode.debut} surChangement={(debut) => setPeriode({ ...periode, debut })} />
-              <span>au</span>
+              <span className="text-texte-2">au</span>
               <ChampDate valeur={periode.fin} surChangement={(fin) => setPeriode({ ...periode, fin })} />
             </div>
           </div>
-          <label className="grid grid-cols-1 gap-1">
-            <span className="font-medium">Journal</span>
+          <label className="grid grid-cols-1 gap-1.5">
+            <span className="font-medium text-texte">Journal</span>
             <select className={CHAMP} value={journal} onChange={(e) => setJournal(e.target.value as Journal | 'tous')}>
               {JOURNAUX.map((j) => (
                 <option key={j} value={j}>
@@ -149,31 +159,41 @@ export function Export() {
               ))}
             </select>
           </label>
-          <div className="grid grid-cols-1 gap-1">
-            <span className="font-medium">Colonnes (cochées, dans l’ordre)</span>
-            <ul className="grid grid-cols-1 gap-1">
+          <div className="grid grid-cols-1 gap-1.5">
+            <span className="flex items-center gap-1.5 font-medium text-texte">
+              <Columns3 className="h-4 w-4 text-texte-2" aria-hidden />
+              Colonnes (cochées, dans l’ordre)
+            </span>
+            <ul className="grid grid-cols-1 divide-y divide-bord overflow-hidden rounded-xl border border-bord">
               {colonnes.map((cle, i) => (
-                <li key={cle} className="flex items-center gap-2">
-                  <input type="checkbox" checked onChange={() => setColonnes(colonnes.filter((c) => c !== cle))} />
-                  <span className="flex-1">{ENTETES.get(cle)}</span>
-                  <Bouton variante="discret" onClick={() => deplacer(i, -1)} aria-label="Monter">
-                    ↑
+                <li key={cle} className="flex items-center gap-2.5 py-1 pl-3 pr-1">
+                  <input type="checkbox" className="h-4 w-4" checked onChange={() => setColonnes(colonnes.filter((c) => c !== cle))} />
+                  <span className="flex-1 font-medium text-texte">{ENTETES.get(cle)}</span>
+                  <Bouton variante="discret" taille="petit" className="!px-1.5" disabled={i === 0} onClick={() => deplacer(i, -1)} aria-label="Monter">
+                    <ArrowUp className="h-4 w-4" aria-hidden />
                   </Bouton>
-                  <Bouton variante="discret" onClick={() => deplacer(i, 1)} aria-label="Descendre">
-                    ↓
+                  <Bouton
+                    variante="discret"
+                    taille="petit"
+                    className="!px-1.5"
+                    disabled={i === colonnes.length - 1}
+                    onClick={() => deplacer(i, 1)}
+                    aria-label="Descendre"
+                  >
+                    <ArrowDown className="h-4 w-4" aria-hidden />
                   </Bouton>
                 </li>
               ))}
               {COLONNES_EXPORT.filter((c) => !colonnes.includes(c.cle)).map((c) => (
-                <li key={c.cle} className="flex items-center gap-2 text-texte-3">
-                  <input type="checkbox" checked={false} onChange={() => setColonnes([...colonnes, c.cle])} />
+                <li key={c.cle} className="flex items-center gap-2.5 bg-surface-2 py-2 pl-3 pr-1 text-texte-3">
+                  <input type="checkbox" className="h-4 w-4" checked={false} onChange={() => setColonnes([...colonnes, c.cle])} />
                   <span>{c.entete}</span>
                 </li>
               ))}
             </ul>
           </div>
-          <label className="grid grid-cols-1 gap-1">
-            <span className="font-medium">Séparateur (CSV)</span>
+          <label className="grid grid-cols-1 gap-1.5">
+            <span className="font-medium text-texte">Séparateur (CSV)</span>
             <select className={CHAMP} value={separateur} onChange={(e) => setSeparateur(e.target.value as Separateur)}>
               {SEPARATEURS.map((s) => (
                 <option key={s.libelle} value={s.valeur}>
@@ -187,92 +207,97 @@ export function Export() {
       </Carte>
 
       <Carte
-        titre={
-          <span>
-            Aperçu{' '}
-            <span className="font-normal text-texte-2">
-              {client.raisonSociale}, du <span className="chiffres">{formatDate(periode.debut)}</span> au{' '}
-              <span className="chiffres">{formatDate(periode.fin)}</span>
-            </span>
-          </span>
+        titre="Aperçu"
+        icone={FileSpreadsheet}
+        sousTitre={
+          <>
+            {client.raisonSociale}, du <span className="chiffres">{formatDate(periode.debut)}</span> au{' '}
+            <span className="chiffres">{formatDate(periode.fin)}</span>
+          </>
         }
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Bouton variante="principal" disabled={problemes.length > 0} onClick={() => void exporter('xlsx')}>
+              <FileSpreadsheet className="h-4 w-4" aria-hidden />
               Exporter en Excel
             </Bouton>
             <Bouton disabled={problemes.length > 0} onClick={() => void exporter('csv')}>
+              <FileDown className="h-4 w-4" aria-hidden />
               Exporter en CSV
             </Bouton>
           </div>
         }
       >
-        {problemes.length > 0 && (
-          <div className="mb-3 border-l-2 border-critique bg-critique-pale px-3 py-2 text-sm text-texte">
-            <p className="font-semibold text-critique">
-              <span aria-hidden>■ </span>Export bloqué :
-            </p>
-            <ul className="list-disc pl-2">
-              {problemes.map((p) => (
-                <li key={p}>{p}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {texteNonValidees(apercu) && <Raison>{texteNonValidees(apercu)}</Raison>}
-        {tableau && apercu.lignes.length > 0 && (
-          <div className="relative mt-2 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className={ENTETE_TABLEAU}>
-                  {(tableau[0] ?? []).map((e, i) => (
-                    <th key={i} className={`py-1.5 pr-3 font-medium ${colonnes[i] === 'debit' || colonnes[i] === 'credit' ? 'text-right' : ''}`}>
-                      {e}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-trait">
-                {tableau.slice(1).map((ligne, i) => (
-                  <tr key={i}>
-                    {ligne.map((v, j) => (
-                      <td
-                        key={j}
-                        className={`py-1.5 pr-3 align-top ${typeof v === 'number' ? 'chiffres text-right' : ''} ${
-                          colonnes[j] === 'libelle' || colonnes[j] === 'client' ? '' : 'whitespace-nowrap'
-                        } ${colonnes[j] === 'compte' ? 'chiffres font-semibold text-encre' : ''}`}
+        <div className="grid gap-3">
+          {problemes.length > 0 && (
+            <Encart ton="critique">
+              <p className="font-semibold text-critique">Export bloqué :</p>
+              <ul className="list-disc pl-5">
+                {problemes.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            </Encart>
+          )}
+          {texteNonValidees(apercu) && <Encart ton="attention">{texteNonValidees(apercu)}</Encart>}
+          {tableau && apercu.lignes.length > 0 ? (
+            <div className="relative overflow-x-auto rounded-xl border border-bord">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className={ENTETE_TABLEAU}>
+                    {(tableau[0] ?? []).map((e, i) => (
+                      <th
+                        key={i}
+                        className={`py-2 pr-3 font-medium first:pl-3.5 last:pr-3.5 ${colonnes[i] === 'debit' || colonnes[i] === 'credit' ? 'text-right' : ''}`}
                       >
-                        {typeof v === 'number' ? (v === 0 ? '' : formatMontant(v)) : v}
-                      </td>
+                        {e}
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <p
-          className={`mt-3 border-t border-texte/70 pt-2 text-sm font-medium ${apercu.totalDebit === apercu.totalCredit ? 'text-bon' : 'text-critique'}`}
-        >
-          <span aria-hidden>{apercu.totalDebit === apercu.totalCredit ? '✓ ' : '■ '}</span>
-          {apercu.lignes.length} ligne{apercu.lignes.length > 1 ? 's' : ''}, {apercu.nombreEcritures} écriture{apercu.nombreEcritures > 1 ? 's' : ''}{' '}
-          : {texteTotauxExport(apercu)}
-        </p>
-        {message && (
-          <p className="mt-2 text-sm text-bon">
-            <span aria-hidden>✓ </span>
-            {message}
-          </p>
-        )}
-        {erreur && <Erreur>{erreur}</Erreur>}
+                </thead>
+                <tbody className="divide-y divide-bord">
+                  {tableau.slice(1).map((ligne, i) => (
+                    <tr key={i} className="hover:bg-surface-2">
+                      {ligne.map((v, j) => (
+                        <td
+                          key={j}
+                          className={`py-2 pr-3 align-top first:pl-3.5 last:pr-3.5 ${typeof v === 'number' ? 'chiffres text-right font-medium' : ''} ${
+                            colonnes[j] === 'libelle' || colonnes[j] === 'client' ? '' : 'whitespace-nowrap'
+                          } ${colonnes[j] === 'compte' ? 'chiffres font-semibold text-marque-fonce' : ''}`}
+                        >
+                          {typeof v === 'number' ? (v === 0 ? '' : formatMontant(v)) : v}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            tableau && <Vide icone={FileSpreadsheet}>Aucune écriture validée sur cette période pour ce client.</Vide>
+          )}
+          <Encart ton={apercu.totalDebit === apercu.totalCredit ? 'bon' : 'critique'}>
+            <span className="font-medium">
+              {apercu.lignes.length} ligne{apercu.lignes.length > 1 ? 's' : ''}, {apercu.nombreEcritures} écriture
+              {apercu.nombreEcritures > 1 ? 's' : ''} : {texteTotauxExport(apercu)}
+            </span>
+          </Encart>
+          {message && (
+            <p className="inline-flex items-center gap-1.5 text-sm font-medium text-bon">
+              <CircleCheck className="h-4 w-4" aria-hidden />
+              {message}
+            </p>
+          )}
+          {erreur && <Erreur>{erreur}</Erreur>}
+        </div>
       </Carte>
 
       {derniers.length > 0 && (
         <div className="lg:col-start-2">
-          <Carte titre="Derniers exports">
-            <ul className="-mt-3 divide-y divide-trait text-sm">
+          <Carte titre="Derniers exports" icone={History} plein>
+            <ul className="divide-y divide-bord border-t border-bord text-sm">
               {derniers.map((x) => (
-                <li key={x.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-2.5">
+                <li key={x.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 px-5 py-3">
                   <div className="min-w-0">
                     <span className="font-medium">{clients.find((c) => c.id === x.clientId)?.raisonSociale ?? x.clientId}</span>
                     <span className="ml-2 text-texte-2">
@@ -294,5 +319,6 @@ export function Export() {
         </div>
       )}
     </div>
+    </>
   )
 }

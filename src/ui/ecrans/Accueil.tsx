@@ -1,20 +1,80 @@
 // Écran 1 — Accueil : pièces à valider, clients en retard, échéances de la semaine (dans cet ordre).
-// En tête, le point du jour en trois phrases ; dessous, la file des pièces regroupée par client.
+// En tête, trois cartes chiffrées qui mènent chacune à son bloc ; dessous, la file des pièces regroupée par client.
+import { AlarmClock, ArrowRight, CalendarDays, CircleCheck, FileCheck2, Inbox, OctagonAlert, type LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { lienVers } from '../../app/routeur'
 import { useApp } from '../../app/store'
 import { formatDate, formatDateHeure } from '../../domain/dates'
-import { LIBELLES_CANAL } from '../../domain/pieces'
-import { LIBELLES_STATUT_RELANCE } from '../../domain/relances'
 import { regrouperParClient, tableauAccueil } from '../../domain/tableaux'
-import { BadgeDemo, IconeCanal, Jauge, Montant, PastilleConfiance, Raison, Vide } from '../composants'
+import {
+  Avatar,
+  BadgeDemo,
+  Carte,
+  classesBouton,
+  EnTetePage,
+  Jauge,
+  Montant,
+  PastilleConfiance,
+  PastilleRelance,
+  PuceCanal,
+  Raison,
+  Vide,
+} from '../composants'
 
-const JOUR = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
+const JOUR = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+const MOIS_COURT = new Intl.DateTimeFormat('fr-FR', { month: 'short', timeZone: 'UTC' })
 /** « 30/09 09:12 » : jour et heure de réception, sans l'année. */
 const recue = (instant: string): string => {
   const t = formatDateHeure(instant)
   return `${t.slice(0, 5)} ${t.slice(-5)}`
 }
-const pluriel = (n: number, un: string, plusieurs: string): string => `${n} ${n > 1 ? plusieurs : un}`
+const pluriel = (n: number, un: string, plusieurs: string): string => `${n} ${n > 1 ? plusieurs : un}`
+
+const TEINTES = {
+  marque: 'bg-marque-pale text-marque-fonce',
+  critique: 'bg-critique-pale text-critique',
+  bon: 'bg-bon-pale text-bon',
+  info: 'bg-info-pale text-info',
+}
+
+/** Carte chiffrée du haut de l'accueil : toute la carte est un lien vers le bloc ou l'écran qui la détaille. */
+function CarteChiffre({
+  href,
+  icone: Icone,
+  teinte,
+  libelle,
+  valeur,
+  detail,
+  appel,
+}: {
+  href: string
+  icone: LucideIcon
+  teinte: keyof typeof TEINTES
+  libelle: string
+  valeur: ReactNode
+  detail: ReactNode
+  appel: string
+}) {
+  return (
+    <a
+      href={href}
+      className="group flex flex-col rounded-2xl border border-bord bg-surface p-5 shadow-carte transition hover:-translate-y-0.5 hover:border-marque/30 hover:shadow-flottant"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm font-medium text-texte-2">{libelle}</p>
+        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${TEINTES[teinte]}`}>
+          <Icone className="h-5 w-5" strokeWidth={2} aria-hidden />
+        </span>
+      </div>
+      <div className="chiffres -mt-1 text-[34px] font-semibold leading-none tracking-[-0.02em] text-texte">{valeur}</div>
+      <div className="mt-2 min-h-[2.6em] text-[13.5px] leading-snug text-texte-2">{detail}</div>
+      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-marque group-hover:text-marque-fonce">
+        {appel}
+        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+      </span>
+    </a>
+  )
+}
 
 export function Accueil() {
   const { etat } = useApp()
@@ -29,112 +89,145 @@ export function Accueil() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-10">
-      {/* Le point du jour */}
-      <header className="grid grid-cols-1 gap-6 pb-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-        <div>
-          <h1 className="titre text-[44px] first-letter:uppercase sm:text-[56px]">{jour}</h1>
-          <ul className="mt-5 grid max-w-[68ch] gap-1 text-[16px] leading-relaxed text-texte">
-            <li>
-              <a href="#a-valider" className="hover:underline">
-                <strong className={`font-semibold ${piecesAValider.nombre > 0 ? 'fluo' : ''}`}>
-                  {pluriel(piecesAValider.nombre, 'pièce à valider', 'pièces à valider')}
-                </strong>
-              </a>
-              {piecesAValider.arriveesDepuisLaVeille.length > 0 && <>, dont {piecesAValider.arriveesDepuisLaVeille.length} arrivées depuis hier</>}
-              {piecesAValider.enLecture > 0 && <> ; {pluriel(piecesAValider.enLecture, 'autre en cours de lecture', 'autres en cours de lecture')}</>}
-              .
-            </li>
-            <li>
-              {clientsEnRetard.length === 0 ? (
-                'Aucun client en retard.'
-              ) : (
-                <>
-                  <a href="#retards" className="underline decoration-trait-fort underline-offset-4 hover:decoration-encre">
-                    <strong className="font-semibold">{pluriel(clientsEnRetard.length, 'client en retard', 'clients en retard')}</strong>
-                  </a>{' '}
-                  : {clientsEnRetard.map((c) => c.client.raisonSociale).join(', ')}.
-                </>
-              )}
-            </li>
-            <li>
-              {prochaine ? (
-                <>
-                  <a href="#echeances" className="underline decoration-trait-fort underline-offset-4 hover:decoration-encre">
-                    <strong className="font-semibold">{prochaine.echeance.libelle}</strong>
-                  </a>{' '}
-                  le {formatDate(prochaine.echeance.date)}
-                  {prochaine.dossiersPasPrets.length > 0
-                    ? ` : ${pluriel(prochaine.dossiersPasPrets.length, 'dossier pas prêt', 'dossiers pas prêts')}.`
-                    : ' : tous les dossiers sont prêts.'}
-                </>
-              ) : (
-                'Aucune échéance dans les 7 prochains jours.'
-              )}
-            </li>
-          </ul>
-        </div>
-        {piecesAValider.nombre > 0 && (
-          <a
-            href={lienVers({ ecran: 'validation', pieceId: null })}
-            className="inline-flex items-center justify-center gap-2 self-end rounded-lg bg-encre px-6 py-3.5 text-[15px] font-semibold text-white hover:bg-black"
-          >
-            Commencer la validation
-          </a>
-        )}
-      </header>
+    <div className="grid grid-cols-1 gap-8">
+      <EnTetePage
+        avant={<p className="mb-1 text-sm font-semibold text-marque first-letter:uppercase">{jour}</p>}
+        titre="Bonjour"
+        description="Voici ce qui demande votre attention aujourd’hui."
+        actions={
+          piecesAValider.nombre > 0 && (
+            <a href={lienVers({ ecran: 'validation', pieceId: null })} className={classesBouton('principal', 'grand')}>
+              <FileCheck2 className="h-[18px] w-[18px]" aria-hidden />
+              Commencer la validation
+            </a>
+          )
+        }
+      />
 
-      <div className="grid grid-cols-1 gap-x-12 gap-y-10 xl:grid-cols-[minmax(0,1fr)_340px]">
+      {/* Le point du jour, en trois cartes */}
+      <div className="-mt-2 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <CarteChiffre
+          href={piecesAValider.nombre > 0 ? lienVers({ ecran: 'validation', pieceId: null }) : lienVers({ ecran: 'reception' })}
+          icone={FileCheck2}
+          teinte="marque"
+          libelle="Pièces à valider"
+          valeur={piecesAValider.nombre}
+          detail={
+            piecesAValider.nombre === 0 ? (
+              'Tout est à jour.'
+            ) : (
+              <>
+                {piecesAValider.arriveesDepuisLaVeille.length > 0
+                  ? `dont ${pluriel(piecesAValider.arriveesDepuisLaVeille.length, 'arrivée', 'arrivées')} depuis hier`
+                  : 'aucune arrivée depuis hier'}
+                {piecesAValider.enLecture > 0 && `, ${pluriel(piecesAValider.enLecture, 'en cours de lecture', 'en cours de lecture')}`}
+              </>
+            )
+          }
+          appel={piecesAValider.nombre > 0 ? 'Commencer' : 'Recevoir des pièces'}
+        />
+        <CarteChiffre
+          href={clientsEnRetard.length > 0 ? lienVers({ ecran: 'relances' }) : '#retards'}
+          icone={AlarmClock}
+          teinte={clientsEnRetard.length > 0 ? 'critique' : 'bon'}
+          libelle="Clients en retard"
+          valeur={clientsEnRetard.length}
+          detail={clientsEnRetard.length === 0 ? 'Tous les clients ont envoyé leurs pièces.' : clientsEnRetard.map((c) => c.client.raisonSociale).join(', ')}
+          appel={clientsEnRetard.length > 0 ? 'Préparer les relances' : 'Voir le détail'}
+        />
+        <CarteChiffre
+          href="#echeances"
+          icone={CalendarDays}
+          teinte="info"
+          libelle="Prochaine échéance"
+          valeur={prochaine ? formatDate(prochaine.echeance.date).slice(0, 5) : '—'}
+          detail={
+            prochaine ? (
+              <>
+                <span className="font-medium text-texte">{prochaine.echeance.libelle}</span>
+                {prochaine.badge && (
+                  <>
+                    {' '}
+                    <BadgeDemo texte={prochaine.badge} />
+                  </>
+                )}
+                <br />
+                {prochaine.dossiersPasPrets.length > 0 ? (
+                  <span className="font-medium text-critique">
+                    {pluriel(prochaine.dossiersPasPrets.length, 'dossier pas prêt', 'dossiers pas prêts')}
+                  </span>
+                ) : (
+                  <span className="font-medium text-bon">Tous les dossiers sont prêts</span>
+                )}
+              </>
+            ) : (
+              'Aucune échéance dans les 7 prochains jours.'
+            )
+          }
+          appel="Voir les échéances"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         {/* Bloc 1 : pièces à valider */}
-        <section id="a-valider" aria-labelledby="titre-a-valider">
-          <div className="mb-3 flex items-baseline justify-between gap-3">
-            <h2 id="titre-a-valider" className="text-[17px] font-semibold">
-              Pièces à valider
-            </h2>
-            <span className="text-sm text-texte-2">arrivées depuis hier, par client</span>
-          </div>
+        <Carte
+          id="a-valider"
+          titre="Pièces à valider"
+          icone={FileCheck2}
+          sousTitre="Arrivées depuis hier, par client. Cliquez sur une ligne pour l’ouvrir."
+          plein
+        >
           {groupes.length === 0 ? (
-            <Vide>Aucune pièce arrivée depuis la veille. Pour la démo, chargez la boîte de réception démo dans l’écran Réception.</Vide>
+            <Vide
+              icone={Inbox}
+              action={
+                <a href={lienVers({ ecran: 'reception' })} className={classesBouton('secondaire')}>
+                  Aller à la réception
+                </a>
+              }
+            >
+              Aucune pièce arrivée depuis la veille. Pour la démo, chargez la boîte de réception démo dans l’écran Réception.
+            </Vide>
           ) : (
-            <div className="relative overflow-x-auto border-t border-encre">
-              <table className="w-full min-w-[560px] text-sm">
+            <div className="relative overflow-x-auto border-t border-bord">
+              <table className="w-full min-w-[600px] text-sm">
                 <thead>
-                  <tr className="border-b border-trait text-left text-xs text-texte-2">
-                    <th className="py-2 pl-2 font-medium">Reçue</th>
+                  <tr className="bg-surface-2 text-left text-xs text-texte-2">
+                    <th className="py-2.5 pl-5 font-medium">Reçue</th>
                     <th className="font-medium">Canal</th>
                     <th className="font-medium">Fournisseur lu</th>
-                    <th className="pr-2 text-right font-medium">Montant TTC</th>
-                    <th className="pr-2 font-medium">Lecture</th>
+                    <th className="pr-4 text-right font-medium">Montant TTC</th>
+                    <th className="pr-5 font-medium">Lecture</th>
                   </tr>
                 </thead>
                 {groupes.map((g) => (
-                  <tbody key={g.client?.id ?? g.lignes[0]!.piece.clientId}>
-                    <tr className="bg-encre-pale/70">
-                      <th colSpan={5} className="border-y border-trait py-1.5 pl-2 text-left text-[13px] font-semibold text-encre">
-                        {g.client?.raisonSociale ?? 'Client inconnu'}
-                        <span className="ml-2 font-normal text-texte-2">{pluriel(g.lignes.length, 'pièce', 'pièces')}</span>
+                  <tbody key={g.client?.id ?? g.lignes[0]!.piece.clientId} className="border-t border-bord">
+                    <tr>
+                      <th colSpan={5} className="py-2.5 pl-5 text-left">
+                        <span className="flex items-center gap-2.5">
+                          <Avatar nom={g.client?.raisonSociale ?? '?'} taille="petit" />
+                          <span className="text-[13.5px] font-semibold text-texte">{g.client?.raisonSociale ?? 'Client inconnu'}</span>
+                          <span className="text-xs font-normal text-texte-3">{pluriel(g.lignes.length, 'pièce', 'pièces')}</span>
+                        </span>
                       </th>
                     </tr>
                     {g.lignes.map((l) => (
                       <tr
                         key={l.piece.id}
                         tabIndex={0}
-                        className="cursor-pointer border-b border-trait/60 last:border-b-0 hover:bg-encre-pale/50 focus-visible:bg-encre-pale/60"
+                        className="cursor-pointer border-t border-bord/60 transition-colors hover:bg-marque-pale/40 focus-visible:bg-marque-pale/50"
                         onClick={() => allerA(l.piece.id)}
                         onKeyDown={(e) => e.key === 'Enter' && allerA(l.piece.id)}
                       >
-                        <td className="chiffres whitespace-nowrap py-2.5 pl-2 text-texte-2">{recue(l.piece.recueLe)}</td>
+                        <td className="chiffres whitespace-nowrap py-3 pl-5 text-texte-2">{recue(l.piece.recueLe)}</td>
                         <td>
-                          <span className="inline-flex items-center gap-1.5 text-texte-2">
-                            <IconeCanal canal={l.piece.canal} />
-                            {LIBELLES_CANAL[l.piece.canal]}
-                          </span>
+                          <PuceCanal canal={l.piece.canal} />
                         </td>
-                        <td className="font-medium">{l.fournisseur ?? <span className="font-normal text-texte-3">non lu</span>}</td>
-                        <td className="pr-2 text-right">
+                        <td className="font-medium text-texte">{l.fournisseur ?? <span className="font-normal text-texte-3">non lu</span>}</td>
+                        <td className="whitespace-nowrap pr-4 text-right font-medium">
                           <Montant valeur={l.ttc} devise={l.devise} />
                         </td>
-                        <td className="pr-2">
+                        <td className="pr-5">
                           {etat.lectures[l.piece.id] ? (
                             <span className="text-xs text-texte-2">{etat.lectures[l.piece.id]}</span>
                           ) : l.piece.erreurLecture ? (
@@ -152,81 +245,90 @@ export function Accueil() {
               </table>
             </div>
           )}
-        </section>
+        </Carte>
 
-        <div className="grid grid-cols-1 content-start gap-8">
+        <div className="grid grid-cols-1 content-start gap-6">
           {/* Bloc 2 : clients en retard */}
-          <section id="retards" aria-labelledby="titre-retards">
-            <h2 id="titre-retards" className="mb-3 text-[17px] font-semibold">
-              Clients en retard
-            </h2>
+          <Carte id="retards" titre="Clients en retard" icone={AlarmClock} plein>
             {clientsEnRetard.length === 0 ? (
-              <Vide>Aucun client en retard aujourd’hui.</Vide>
+              <Vide icone={CircleCheck}>Aucun client en retard aujourd’hui.</Vide>
             ) : (
-              <ul className="divide-y divide-trait border-t border-encre">
+              <ul className="divide-y divide-bord border-t border-bord">
                 {clientsEnRetard.map(({ client, etat: retard, relance }) => (
-                  <li key={client.id} className="grid grid-cols-1 gap-1.5 px-1 py-3.5">
-                    <a href={lienVers({ ecran: 'client', clientId: client.id })} className="font-semibold hover:text-encre hover:underline">
-                      {client.raisonSociale}
-                    </a>
-                    <div className="flex items-center gap-2 text-xs text-texte-2">
-                      <Jauge valeur={retard.recuesCeMois} max={retard.attendues} />
-                      <span className="chiffres">
+                  <li key={client.id} className="grid grid-cols-1 gap-2 px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar nom={client.raisonSociale} />
+                      <div className="min-w-0 flex-1">
+                        <a
+                          href={lienVers({ ecran: 'client', clientId: client.id })}
+                          className="block truncate font-semibold text-texte hover:text-marque hover:underline"
+                        >
+                          {client.raisonSociale}
+                        </a>
+                        <p className="text-xs text-texte-2">
+                          Dernier envoi : {retard.dernierEnvoi ? formatDate(retard.dernierEnvoi.slice(0, 10)) : 'jamais'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5 text-xs text-texte-2">
+                      <Jauge valeur={retard.recuesCeMois} max={retard.attendues} largeur="flex-1" />
+                      <span className="chiffres whitespace-nowrap font-medium text-texte">
                         {retard.recuesCeMois} / {retard.attendues} pièces ce mois
                       </span>
                     </div>
                     <Raison>{retard.raison}</Raison>
-                    <div className="flex items-center justify-between gap-3 text-xs">
-                      <span className="text-texte-2">
-                        Dernier envoi : {retard.dernierEnvoi ? formatDate(retard.dernierEnvoi.slice(0, 10)) : 'jamais'}
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="flex items-center gap-2 text-xs text-texte-2">
+                        Relance <PastilleRelance statut={relance} />
                       </span>
-                      <a href={lienVers({ ecran: 'relances' })} className="font-medium text-encre hover:underline">
-                        Relance : {LIBELLES_STATUT_RELANCE[relance].toLowerCase()}
+                      <a href={lienVers({ ecran: 'relances' })} className="inline-flex items-center gap-1 text-sm font-semibold text-marque hover:underline">
+                        Relancer
+                        <ArrowRight className="h-4 w-4" aria-hidden />
                       </a>
                     </div>
                   </li>
                 ))}
               </ul>
             )}
-          </section>
+          </Carte>
 
           {/* Bloc 3 : échéances de la semaine */}
-          <section id="echeances" aria-labelledby="titre-echeances">
-            <h2 id="titre-echeances" className="mb-3 text-[17px] font-semibold">
-              Échéances de la semaine
-            </h2>
+          <Carte id="echeances" titre="Échéances de la semaine" icone={CalendarDays} plein>
             {echeancesDeLaSemaine.length === 0 ? (
-              <Vide>Aucune échéance dans les 7 prochains jours.</Vide>
+              <Vide icone={CalendarDays}>Aucune échéance dans les 7 prochains jours.</Vide>
             ) : (
-              <ul className="divide-y divide-trait border-t border-encre">
+              <ul className="divide-y divide-bord border-t border-bord">
                 {echeancesDeLaSemaine.map(({ echeance, badge, dossiersPasPrets }) => (
-                  <li key={echeance.id} className="grid grid-cols-[52px_minmax(0,1fr)] gap-3 px-1 py-3.5">
-                    <div className="rounded-[4px] border border-trait text-center leading-tight">
-                      <div className="chiffres pt-1 text-lg font-bold text-encre">{echeance.date.slice(8, 10)}</div>
-                      <div className="pb-1 text-[11px] text-texte-2">
-                        {formatDate(echeance.date).slice(3, 5)}/{echeance.date.slice(2, 4)}
+                  <li key={echeance.id} className="grid grid-cols-[52px_minmax(0,1fr)] gap-3.5 px-5 py-4">
+                    <div className="overflow-hidden rounded-xl border border-bord text-center leading-tight">
+                      <div className="bg-info py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-white">
+                        {MOIS_COURT.format(new Date(echeance.date)).replace('.', '')}
                       </div>
+                      <div className="chiffres py-1 text-xl font-semibold text-texte">{echeance.date.slice(8, 10)}</div>
                     </div>
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 font-medium">
+                      <div className="flex flex-wrap items-center gap-2 font-semibold text-texte">
                         {echeance.libelle}
                         {badge && <BadgeDemo texte={badge} />}
                       </div>
+                      <p className="chiffres text-xs text-texte-3">le {formatDate(echeance.date)}</p>
                       {dossiersPasPrets.length === 0 ? (
-                        <p className="mt-0.5 text-xs text-bon">
-                          <span aria-hidden>✓ </span>Tous les dossiers concernés sont prêts.
+                        <p className="mt-1.5 flex items-center gap-1.5 text-[13px] font-medium text-bon">
+                          <CircleCheck className="h-4 w-4" aria-hidden />
+                          Tous les dossiers concernés sont prêts.
                         </p>
                       ) : (
-                        <ul className="mt-1 space-y-0.5 text-xs">
+                        <ul className="mt-2 grid gap-1.5 text-[13px]">
                           {dossiersPasPrets.map((d) => (
-                            <li key={d.client.id}>
-                              <span className="font-semibold text-critique">
-                                <span aria-hidden>■ </span>Pas prêt :
-                              </span>{' '}
-                              <a href={lienVers({ ecran: 'client', clientId: d.client.id })} className="hover:underline">
-                                {d.client.raisonSociale}
-                              </a>
-                              <span className="text-texte-2">, {d.raison}</span>
+                            <li key={d.client.id} className="flex items-start gap-1.5">
+                              <OctagonAlert className="mt-0.5 h-4 w-4 shrink-0 text-critique" aria-hidden />
+                              <span>
+                                <span className="font-semibold text-critique">Pas prêt : </span>
+                                <a href={lienVers({ ecran: 'client', clientId: d.client.id })} className="font-medium hover:underline">
+                                  {d.client.raisonSociale}
+                                </a>
+                                <span className="text-texte-2">, {d.raison}</span>
+                              </span>
                             </li>
                           ))}
                         </ul>
@@ -236,7 +338,7 @@ export function Accueil() {
                 ))}
               </ul>
             )}
-          </section>
+          </Carte>
         </div>
       </div>
     </div>

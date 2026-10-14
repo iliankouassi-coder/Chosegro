@@ -60,7 +60,7 @@ Ce fichier sert à reprendre le projet dans une nouvelle session de Claude Code,
 - **Effets React** : un `useEffect` ne doit rien renvoyer d'autre qu'une fonction de nettoyage. `scrollIntoView` renvoie désormais une promesse dans Chrome : l'écrire entre accolades, sinon la page devient blanche.
 - **Démarrage** : le chargement de la démo passe par `demarrer()` dans `src/app/store.tsx`, une promesse gardée au niveau du module. Sans elle, le StrictMode de React monte l'application deux fois et l'historique de démo est chargé en double.
 - **Rechargement à chaud** : après une modification de `src/app/store.tsx`, Vite peut afficher « useApp doit être utilisé dans <FournisseurApp> » : recharger la page.
-- **Espaces insécables** : les montants s'affichent avec U+00A0 (« 118 000 FCFA »). Dans le code, écrire les caractères invisibles en séquences ` `, ` `, `−`, jamais en clair. Les tests comparent après remplacement.
+- **Espaces insécables** : les montants s'affichent avec U+00A0 (« 118 000 FCFA »). Dans le code, écrire les caractères invisibles en séquences `\u00A0`, `\u202F`, `\u2212`, jamais en clair. Les tests comparent après remplacement.
 - **Dates et heures** : une date est `AAAA-MM-JJ` sans fuseau ; un instant doit porter `Z` ou un décalage, sinon il est refusé (son sens dépendrait de l'heure du Mac). Abidjan = UTC+0.
 - **Données de démo** : `npm run seed` recalcule les dates à partir d'aujourd'hui et n'écrase jamais `data/echeances.json`.
 - **Recette** : Playwright n'est pas dans les dépendances : `npm install --no-save playwright && npx playwright install chromium`. Si le serveur de dev n'est pas sur le port 5173 : `URL_DEMO=http://localhost:<port> npm run recette`.

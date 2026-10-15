@@ -1,19 +1,22 @@
 // Écran 2 — Réception : simule l'arrivée des pièces par WhatsApp, e-mail ou papier.
-// Trois étapes numérotées (client, canal, fichiers), la boîte de réception démo, et les dernières pièces reçues.
+// La boîte de réception démo en tête, puis trois étapes numérotées (client, canal, fichiers) et les dernières pièces reçues.
 import { useEffect, useState, type DragEvent, type ReactNode } from 'react'
-import { CloudUpload, Inbox, Sparkles } from 'lucide-react'
+import { ArrowRight, CircleCheck, CloudUpload, Inbox, Sparkles } from 'lucide-react'
 import { lienVers } from '../../app/routeur'
 import { SEED } from '../../app/demo'
 import { useApp } from '../../app/store'
 import { formatDateHeure } from '../../domain/dates'
 import { messageLecture } from '../../domain/lecture'
-import { decoupageEnTacheDeFond, LIBELLES_CANAL } from '../../domain/pieces'
-import type { Canal, Piece } from '../../domain/types'
+import { decoupageEnTacheDeFond, groupePapier, LIBELLES_CANAL, libellePages, ordreReception, piecesAValider } from '../../domain/pieces'
+import type { Canal, Resultat } from '../../domain/types'
 import { genreFichier } from '../../infra/fichiers'
-import { BadgeDemo, Bouton, Carte, EnTetePage, Erreur, EtatLecture, IconeCanal, PastilleStatutPiece, Raison, TuileCanal, Vide } from '../composants'
+import { BadgeDemo, Bouton, Carte, classesBouton, EnTetePage, Erreur, EtatLecture, IconeCanal, PastilleStatutPiece, Raison, TuileCanal, Vide } from '../composants'
 import { CHAMP } from '../styles'
 
 const CANAUX: Canal[] = ['whatsapp', 'email', 'papier']
+
+/** La liste « Dernières pièces reçues » s'arrête là. */
+const MAX_RECUES = 40
 
 const TEINTES_CANAL: Record<Canal, { actif: string; icone: string }> = {
   whatsapp: { actif: 'border-whatsapp bg-whatsapp-pale/60 ring-whatsapp/15', icone: 'bg-whatsapp-pale text-whatsapp' },
@@ -33,6 +36,93 @@ function Etape({ numero, titre, children }: { numero: number; titre: string; chi
   )
 }
 
+/**
+ * La boîte de réception démo, en tête de l'écran : la démo commence par elle. Avant le chargement, une bannière
+ * avec son bouton ; après, une ligne qui le confirme et mène à la validation.
+ */
+function BoiteDemo({ occupe }: { occupe: boolean }) {
+  const { etat, actions } = useApp()
+  const [chargement, setChargement] = useState(false)
+  const [erreur, setErreur] = useState<string | null>(null)
+  const aValider = piecesAValider(etat.donnees.pieces).length
+  const envois = SEED.boiteDeReception.length
+
+  const charger = async (): Promise<void> => {
+    setChargement(true)
+    setErreur(null)
+    try {
+      await actions.chargerBoiteDemo()
+    } catch (e) {
+      setErreur(e instanceof Error ? e.message : String(e))
+    } finally {
+      setChargement(false)
+    }
+  }
+
+  const titre = (
+    <h2 id="titre-boite-demo" className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] font-semibold text-texte">
+      Boîte de réception démo <BadgeDemo texte="fictive" />
+    </h2>
+  )
+
+  if (etat.boiteDemoChargee) {
+    return (
+      <section
+        aria-labelledby="titre-boite-demo"
+        className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-bord bg-surface px-5 py-3.5 shadow-carte"
+      >
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-bon-pale text-bon">
+          <CircleCheck className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            {titre}
+            <span className="text-sm text-texte-2">{`${envois} envois fictifs reçus et lus`}</span>
+          </div>
+          <Raison>{'Déjà chargée. Pour recommencer : Paramètres, puis « Réinitialiser la démo ».'}</Raison>
+        </div>
+        {aValider > 0 && (
+          <a href={lienVers({ ecran: 'validation', pieceId: null })} className={classesBouton('principal')}>
+            Valider les pièces
+            <span className="chiffres rounded-full bg-black/20 px-1.5 text-xs leading-5">{aValider}</span>
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </a>
+        )}
+      </section>
+    )
+  }
+
+  return (
+    <section
+      aria-labelledby="titre-boite-demo"
+      className="mb-6 flex flex-col gap-4 rounded-2xl border border-marque/25 bg-gradient-to-br from-marque-pale via-surface to-surface p-5 shadow-carte sm:flex-row sm:items-center"
+    >
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-marque text-white">
+        <Sparkles className="h-5 w-5" aria-hidden />
+      </span>
+      <div className="min-w-0 flex-1">
+        {titre}
+        <p className="mt-1 max-w-[80ch] text-sm leading-relaxed text-texte-2">
+          {envois} envois fictifs déjà lus (dont une photo floue, la même photo envoyée deux fois, un avoir, un ticket manuscrit et un PDF
+          papier de 4 pages), pour faire la démo sans attendre la lecture automatique.
+        </p>
+        {erreur && (
+          <div className="mt-2">
+            <Erreur>{erreur}</Erreur>
+          </div>
+        )}
+      </div>
+      <div className="flex shrink-0 flex-col items-start gap-1.5 sm:items-end">
+        <Bouton variante="principal" disabled={occupe || chargement} aria-busy={chargement} onClick={() => void charger()}>
+          <Inbox className="h-4 w-4" aria-hidden />
+          Charger la boîte de réception démo
+        </Bouton>
+        {chargement && <Raison>{`Réception des ${envois} envois…`}</Raison>}
+      </div>
+    </section>
+  )
+}
+
 export function Reception() {
   const { etat, actions } = useApp()
   const { clients, pieces } = etat.donnees
@@ -41,6 +131,8 @@ export function Reception() {
   const [survol, setSurvol] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
   const [enCours, setEnCours] = useState(false)
+  // Erreur d'une action de la liste (fusion, séparation), affichée sous la pièce concernée.
+  const [erreurPiece, setErreurPiece] = useState<{ pieceId: string; message: string } | null>(null)
 
   const clientChoisi = clients.find((c) => c.id === clientId) ?? clients[0]
 
@@ -74,18 +166,24 @@ export function Reception() {
     void deposer(e.dataTransfer.files)
   }
 
-  const recues = [...pieces].sort((a, b) => (a.recueLe < b.recueLe ? 1 : -1)).slice(0, 40)
-  const groupesPapier = (p: Piece): Piece[] =>
-    pieces
-      .filter((x) => x.canal === 'papier' && x.empreinte === p.empreinte && x.clientId === p.clientId && x.fichier.pages !== null)
-      .sort((a, b) => (a.fichier.pages?.[0] ?? 0) - (b.fichier.pages?.[0] ?? 0))
+  const recues = ordreReception(pieces).slice(0, MAX_RECUES)
+
+  /** Fusion ou séparation d'un PDF papier : un refus du domaine s'affiche sous la pièce. */
+  const agirSurPapier = async (pieceId: string, f: (id: string) => Promise<Resultat<null>>): Promise<void> => {
+    setErreurPiece(null)
+    const r = await f(pieceId)
+    if (!r.ok) setErreurPiece({ pieceId, message: r.erreur })
+  }
 
   return (
     <>
       <EnTetePage
         titre="Recevoir des pièces"
-        description="Simulez l’envoi d’une pièce par un client : choisissez le client et le canal, puis déposez le fichier. L’IA la lit et la range dans « Pièces à valider »."
+        description={
+          'Simulez l’envoi d’une pièce par un client\u00A0: choisissez le client et le canal, puis déposez le fichier. L’IA lit la pièce et la range dans «\u00A0Pièces à valider\u00A0».'
+        }
       />
+      <BoiteDemo occupe={enCours} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         <div className="grid grid-cols-1 content-start gap-6">
           <Carte>
@@ -186,43 +284,18 @@ export function Reception() {
               </Etape>
             </div>
           </Carte>
-
-          <section
-            aria-labelledby="titre-boite-demo"
-            className="relative overflow-hidden rounded-2xl border border-marque/20 bg-gradient-to-br from-marque-pale via-surface to-surface p-5 shadow-carte"
-          >
-            <div className="flex items-start gap-3.5">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-marque text-white">
-                <Sparkles className="h-5 w-5" aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <h2 id="titre-boite-demo" className="flex flex-wrap items-center gap-2 text-[16px] font-semibold text-texte">
-                  Boîte de réception démo <BadgeDemo texte="fictive" />
-                </h2>
-                <p className="mt-1 text-sm leading-relaxed text-texte-2">
-                  {SEED.boiteDeReception.length} envois fictifs déjà lus (dont une photo floue, la même photo envoyée deux fois, un avoir, un ticket
-                  manuscrit et un PDF papier de 4 pages), pour faire la démo sans attendre Claude Code.
-                </p>
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <Bouton variante="principal" disabled={etat.boiteDemoChargee || enCours} onClick={() => void actions.chargerBoiteDemo()}>
-                    Charger la boîte de réception démo
-                  </Bouton>
-                  {etat.boiteDemoChargee && <Raison>{'Déjà chargée. Pour recommencer\u00A0: Paramètres, puis «\u00A0Réinitialiser la démo\u00A0».'}</Raison>}
-                </div>
-              </div>
-            </div>
-          </section>
         </div>
 
-        <Carte titre="Dernières pièces reçues" icone={Inbox} sousTitre={recues.length > 0 ? 'Les 40 plus récentes' : undefined} plein>
+        <Carte titre="Dernières pièces reçues" icone={Inbox} sousTitre={pieces.length > MAX_RECUES ? `Les ${MAX_RECUES} plus récentes` : undefined} plein>
           {recues.length === 0 ? (
             <Vide icone={Inbox}>Aucune pièce pour l’instant. Déposez un fichier ou chargez la boîte de réception démo.</Vide>
           ) : (
             <ul className="divide-y divide-bord border-t border-bord">
               {recues.map((p) => {
                 const client = clients.find((c) => c.id === p.clientId)
-                const groupe = p.canal === 'papier' && p.fichier.pages ? groupesPapier(p) : []
+                const groupe = groupePapier(pieces, p)
                 const index = groupe.findIndex((x) => x.id === p.id)
+                const precedente = index > 0 ? groupe[index - 1] : undefined
                 const modifiable = p.statut === 'a_lire' || p.statut === 'a_valider'
                 return (
                   <li key={p.id} className="flex items-start gap-3 px-5 py-3.5 text-sm transition-colors hover:bg-surface-2">
@@ -250,15 +323,19 @@ export function Reception() {
                         )}
                       </div>
                       {p.erreurLecture && <div className="mt-1 text-xs text-critique">{p.erreurLecture}</div>}
-                      {modifiable && (index > 0 || (p.fichier.pages?.length ?? 0) > 1 || (p.statut === 'a_lire' && !etat.lectures[p.id])) && (
+                      {modifiable && (precedente !== undefined || (p.fichier.pages?.length ?? 0) > 1 || (p.statut === 'a_lire' && !etat.lectures[p.id])) && (
                         <div className="mt-2 flex flex-wrap gap-1.5">
-                          {index > 0 && (
-                            <Bouton taille="petit" onClick={() => void actions.fusionnerAvecPrecedente(p.id)}>
+                          {precedente && (
+                            <Bouton
+                              taille="petit"
+                              title={`Rattacher à la pièce du dessus (${libellePages(precedente.fichier.pages ?? [])})`}
+                              onClick={() => void agirSurPapier(p.id, actions.fusionnerAvecPrecedente)}
+                            >
                               Fusionner avec la précédente
                             </Bouton>
                           )}
                           {(p.fichier.pages?.length ?? 0) > 1 && (
-                            <Bouton taille="petit" onClick={() => void actions.separer(p.id)}>
+                            <Bouton taille="petit" onClick={() => void agirSurPapier(p.id, actions.separer)}>
                               Séparer les pages
                             </Bouton>
                           )}
@@ -267,6 +344,11 @@ export function Reception() {
                               Réessayer
                             </Bouton>
                           )}
+                        </div>
+                      )}
+                      {erreurPiece?.pieceId === p.id && (
+                        <div className="mt-2">
+                          <Erreur>{erreurPiece.message}</Erreur>
                         </div>
                       )}
                     </div>

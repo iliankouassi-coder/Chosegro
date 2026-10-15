@@ -10,9 +10,11 @@ import {
   enregistrerEchecLecture,
   enregistrerLecture,
   fusionnerAvecPrecedente,
+  groupePapier,
   libellePages,
   marquerDoublon,
   nouvellePiece,
+  ordreReception,
   pieceSuivante,
   piecesAValider,
   piecesArriveesDepuisLaVeille,
@@ -576,6 +578,53 @@ describe('pieceSuivante', () => {
   })
 })
 
+/** Une page d'un PDF papier ; le découpage décale chaque page d'une milliseconde (store.tsx). */
+const pagePdf = (page: number, partiel: Partial<Piece> = {}): Piece =>
+  fabriquerPiece({
+    id: `page-${page}`,
+    canal: 'papier',
+    empreinte: 'pdf-4-pages',
+    fichier: { nom: 'scan.pdf', type: 'application/pdf', taille: 1000, pages: [page] },
+    recueLe: new Date(Date.parse('2026-10-12T10:00:00.000Z') + page - 1).toISOString(),
+    ...partiel,
+  })
+
+describe('ordreReception', () => {
+  it('met la plus récente d’abord', () => {
+    const pieces = [
+      fabriquerPiece({ id: 'a', recueLe: '2026-10-12T09:00:00.000Z' }),
+      fabriquerPiece({ id: 'c', recueLe: '2026-10-12T11:00:00.000Z' }),
+      fabriquerPiece({ id: 'b', recueLe: '2026-10-12T10:30:00.000Z' }),
+    ]
+    expect(ordreReception(pieces).map((p) => p.id)).toEqual(['c', 'b', 'a'])
+  })
+
+  it('garde les pages d’un PDF ensemble, dans l’ordre des pages : « la précédente » est la ligne du dessus', () => {
+    const pieces = [
+      fabriquerPiece({ id: 'avant', recueLe: '2026-10-12T09:00:00.000Z' }),
+      pagePdf(3),
+      pagePdf(1),
+      pagePdf(4),
+      pagePdf(2, { statut: 'rejetee' }),
+      fabriquerPiece({ id: 'apres', recueLe: '2026-10-12T11:00:00.000Z' }),
+    ]
+    expect(ordreReception(pieces).map((p) => p.id)).toEqual(['apres', 'page-1', 'page-2', 'page-3', 'page-4', 'avant'])
+  })
+
+  it('ne mélange pas deux PDF, ni le même PDF reçu pour deux clients', () => {
+    const autreClient = (page: number): Piece => pagePdf(page, { id: `autre-${page}`, clientId: 'client-lagune' })
+    const ordre = ordreReception([pagePdf(2), autreClient(2), pagePdf(1), autreClient(1)]).map((p) => p.id)
+    expect(ordre.filter((id) => id.startsWith('page'))).toEqual(['page-1', 'page-2'])
+    expect(ordre.filter((id) => id.startsWith('autre'))).toEqual(['autre-1', 'autre-2'])
+    expect(Math.abs(ordre.indexOf('page-1') - ordre.indexOf('page-2'))).toBe(1)
+  })
+
+  it('met en dernier un instant invalide, sans modifier la liste reçue', () => {
+    const pieces = geler([fabriquerPiece({ id: 'invalide', recueLe: 'hier' }), fabriquerPiece({ id: 'ok', recueLe: '2026-10-12T09:00:00.000Z' })])
+    expect(ordreReception(pieces).map((p) => p.id)).toEqual(['ok', 'invalide'])
+  })
+})
+
 describe('découpage d’un PDF papier', () => {
   it('donne une pièce par page par défaut', () => {
     expect(decouperParPage(4)).toEqual([[1], [2], [3], [4]])
@@ -586,6 +635,16 @@ describe('découpage d’un PDF papier', () => {
     for (const n of [0, -3, 2.5, Number.NaN, Number.POSITIVE_INFINITY]) {
       expect(() => decouperParPage(n)).toThrow('Nombre de pages invalide')
     }
+  })
+
+  it('groupePapier : les pages encore à lire ou à valider du même PDF, dans l’ordre des pages', () => {
+    const pieces = [pagePdf(3), pagePdf(1, { statut: 'rejetee' }), pagePdf(4, { statut: 'a_lire', extraction: null }), pagePdf(2), fabriquerPiece({ id: 'photo' })]
+    const page3 = pieces[0] as Piece
+    expect(groupePapier(pieces, page3).map((p) => p.id)).toEqual(['page-2', 'page-3', 'page-4'])
+    // La page 2 n'a plus de précédente : la page 1 est rejetée.
+    expect(groupePapier(pieces, pieces[3] as Piece)[0]?.id).toBe('page-2')
+    expect(groupePapier(pieces, pagePdf(1, { clientId: 'client-lagune' }))).toEqual([])
+    expect(groupePapier(pieces, pieces[4] as Piece)).toEqual([])
   })
 
   it('« Fusionner avec la précédente » rattache une page à la pièce d’avant', () => {

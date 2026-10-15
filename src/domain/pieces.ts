@@ -269,6 +269,41 @@ export function piecesArriveesDepuisLaVeille(pieces: readonly Piece[], maintenan
     })
 }
 
+/** Les pages d'un même PDF papier partagent client et empreinte : la clé qui les réunit, ou null pour une autre pièce. */
+const clePdfPapier = (p: Piece): string | null =>
+  p.canal === 'papier' && p.fichier.pages !== null ? `${p.clientId}\u0000${p.empreinte}` : null
+
+/**
+ * Ordre de la liste « Dernières pièces reçues » : la plus récente d'abord. Les pages d'un même PDF papier
+ * (reçues au même instant, à une milliseconde près) restent ensemble, dans l'ordre des pages, à la place de
+ * la plus récente d'entre elles : « Fusionner avec la précédente » vise alors la ligne du dessus.
+ * Un instant invalide passe en dernier.
+ */
+export function ordreReception(pieces: readonly Piece[]): Piece[] {
+  const instant = (p: Piece): number => msInstant(p.recueLe) ?? Number.NEGATIVE_INFINITY
+  const plusRecente = new Map<string, number>()
+  for (const p of pieces) {
+    const cle = clePdfPapier(p)
+    if (cle !== null) plusRecente.set(cle, Math.max(plusRecente.get(cle) ?? Number.NEGATIVE_INFINITY, instant(p)))
+  }
+  const rang = (p: Piece): number => {
+    const cle = clePdfPapier(p)
+    return cle === null ? instant(p) : (plusRecente.get(cle) ?? instant(p))
+  }
+  return [...pieces].sort((a, b) => {
+    const ra = rang(a)
+    const rb = rang(b)
+    if (ra !== rb) return ra > rb ? -1 : 1
+    const ca = clePdfPapier(a) ?? ''
+    const cb = clePdfPapier(b) ?? ''
+    if (ca !== cb) return ca < cb ? -1 : 1
+    const pa = a.fichier.pages?.[0] ?? 0
+    const pb = b.fichier.pages?.[0] ?? 0
+    if (pa !== pb) return pa - pb
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+  })
+}
+
 /**
  * Raccourci « flèche droite » : la prochaine pièce « à valider » après la courante, dans l'ordre de
  * réception. S'il n'y en a pas après, on reboucle sur la première. Jamais la courante ; null s'il n'y en a
@@ -304,6 +339,19 @@ const verifierIndex = (groupes: GroupesPages, index: number): string | null => {
   if (!Number.isInteger(index)) return `Position de pièce invalide : ${String(index)}.`
   if (index < 0 || index >= groupes.length) return `Cette pièce n'existe pas : le document en compte ${groupes.length}.`
   return null
+}
+
+/**
+ * Les pièces du PDF papier de `piece` qu'on peut encore fusionner ou séparer (à lire ou à valider), dans l'ordre
+ * des pages. « Fusionner avec la précédente » est proposé à partir de la deuxième ; une page rejetée,
+ * validée ou marquée doublon n'en fait plus partie. Liste vide pour une pièce qui ne vient pas d'un PDF papier.
+ */
+export function groupePapier(pieces: readonly Piece[], piece: Piece): Piece[] {
+  const cle = clePdfPapier(piece)
+  if (cle === null) return []
+  return pieces
+    .filter((p) => clePdfPapier(p) === cle && (p.statut === 'a_lire' || p.statut === 'a_valider'))
+    .sort((a, b) => (a.fichier.pages?.[0] ?? 0) - (b.fichier.pages?.[0] ?? 0))
 }
 
 /** « Fusionner avec la précédente » : les pages de la pièce index rejoignent la pièce d'avant. */

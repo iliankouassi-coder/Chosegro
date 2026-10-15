@@ -14,6 +14,7 @@ import {
   enregistrerEchecLecture,
   enregistrerLecture,
   fusionnerAvecPrecedente,
+  groupePapier,
   nouvellePiece,
   piecesAValider,
   rouvrirPiece,
@@ -467,19 +468,6 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
       return r.ok ? r.valeur : piece
     }
 
-    /** Pièces du même PDF papier, dans l'ordre des pages. */
-    const groupePapier = (piece: Piece): Piece[] =>
-      donneesRef.current.pieces
-        .filter(
-          (p) =>
-            p.canal === 'papier' &&
-            p.clientId === piece.clientId &&
-            p.empreinte === piece.empreinte &&
-            p.fichier.pages !== null &&
-            (p.statut === 'a_lire' || p.statut === 'a_valider'),
-        )
-        .sort((a, b) => (a.fichier.pages?.[0] ?? 0) - (b.fichier.pages?.[0] ?? 0))
-
     const relireOuDemo = async (piece: Piece): Promise<void> => {
       if (piece.demo) await db.pieces.put(appliquerLectureDemo(piece))
       else void lancerLecture(piece.id)
@@ -543,7 +531,7 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
         action(async () => {
           const piece = donneesRef.current.pieces.find((p) => p.id === pieceId)
           if (!piece) return { ok: false, erreur: 'Pièce introuvable.' }
-          const groupe = groupePapier(piece)
+          const groupe = groupePapier(donneesRef.current.pieces, piece)
           const index = groupe.findIndex((p) => p.id === pieceId)
           const groupes = groupe.map((p) => p.fichier.pages ?? [])
           const r = fusionnerAvecPrecedente(groupes, index)

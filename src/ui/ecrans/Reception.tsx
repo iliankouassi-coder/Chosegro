@@ -77,9 +77,9 @@ function BoiteDemo({ occupe }: { occupe: boolean }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2">
             {titre}
-            <span className="text-sm text-texte-2">{`${envois} envois fictifs reçus et lus`}</span>
+            <span className="text-sm text-texte-2">{`${envois}\u00A0envois fictifs reçus et lus`}</span>
           </div>
-          <Raison>{'Déjà chargée. Pour recommencer : Paramètres, puis « Réinitialiser la démo ».'}</Raison>
+          <Raison>{'Déjà chargée. Pour recommencer\u00A0: Paramètres, puis «\u00A0Réinitialiser la démo\u00A0».'}</Raison>
         </div>
         {aValider > 0 && (
           <a href={lienVers({ ecran: 'validation', pieceId: null })} className={classesBouton('principal')}>
@@ -117,7 +117,7 @@ function BoiteDemo({ occupe }: { occupe: boolean }) {
           <Inbox className="h-4 w-4" aria-hidden />
           Charger la boîte de réception démo
         </Bouton>
-        {chargement && <Raison>{`Réception des ${envois} envois…`}</Raison>}
+        {chargement && <Raison>{`Réception des ${envois}\u00A0envois…`}</Raison>}
       </div>
     </section>
   )

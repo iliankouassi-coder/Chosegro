@@ -93,7 +93,7 @@ function versCorrections(s: Saisie): { corrections: Corrections; erreurs: string
   // et la validation attend qu'un numéro soit choisi.
   const compte = s.compte.trim()
   const numeroDeCompte = /^\d+$/.test(compte)
-  if (compte !== '' && !numeroDeCompte) erreurs.push('Compte : choisissez un compte dans la liste des suggestions, ou tapez son numéro.')
+  if (compte !== '' && !numeroDeCompte) erreurs.push('Compte\u00A0: choisissez un compte dans la liste des suggestions, ou tapez son numéro.')
   return {
     corrections: {
       champs,
@@ -717,7 +717,7 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                     }}
                   >
                     <Raison>
-                      {'Ne remplissez que ce qui est faux : un champ laissé vide garde la valeur lue, écrite en gris. Échap ferme ce formulaire.'}
+                      {'Ne remplissez que ce qui est faux\u00A0: un champ laissé vide garde la valeur lue, écrite en gris. Échap ferme ce formulaire.'}
                     </Raison>
                     <div className="grid grid-cols-1 gap-1.5 text-sm">
                       <label htmlFor="correction-compte" className="font-medium text-texte">
@@ -898,7 +898,7 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                     {piece.traiteeLe && ` le ${formatDateHeure(piece.traiteeLe)}`}
                     {piece.statut === 'rejetee' && piece.motifRejet === 'illisible' && (
                       <>
-                        {' (illisible). Message de relance prêt : '}
+                        {' (illisible). Message de relance prêt\u00A0: '}
                         <a href={lienVers({ ecran: 'relances' })} className="font-semibold underline underline-offset-2">
                           ouvrir les relances
                         </a>

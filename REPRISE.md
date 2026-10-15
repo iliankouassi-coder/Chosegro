@@ -2,18 +2,21 @@
 
 Ce fichier sert à reprendre le projet dans une nouvelle session de Claude Code, sans l'historique de la précédente. Il complète CLAUDE.md (les règles), SPEC.md (la référence), PLAN.md (les étapes et les choix à valider) et README.md (le lancement).
 
-## État au 14/10/2026 (fin de journée)
+## État au 15/10/2026
 
 - La version démo décrite dans SPEC.md est **entièrement construite** : `src/domain` et ses tests, données de démo, serveur local de lecture, les 7 écrans.
-- Branche de travail : `claude/refonte-ui`. Elle contient `claude/plan-demo-etapes-s3iu27` (la branche par défaut du dépôt), puis :
+- Branche de travail : **`claude/plan-demo-etapes-s3iu27`** (la branche par défaut du dépôt). Elle contient tout `claude/refonte-ui`, puis la seconde refonte de l'interface du 15/10 (plus bas). Sur le Mac : `git fetch`, `git checkout claude/plan-demo-etapes-s3iu27`, `git pull`.
+- Ce que `claude/refonte-ui` avait apporté :
   - la refonte de l'interface (barre latérale à compteurs, cartes, pastilles d'état, icônes lucide-react) et un correctif (l'écran Validation plantait sur les navigateurs récents) ;
   - la **FNE** : un achat sans QR code de facture normalisée voit sa TVA ajoutée à la charge (interprétation 15) ; chiffre sur l'accueil, relance prête, date d'obligation dans Paramètres ;
   - l'**annulation d'une validation**, tant que l'écriture n'a pas été exportée (interprétation 16) ;
   - la **date de démo** : avant le 10, l'accueil propose de caler la démo sur le 14 (interprétation 17) ;
   - la **lecture locale** par Ollama (`npm run dev:locale`) et le **banc d'essai** (`npm run banc`), décidés par Adam.
-- Si `claude/refonte-ui` n'est pas encore sur GitHub : `git push -u origin claude/refonte-ui` depuis le Terminal d'Adam (il faut son identifiant GitHub et un jeton d'accès ; Claude Code n'a pas d'identifiants).
-- Vérifié : 877 tests verts (`npm test`, 25 fichiers), aussi sous `TZ=Europe/Paris` et `TZ=America/Los_Angeles` ; `npm run typecheck` et `npm run build` propres.
-- Sur le Mac d'Adam : `npm run recette -- --sans-claude` verte (tests 2 et 3, aucune erreur de console) ; la partie interface du test 1 rejouée sur une pièce démo déjà lue est verte. **La lecture en direct de D01 et D02 par Claude Code sur le Mac n'est pas encore faite.**
+- **Seconde refonte de l'interface (15/10)**, demandée par Adam (« simple à comprendre, facile à utiliser, agréable à regarder ») :
+  - Validation : à 1440 × 790 (fenêtre Chrome d'un MacBook Air), le contrôle des montants, le « Pourquoi » et toute l'écriture tiennent sans défiler ; une pièce validée montre l'écriture **enregistrée** (« Écriture validée ») ; la recherche d'un compte met les comptes de charge (ou de produit) en tête et un mot tapé n'est plus pris pour un compte ; « Marquer comme doublon » est dans l'encart du doublon probable. Sous 1 400 px de large, la file de gauche est masquée (« Suivante » et la flèche restent).
+  - Audit de tous les écrans à trois tailles par plusieurs agents : 93 défauts signalés, 75 confirmés par contre-vérification et corrigés, 18 écartés. Entre autres : contrastes à 4,5:1 au moins, chaque écran s'ouvre en haut, libellés de compte lisibles seuls (« ACHATS DE MARCHANDISES — dans la Région »), état de la lecture en une phrase claire, boîte de réception démo proposée dès le premier lancement, « pas nécessaire » au lieu de « Relance : À faire » pour un client à jour, fiche client qui dit si le client est en retard, suppression d'une règle confirmée, export avec réglages du format repliés, Paramètres avec une barre « Modifications non enregistrées ».
+- Vérifié le 15/10 (environnement de développement Linux) : 939 tests verts (`npm test`, 28 fichiers), aussi sous `TZ=Europe/Paris` et `TZ=America/Los_Angeles` ; `npm run typecheck` et `npm run build` propres ; **`npm run recette` complète verte**, lecture en direct de D01 par Claude Code en 11 s comprise, aucune erreur de console.
+- Sur le Mac d'Adam : seule la recette du 14/10 (`--sans-claude`) a été faite. **La lecture en direct de D01 et D02 par Claude Code sur le Mac n'est pas encore faite.**
 - Le banc d'essai est prêt mais **pas encore lancé** : Ollama n'est pas installé sur le Mac (MacBook Air M1, 8 Go, Homebrew absent).
 - Revue adversariale du domaine : 48 défauts signalés, 32 confirmés et corrigés avec leur test, 16 écartés (détail dans PLAN.md).
 
@@ -25,7 +28,14 @@ Ce fichier sert à reprendre le projet dans une nouvelle session de Claude Code,
 4. **Banc d'essai de la lecture locale** : installer Ollama (application depuis ollama.com), `ollama pull qwen3-vl:2b` (1,9 Go), puis `npm run banc`. Le rapport s'enregistre dans `.banc/`. Sur une machine de 16 Go ou plus, comparer avec `--modele qwen3-vl:4b`.
 5. **Fichiers créés à la place d'Adam**, parce qu'ils manquaient : `data/echeances.json` (échéances fictives, badge DÉMO), `prompts/extraction.md` et `prompts/extraction_locale.md`. CLAUDE.md réserve les deux premiers à Adam : ne pas les modifier sans sa demande.
 6. **Avant une démo** : mettre un vrai numéro dans les fiches clients (ceux de la démo sont fictifs). Avant le 10 du mois, cliquer sur « Caler la démo au 14 » dans l'accueil, et revenir au jour réel ensuite (Paramètres, carte Démo).
-7. **Plus tard**, selon les entretiens (voir l'audit du 14/10/2026 : import d'une discussion WhatsApp exportée, export au format du logiciel du cabinet, taxes autres que la TVA, sauvegarde). Le format Neos, seulement quand le fichier exemple sera fourni. Tout ce qui est dans « Hors périmètre » de SPEC.md reste exclu.
+7. **Choix d'interface laissés à Adam** (refonte du 15/10) :
+   - Validation : « QR code FNE » remplace « QR facture électronique » ; la devise est dans la grille des champs lus ; le type se lit dans la phrase « Pièce émise par … : achat. » en tête des champs.
+   - Pièce floue : la consigne « rejetez-la » apparaît deux fois (alerte « Bloquant » et pied « Validation impossible ») ; à 1440 × 790, il faut défiler pour voir ses lignes d'écriture.
+   - À 1280 × 720, les totaux d'un doublon, d'une pièce sans FNE ou d'un avoir passent sous la barre d'action (10 à 23 px) ; les lignes restent visibles.
+   - « mois-ci » contient un caractère invisible (U+2060) qui empêche « mois- / ci » en fin de ligne ; une recherche Ctrl+F sur « mois-ci » peut ne pas le trouver.
+   - Aperçu des relances dans Paramètres : client et fournisseurs fictifs (« Boutique Exemple SARL », « Imprimerie Exemple »…).
+8. **Libellés de `data/plan_syscohada.xlsx` à corriger par Adam** (l'interface les affiche tels quels, en retirant seulement les renvois « (1) ») : majuscules sans accents (613 « TRANSPORTS POUR LE COMPTE DE TIERS », 601, 602, 445…) ; tiret mal espacé (6052 « Fournitures non stockables- Electricité », 6053, 172, 173, 479, 551 à 553, 2446, 4717) ; environ 90 libellés qui commencent par une minuscule et n'ont de sens qu'avec leur parent (« dans la Région »…) ; libellés erronés de 54, 6791 et 60 ; 4812 « Immobilisations corporelles », qui se lit comme un compte de classe 2.
+9. **Plus tard**, selon les entretiens (voir l'audit du 14/10/2026 : import d'une discussion WhatsApp exportée, export au format du logiciel du cabinet, taxes autres que la TVA, sauvegarde). Le format Neos, seulement quand le fichier exemple sera fourni. Tout ce qui est dans « Hors périmètre » de SPEC.md reste exclu.
 
 ## Où changer quoi
 
@@ -43,7 +53,10 @@ Ce fichier sert à reprendre le projet dans une nouvelle session de Claude Code,
 | Les clients et pièces fictifs | `scripts/demo/catalogue.ts`, puis `npm run seed` |
 | L'état de l'application, le chargement de la démo | `src/app/store.tsx` |
 | L'heure vue par l'application (date de démo) | `src/app/horloge.ts` |
-| L'allure commune (couleurs, cartes, pastilles, barre latérale) | `src/index.css`, `src/ui/composants.tsx`, `src/ui/Coquille.tsx` |
+| L'allure commune (couleurs, cartes, pastilles, barre latérale) | `src/index.css` (jetons de couleur), `src/ui/composants.tsx`, `src/ui/Coquille.tsx` |
+| Le libellé d'un compte tel qu'il s'affiche (parent ajouté, renvoi retiré) | `libelleCompletCompte` dans `src/domain/plan.ts` |
+| La phrase sur l'état de la lecture (Réception, Paramètres) | `src/domain/lecture.ts` |
+| La couleur de la jauge des pièces reçues | `tonJauge` dans `src/domain/retards.ts` |
 | Un écran | `src/ui/ecrans/<Écran>.tsx` (affichage seulement : le calcul va dans `src/domain`) |
 
 ## Façon de travailler
@@ -64,4 +77,8 @@ Ce fichier sert à reprendre le projet dans une nouvelle session de Claude Code,
 - **Dates et heures** : une date est `AAAA-MM-JJ` sans fuseau ; un instant doit porter `Z` ou un décalage, sinon il est refusé (son sens dépendrait de l'heure du Mac). Abidjan = UTC+0.
 - **Données de démo** : `npm run seed` recalcule les dates à partir d'aujourd'hui et n'écrase jamais `data/echeances.json`.
 - **Recette** : Playwright n'est pas dans les dépendances : `npm install --no-save playwright && npx playwright install chromium`. Si le serveur de dev n'est pas sur le port 5173 : `URL_DEMO=http://localhost:<port> npm run recette`.
+- **Contrastes** : les couleurs passent par les jetons de `src/index.css`, réglés pour 4,5:1 au moins. Ne pas écrire de couleur en dur dans un écran.
+- **Tailwind 4** : une variante de largeur en px (`min-[1400px]:`) est émise avant `lg:` (en rem) et perd contre elle ; écrire la largeur en rem (`min-[87.5rem]:`).
+- **Copie de travail git (worktree) avec `node_modules` en lien symbolique** : Vite refuse la police Instrument Sans (403, `server.fs.allow`). Lancer le serveur avec une configuration qui ajoute le dossier du lien à `server.fs.allow`, sinon les captures sont faites avec une autre police.
+- **Recette** : `scripts/recette/recette.cjs` cherche des libellés précis (« Écriture proposée », « Pourquoi : », « écriture équilibrée », « Validée par », « Charger la boîte de réception démo », « Ouvrir WhatsApp », « Exporter en Excel »…). Changer un de ces textes, c'est changer la recette.
 - **Lecture locale** : la conversion des PDF en images passe par `qlmanage` (macOS). Un modèle de 2 milliards de paramètres tient dans 8 Go, mais il est plus lent et moins précis : le banc d'essai le mesure.

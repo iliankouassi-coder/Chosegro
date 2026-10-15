@@ -207,7 +207,7 @@ function FileValidation({ lignes, courante }: { lignes: LignePiece[]; courante: 
                         sans FNE
                       </span>
                     ) : (
-                      <span className="chiffres text-texte-3">{formatDateHeure(l.piece.recueLe).slice(-5)}</span>
+                      <span className={`chiffres ${ici ? 'text-texte-2' : 'text-texte-3'}`}>{formatDateHeure(l.piece.recueLe).slice(-5)}</span>
                     )}
                   </span>
                 </a>

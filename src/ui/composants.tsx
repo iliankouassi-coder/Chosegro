@@ -324,12 +324,17 @@ export function Bouton({
   return <button type="button" className={`${classesBouton(variante, taille)} ${className}`} {...props} />
 }
 
-/** Touche clavier affichée dans un bouton ou une aide. */
+/**
+ * Touche clavier affichée dans un bouton ou une aide. `sombre` : sur le vert d'un bouton principal ; quand ce bouton
+ * est désactivé (gris et plat), la touche reprend l'allure claire, sinon son texte blanc disparaîtrait sur le gris.
+ */
 export function Touche({ children, sombre = false }: { children: ReactNode; sombre?: boolean }) {
   return (
     <kbd
       className={`inline-flex min-w-[1.5em] items-center justify-center rounded-md px-1.5 font-sans text-[11px] font-semibold leading-5 ${
-        sombre ? 'bg-black/20 text-white' : 'border border-bord bg-surface text-texte-2 shadow-[0_1px_0_var(--color-bord)]'
+        sombre
+          ? 'bg-black/20 text-white in-disabled:bg-surface in-disabled:text-texte-3 in-disabled:ring-1 in-disabled:ring-inset in-disabled:ring-bord'
+          : 'border border-bord bg-surface text-texte-2 shadow-[0_1px_0_var(--color-bord)]'
       }`}
     >
       {children}

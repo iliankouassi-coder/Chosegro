@@ -1,5 +1,5 @@
 // Écran 1 — Accueil : pièces à valider, clients en retard, échéances de la semaine (dans cet ordre).
-// En tête, trois cartes chiffrées qui mènent chacune à son bloc ; dessous, la file des pièces regroupée par client.
+// En tête, quatre cartes chiffrées sur une rangée, qui mènent chacune à son bloc ; dessous, la file des pièces regroupée par client.
 import { AlarmClock, ArrowRight, CalendarClock, CalendarDays, CircleCheck, FileCheck2, Inbox, OctagonAlert, QrCode, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { lienVers } from '../../app/routeur'
@@ -8,7 +8,9 @@ import { useApp } from '../../app/store'
 import { dateAbidjan, formatDate, formatDateHeure } from '../../domain/dates'
 import { avantSeuilRetard, dateDemoConseillee, tonJauge } from '../../domain/retards'
 import { formatFcfa } from '../../domain/montants'
+import { LIBELLES_CANAL } from '../../domain/pieces'
 import { regrouperParClient, tableauAccueil } from '../../domain/tableaux'
+import type { Canal } from '../../domain/types'
 import {
   Avatar,
   BadgeDemo,
@@ -22,6 +24,7 @@ import {
   PastilleRelance,
   PuceCanal,
   Raison,
+  TuileCanal,
   Vide,
 } from '../composants'
 
@@ -63,7 +66,7 @@ function CarteChiffre({
   return (
     <a
       href={href}
-      className="group flex flex-col rounded-2xl border border-bord bg-surface p-5 shadow-carte transition hover:-translate-y-0.5 hover:border-marque/30 hover:shadow-flottant"
+      className="group flex flex-col rounded-2xl border border-bord bg-surface p-4 shadow-carte transition hover:-translate-y-0.5 hover:border-marque/30 hover:shadow-flottant"
     >
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium text-texte-2">{libelle}</p>
@@ -71,13 +74,32 @@ function CarteChiffre({
           <Icone className="h-5 w-5" strokeWidth={2} aria-hidden />
         </span>
       </div>
-      <div className="chiffres -mt-1 text-[34px] font-semibold leading-none tracking-[-0.02em] text-texte">{valeur}</div>
-      <div className="mt-2 min-h-[2.6em] text-[13.5px] leading-snug text-texte-2">{detail}</div>
-      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-marque group-hover:text-marque-fonce">
+      <div className="chiffres text-[28px] font-semibold leading-none tracking-[-0.02em] text-texte">{valeur}</div>
+      <div className="mt-2 text-[13.5px] leading-snug text-texte-2">{detail}</div>
+      <span className="mt-auto inline-flex items-center gap-1.5 pt-3 text-sm font-semibold text-marque group-hover:text-marque-fonce">
         {appel}
         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
       </span>
     </a>
+  )
+}
+
+/**
+ * Le canal d'une pièce dans le tableau : la pastille nommée quand le tableau a la place, la tuile seule quand il est
+ * étroit (portable de 1280 px), pour que le nom du fournisseur tienne sur une ligne. Le nom du canal reste au survol
+ * et pour les lecteurs d'écran.
+ */
+function CanalDeLaPiece({ canal }: { canal: Canal }) {
+  return (
+    <>
+      <span className="hidden @min-[680px]:inline-flex">
+        <PuceCanal canal={canal} />
+      </span>
+      <span className="inline-flex @min-[680px]:hidden">
+        <TuileCanal canal={canal} />
+        <span className="sr-only">{LIBELLES_CANAL[canal]}</span>
+      </span>
+    </>
   )
 }
 
@@ -112,8 +134,8 @@ export function Accueil() {
         }
       />
 
-      {/* Le point du jour, en trois cartes */}
-      <div className="-mt-2 grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-4">
+      {/* Le point du jour, en quatre cartes sur une rangée : le bloc « Pièces à valider » reste visible au premier écran */}
+      <div className="-mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <CarteChiffre
           href={piecesAValider.nombre > 0 ? lienVers({ ecran: 'validation', pieceId: null }) : lienVers({ ecran: 'reception' })}
           icone={FileCheck2}
@@ -184,8 +206,8 @@ export function Accueil() {
           href={fne.pieces > 0 ? lienVers({ ecran: 'relances' }) : lienVers({ ecran: 'parametres' })}
           icone={QrCode}
           teinte={fne.pieces > 0 ? 'attention' : 'bon'}
-          libelle="TVA non déductible (sans FNE)"
-          valeur={<span className="text-[28px]">{formatFcfa(fne.tvaNonDeductible)}</span>}
+          libelle="TVA non déductible"
+          valeur={<span className="text-[24px]">{formatFcfa(fne.tvaNonDeductible)}</span>}
           detail={
             fne.pieces === 0
               ? 'Tous les achats du mois ont leur QR code de facture normalisée (FNE).'
@@ -195,7 +217,7 @@ export function Accueil() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         {/* Bloc 1 : pièces à valider */}
         <Carte
           id="a-valider"
@@ -216,15 +238,15 @@ export function Accueil() {
               Aucune pièce arrivée depuis la veille. Pour la démo, chargez la boîte de réception démo dans l’écran Réception.
             </Vide>
           ) : (
-            <div className="relative overflow-x-auto border-t border-bord">
-              <table className="w-full min-w-[600px] text-sm">
+            <div className="@container relative overflow-x-auto border-t border-bord">
+              <table className="w-full min-w-[560px] text-sm">
                 <thead>
                   <tr className="bg-surface-2 text-left text-xs text-texte-2">
                     <th className="py-2.5 pl-5 font-medium">Reçue</th>
                     <th className="font-medium">Canal</th>
                     <th className="font-medium">Fournisseur lu</th>
                     <th className="pr-4 text-right font-medium">Montant TTC</th>
-                    <th className="pr-5 font-medium">Lecture</th>
+                    <th className="pr-5 font-medium @max-[680px]:w-px">Lecture</th>
                   </tr>
                 </thead>
                 {groupes.map((g) => (
@@ -246,11 +268,11 @@ export function Accueil() {
                         onClick={() => allerA(l.piece.id)}
                         onKeyDown={(e) => e.key === 'Enter' && allerA(l.piece.id)}
                       >
-                        <td className="chiffres whitespace-nowrap py-3 pl-5 text-texte-2">{recue(l.piece.recueLe)}</td>
-                        <td>
-                          <PuceCanal canal={l.piece.canal} />
+                        <td className="chiffres whitespace-nowrap py-3 pl-5 pr-3 text-texte-2">{recue(l.piece.recueLe)}</td>
+                        <td className="pr-3">
+                          <CanalDeLaPiece canal={l.piece.canal} />
                         </td>
-                        <td className="font-medium text-texte">{l.fournisseur ?? <span className="font-normal text-texte-3">non lu</span>}</td>
+                        <td className="pr-3 font-medium text-texte">{l.fournisseur ?? <span className="font-normal text-texte-3">non lu</span>}</td>
                         <td className="whitespace-nowrap pr-4 text-right font-medium">
                           <Montant valeur={l.ttc} devise={l.devise} />
                         </td>
@@ -350,7 +372,7 @@ export function Accueil() {
               <ul className="divide-y divide-bord border-t border-bord">
                 {echeancesDeLaSemaine.map(({ echeance, badge, dossiersPasPrets }) => (
                   <li key={echeance.id} className="grid grid-cols-[52px_minmax(0,1fr)] gap-3.5 px-5 py-4">
-                    <div className="overflow-hidden rounded-xl border border-bord text-center leading-tight">
+                    <div className="self-start overflow-hidden rounded-xl border border-bord text-center leading-tight">
                       <div className="bg-info py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-white">
                         {MOIS_COURT.format(new Date(echeance.date)).replace('.', '')}
                       </div>

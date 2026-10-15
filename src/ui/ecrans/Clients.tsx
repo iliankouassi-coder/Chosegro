@@ -1,11 +1,11 @@
 // Écran 4 — Clients : la liste, puis la fiche (pièces, écritures validées, règles apprises, fusion des fournisseurs).
 import { useState } from 'react'
-import { ArrowLeft, BookOpenCheck, CircleCheck, Contact, FileText, Merge, NotebookText, OctagonAlert, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, BellRing, BookOpenCheck, CircleCheck, Contact, FileText, Merge, NotebookText, OctagonAlert, Pencil, Trash2 } from 'lucide-react'
 import { lienVers } from '../../app/routeur'
 import { maintenant } from '../../app/horloge'
 import { useApp } from '../../app/store'
-import { formatDate, formatDateHeure, formatJourMois } from '../../domain/dates'
-import { totaux } from '../../domain/ecritures'
+import { formatDate, formatDateHeure } from '../../domain/dates'
+import { raisonRegle, totaux } from '../../domain/ecritures'
 import { LIBELLES_JOURNAL } from '../../domain/export'
 import { LIBELLES_CANAL } from '../../domain/pieces'
 import { libelleCompletCompte } from '../../domain/plan'
@@ -17,6 +17,7 @@ import {
   Avatar,
   Bouton,
   Carte,
+  classesBouton,
   EnTetePage,
   Erreur,
   Jauge,
@@ -199,10 +200,7 @@ function LigneRegle({ regle }: { regle: RegleFournisseur }) {
               </dd>
             </div>
           </dl>
-          <p className="mt-1.5 text-xs text-texte-3">
-            {regle.utilisations > 0 ? 'Apprise' : 'Modifiée'} le {formatJourMois(regle.misAJourLe.slice(0, 10))}, {regle.utilisations} utilisation
-            {regle.utilisations > 1 ? 's' : ''}
-          </p>
+          <p className="mt-1.5 text-xs text-texte-3">{raisonRegle(regle)}</p>
         </div>
         <div className="flex shrink-0 gap-1.5">
           <Bouton taille="petit" aria-expanded={edition} onClick={() => setEdition((e) => !e)}>
@@ -264,6 +262,8 @@ export function FicheClient({ clientId }: { clientId: string }) {
   const [erreurFusion, setErreurFusion] = useState<string | null>(null)
   if (!fiche) return <Vide>Client introuvable.</Vide>
   const { client, pieces, ecrituresValidees, regles, fournisseurs, fusions } = fiche
+  // Retard et raison, les mêmes que dans la liste des clients et sur l'Accueil.
+  const retard = listeClients(etat.donnees, maintenant()).find((l) => l.client.id === clientId)?.retard ?? null
 
   return (
     <div className="grid grid-cols-1 gap-6">
@@ -275,22 +275,45 @@ export function FicheClient({ clientId }: { clientId: string }) {
           </a>
           <span className="sr-only"> / {client.raisonSociale}</span>
         </nav>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
           <Avatar nom={client.raisonSociale} taille="grand" />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-texte">{client.raisonSociale}</h1>
             <p className="mt-1.5 flex flex-wrap gap-1.5">
+              {retard &&
+                (retard.enRetard ? (
+                  <Pastille ton="critique" icone={OctagonAlert}>
+                    En retard
+                  </Pastille>
+                ) : (
+                  <Pastille ton="bon" icone={CircleCheck}>
+                    À jour
+                  </Pastille>
+                ))}
               <Pastille ton="neutre">{client.secteur}</Pastille>
               <Pastille ton="neutre">Régime {client.regimeFiscal}</Pastille>
               <Pastille ton="neutre">Suivi par {client.collaborateur}</Pastille>
             </p>
+            {retard && (
+              <div className="mt-2">
+                <Raison>{retard.raison}</Raison>
+              </div>
+            )}
           </div>
+          {retard?.enRetard && (
+            <a href={lienVers({ ecran: 'relances' })} className={classesBouton('secondaire')}>
+              <BellRing className="h-4 w-4" aria-hidden />
+              Préparer la relance
+            </a>
+          )}
         </div>
       </header>
 
       <Carte titre={`Règles apprises (${regles.length})`} icone={BookOpenCheck} plein>
         {regles.length === 0 ? (
-          <Vide icone={BookOpenCheck}>Aucune règle : elles se créent quand un collaborateur corrige le compte d’un fournisseur.</Vide>
+          <div className="px-5 pb-2">
+            <Vide>Aucune règle pour l’instant{' '}: elles se créent quand un collaborateur corrige le compte d’un fournisseur.</Vide>
+          </div>
         ) : (
           <ul className="divide-y divide-bord border-t border-bord">
             {regles.map((r) => (
@@ -300,7 +323,7 @@ export function FicheClient({ clientId }: { clientId: string }) {
         )}
       </Carte>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
         <Carte titre={`Pièces (${pieces.length})`} icone={FileText} plein>
           {pieces.length === 0 ? (
             <Vide icone={FileText}>Aucune pièce reçue.</Vide>
@@ -347,11 +370,18 @@ export function FicheClient({ clientId }: { clientId: string }) {
                 {ecrituresValidees.map((e) => (
                   <tbody key={e.id} className="border-t border-bord">
                     <tr>
-                      <th colSpan={3} className="py-2.5 pl-5 pr-5 text-left text-xs font-normal text-texte-2">
-                        <span className="chiffres font-semibold text-texte">{formatDate(e.date)}</span>
-                        <span className="ml-3">{LIBELLES_JOURNAL[e.journal]}</span>
-                        <span className="chiffres ml-3">{e.numeroPiece}</span>
-                        <span className="ml-3">validée par {e.valideePar}</span>
+                      <th colSpan={3} className="py-2.5 pl-5 pr-5 text-left font-normal">
+                        {/* Le libellé de l'écriture nomme le fournisseur et la facture : il mène à la pièce. */}
+                        <a
+                          href={lienVers({ ecran: 'validation', pieceId: e.pieceId })}
+                          className="text-[13.5px] font-semibold text-texte hover:text-marque hover:underline"
+                        >
+                          {e.lignes[0]?.libelle ?? e.numeroPiece}
+                        </a>
+                        <span className="mt-0.5 block text-xs text-texte-2">
+                          <span className="chiffres">{formatDate(e.date)}</span>, journal {LIBELLES_JOURNAL[e.journal]}, validée par{' '}
+                          {e.valideePar}
+                        </span>
                       </th>
                     </tr>
                     {e.lignes.map((l, i) => (

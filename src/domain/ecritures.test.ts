@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { fabriquerClient, fabriquerExtraction, fabriquerRegle } from '../test/fabriques'
 import { planReel } from '../test/planReel'
 import {
+  classesAttendues,
   determinerType,
+  etatEcriture,
   memeEntreprise,
   proposerEcriture,
   raisonRegle,
@@ -243,6 +245,24 @@ describe('contrôles avant validation', () => {
     expect(nb(texteEquilibre(totaux([{ compte: '1', libelle: '', debit: 100, credit: 0 }])))).toBe(
       'Total débit 100 ≠ total crédit 0 : écart de 100 FCFA.',
     )
+  })
+
+  it('dit une écriture incomplète quand un compte manque ou que tout est à 0, au lieu de « équilibrée »', () => {
+    const ligne = (compte: string, debit: number, credit: number): LigneEcriture => ({ compte, libelle: '', debit, credit })
+    expect(etatEcriture([ligne('6052', 84_500, 0), ligne('4452', 15_210, 0), ligne('4011', 0, 99_710)])).toBe('equilibree')
+    expect(etatEcriture([ligne('6052', 84_500, 0), ligne('4011', 0, 99_710)])).toBe('desequilibree')
+    // Photo floue : compte à choisir et montants non lus, les totaux valent 0 = 0.
+    expect(etatEcriture([ligne('', 0, 0), ligne('4452', 0, 0), ligne('4011', 0, 0)])).toBe('incomplete')
+    expect(etatEcriture([ligne('', 84_500, 0), ligne('4011', 0, 84_500)])).toBe('incomplete')
+    expect(etatEcriture([ligne('6052', 0, 0), ligne('4011', 0, 0)])).toBe('incomplete')
+    expect(etatEcriture([])).toBe('incomplete')
+    const floue = proposerEcriture(entree(fabriquerExtraction({ ht: null, tva: null, ttc: null }, { lisible: false })))
+    expect(etatEcriture(floue.ecriture.lignes)).toBe('incomplete')
+  })
+
+  it('attend un compte de charge (6, puis 2 pour une immobilisation) pour un achat, de produit (7) pour une vente', () => {
+    expect(classesAttendues('achat')).toEqual([6, 2])
+    expect(classesAttendues('vente')).toEqual([7])
   })
 })
 

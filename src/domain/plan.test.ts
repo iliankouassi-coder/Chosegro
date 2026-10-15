@@ -71,6 +71,17 @@ describe('plan réel (data/plan_syscohada.xlsx)', () => {
     expect(rechercherComptes(plan, '6', { limite: 5 })).toHaveLength(5)
   })
 
+  it('avec des classes, met les comptes dans l’ordre de ces classes : les charges avant les immobilisations', () => {
+    const codes = (requete: string, classes: readonly number[]): string[] => rechercherComptes(plan, requete, { classes, limite: 12 }).map((c) => c.code)
+    // Sans classes, « bureau » ne donnait que des comptes de classe 2, rangés par numéro.
+    expect(codes('bureau', [6, 2]).slice(0, 2)).toEqual(['6047', '6055'])
+    expect(codes('bureau', [6, 2])).toContain('2444')
+    expect(codes('telephone', [6, 2])[0]).toBe('6281')
+    expect(codes('telephone', [6, 2])).not.toContain('552')
+    expect(codes('electricite', [6, 2])).toEqual(['6052', '2752'])
+    expect(codes('services', [7]).every((c) => c.startsWith('7'))).toBe(true)
+  })
+
   it('lit aussi le fichier quand les codes arrivent comme des nombres', () => {
     const lignes = lignesDuPlanReel().map((ligne, i) =>
       i === 0 ? ligne : [Number(ligne[0]), ...ligne.slice(1)],

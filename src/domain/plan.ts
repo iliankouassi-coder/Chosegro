@@ -187,7 +187,8 @@ const motsRecherche = (texte: string): string[] =>
 
 /**
  * Recherche pour le choix d'un compte : par début de code (« 605 ») ou par mots du libellé
- * (« electricite »), sans tenir compte des accents ni de la casse.
+ * (« electricite »), sans tenir compte des accents ni de la casse. Avec `classes`, seuls ces comptes
+ * sont gardés, dans l'ordre des classes demandées puis par code : [6, 2] met les charges avant les immobilisations.
  */
 export function rechercherComptes(
   plan: PlanComptable,
@@ -207,7 +208,8 @@ export function rechercherComptes(
       : mots.every((mot) => motsRecherche(`${compte.libelle} ${compte.libelleParent ?? ''}`).some((m) => m.startsWith(mot)))
     if (correspond) resultats.push(compte)
   }
-  resultats.sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0))
+  const rang = (c: CompteComptable): number => (classes ? classes.indexOf(c.classe) : 0)
+  resultats.sort((a, b) => rang(a) - rang(b) || (a.code < b.code ? -1 : a.code > b.code ? 1 : 0))
   return resultats.slice(0, limite)
 }
 

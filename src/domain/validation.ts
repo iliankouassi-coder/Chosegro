@@ -57,8 +57,13 @@ export interface PreparationValidation {
   alertes: Alerte[]
   doublon: CandidatDoublon | null
   confiance: Confiance
-  /** Ce qui empêche la validation, à afficher près du bouton Valider. */
+  /** Ce qui empêche la validation. */
   bloquants: string[]
+  /**
+   * Ce qu'on affiche près du bouton Valider : les bloquants, sauf pour une pièce illisible, où la seule consigne
+   * (rejeter, ou tout saisir à la main) suffit ; montants, date et compte manquants en découlent.
+   */
+  bloquantsAffiches: string[]
   /** Numéro de pièce interne utilisé si le numéro de facture n'est pas lu. */
   numeroPieceRepli: string
 }
@@ -68,6 +73,9 @@ export function numeroPieceInterne(piece: Piece): string {
   const mois = moisDe(dateAbidjan(piece.recueLe)).replace('-', '').slice(2)
   return `P-${mois}-${piece.id.replace(/[^a-zA-Z0-9]/g, '').slice(-4).toUpperCase()}`
 }
+
+/** Alertes qui redisent le texte du contrôle des montants (`controle.texte`), déjà affiché à part. */
+const ALERTES_DU_CONTROLE: ReadonlySet<Alerte['code']> = new Set<Alerte['code']>(['ecart_montants', 'montants_incomplets'])
 
 /** Prépare l'écran de validation, avec les corrections déjà saisies par le collaborateur. */
 export function preparerValidation(ctx: ContexteValidation, corrections: Corrections = {}): Resultat<PreparationValidation, string[]> {
@@ -118,6 +126,8 @@ export function preparerValidation(ctx: ContexteValidation, corrections: Correct
 
   const m = proposition.montants
   const controle = controlerMontants({ ht: m.ht, tva: m.tva, ttc: m.ttc }, p.toleranceEcart)
+  // L'écran affiche le contrôle des montants juste au-dessus des alertes : l'écart et les montants manquants
+  // n'y sont pas répétés.
   const alertes = alertesPiece(extraction, {
     aujourdhui: dateAbidjan(ctx.maintenant),
     toleranceEcart: p.toleranceEcart,
@@ -125,18 +135,18 @@ export function preparerValidation(ctx: ContexteValidation, corrections: Correct
     type: proposition.determination.type,
     emetteurEstLeClient: proposition.determination.emetteurEstLeClient,
     alerteFne: proposition.fne.alerte,
-  })
+  }).filter((a) => !ALERTES_DU_CONTROLE.has(a.code))
   const doublon = chercherDoublon({ ...piece, extraction }, ctx.pieces, { fusions: ctx.fusions, motsCourants: mots, clients: [client] })
   const bloquants = [...proposition.bloquants]
   // Une pièce jugée illisible par l'IA se valide seulement si le collaborateur a saisi lui-même ce qui compte.
   const c = corrections.champs ?? {}
   const saisieManuelle =
     c.ht !== undefined && c.tva !== undefined && c.ttc !== undefined && (c.date !== undefined || corrections.date !== undefined)
-  if (!extraction.lisible && !saisieManuelle) {
-    bloquants.unshift(
-      'Pièce illisible : rejetez-la (le message de relance sera prêt), ou saisissez à la main le HT, la TVA, le TTC et la date pour la valider.',
-    )
-  }
+  const consigneIllisible =
+    !extraction.lisible && !saisieManuelle
+      ? 'Pièce illisible : rejetez-la (le message de relance sera prêt), ou saisissez à la main le HT, la TVA, le TTC et la date pour la valider.'
+      : null
+  if (consigneIllisible !== null) bloquants.unshift(consigneIllisible)
 
   return succes({
     extraction,
@@ -146,6 +156,7 @@ export function preparerValidation(ctx: ContexteValidation, corrections: Correct
     doublon,
     confiance: confianceGlobale(extraction),
     bloquants,
+    bloquantsAffiches: consigneIllisible !== null ? [consigneIllisible] : bloquants,
     numeroPieceRepli,
   })
 }

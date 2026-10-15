@@ -7,6 +7,7 @@ import {
   BookOpenCheck,
   Check,
   CircleCheck,
+  CircleDashed,
   Copy,
   Inbox,
   OctagonAlert,
@@ -23,7 +24,7 @@ import { allerA, lienVers } from '../../app/routeur'
 import { maintenant } from '../../app/horloge'
 import { useApp } from '../../app/store'
 import { formatDate, formatDateHeure, lireDate } from '../../domain/dates'
-import { texteEquilibre, totaux } from '../../domain/ecritures'
+import { classesAttendues, etatEcriture, texteEquilibre, totaux } from '../../domain/ecritures'
 import { exportDeLEcriture, LIBELLES_JOURNAL } from '../../domain/export'
 import { LIBELLES_STATUT, pieceSuivante } from '../../domain/pieces'
 import { fileDeValidation, type LignePiece } from '../../domain/tableaux'
@@ -89,10 +90,15 @@ function versCorrections(s: Saisie): { corrections: Corrections; erreurs: string
   if (s.devise.trim() !== '') champs.devise = s.devise.trim().toUpperCase() === 'FCFA' ? 'XOF' : s.devise.trim().toUpperCase()
   if (s.nature !== '') champs.nature = s.nature
   if (s.qrFne !== '') champs.qrFne = s.qrFne
+  // Des mots (« bureau ») sont une recherche en cours, pas un compte : l'écriture garde le compte proposé,
+  // et la validation attend qu'un numéro soit choisi.
+  const compte = s.compte.trim()
+  const numeroDeCompte = /^\d+$/.test(compte)
+  if (compte !== '' && !numeroDeCompte) erreurs.push('Compte : choisissez un compte dans la liste des suggestions, ou tapez son numéro.')
   return {
     corrections: {
       champs,
-      ...(s.compte.trim() !== '' ? { compteChargeOuProduit: s.compte.trim() } : {}),
+      ...(numeroDeCompte ? { compteChargeOuProduit: compte } : {}),
       ...(date ? { date } : {}),
     },
     erreurs,
@@ -410,6 +416,12 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
     setTimeout(() => champCompte.current?.focus(), 0)
   }
 
+  // Les corrections saisies restent appliquées ; une recherche de compte inachevée (des mots) est abandonnée.
+  const fermerCorrection = (): void => {
+    setCorrection(false)
+    if (saisie.compte.trim() !== '' && !/^\d+$/.test(saisie.compte.trim())) setSaisie({ ...saisie, compte: '' })
+  }
+
   // Raccourcis : Entrée valide, flèche droite passe à la suivante, C corrige.
   useEffect(() => {
     const surTouche = (e: KeyboardEvent): void => {
@@ -426,6 +438,9 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
       } else if ((e.key === 'c' || e.key === 'C') && !dansUnChamp && modifiable && !e.metaKey && !e.ctrlKey) {
         e.preventDefault()
         ouvrirCorrection()
+      } else if (e.key === 'Escape' && correction) {
+        e.preventDefault()
+        fermerCorrection()
       }
     }
     window.addEventListener('keydown', surTouche)
@@ -433,10 +448,14 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
   })
 
   const position = file.findIndex((x) => x.id === piece.id)
+  // Les suggestions sont des comptes de charge (6, puis 2) pour un achat, de produit (7) pour une vente.
   const suggestions =
-    plan && saisie.compte.trim().length >= 2 && !/^\d{4,}$/.test(saisie.compte.trim()) ? rechercherComptes(plan, saisie.compte, { limite: 8 }) : []
+    plan && p && saisie.compte.trim().length >= 2 && !/^\d{4,}$/.test(saisie.compte.trim())
+      ? rechercherComptes(plan, saisie.compte, { limite: 12, classes: classesAttendues(p.proposition.determination.sens) })
+      : []
   const lignesEcriture = ecriture?.lignes ?? []
   const t = totaux(lignesEcriture)
+  const etatTotaux = etatEcriture(lignesEcriture)
   const libelleUnique =
     lignesEcriture.length > 0 && lignesEcriture.every((l) => l.libelle === lignesEcriture[0]?.libelle) ? lignesEcriture[0]?.libelle : null
   const parIa = ecriture?.source === 'ia'
@@ -652,7 +671,13 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                           <td className="py-2 pl-3" colSpan={libelleUnique ? 1 : 2}>
                             <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                               Totaux
-                              {t.equilibree ? (
+                              {etatTotaux === 'incomplete' ? (
+                                // Un compte à choisir ou des montants à 0 : « 0 = 0 » ne dit pas que l'écriture est bonne.
+                                <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2 text-xs font-semibold leading-5 text-texte-2 ring-1 ring-inset ring-bord">
+                                  <CircleDashed className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden />
+                                  écriture incomplète
+                                </span>
+                              ) : etatTotaux === 'equilibree' ? (
                                 <span className="inline-flex items-center gap-1 rounded-full bg-bon-pale px-2 text-xs font-semibold leading-5 text-bon">
                                   <CircleCheck className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden />
                                   écriture équilibrée
@@ -705,6 +730,9 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                       valider()
                     }}
                   >
+                    <Raison>
+                      {'Ne remplissez que ce qui est faux : un champ laissé vide garde la valeur lue, écrite en gris. Échap ferme ce formulaire.'}
+                    </Raison>
                     <div className="grid grid-cols-1 gap-1.5 text-sm">
                       <label htmlFor="correction-compte" className="font-medium text-texte">
                         Compte {p.proposition.determination.sens === 'achat' ? 'de charge' : 'de produit'} (numéro ou mots du libellé)
@@ -831,7 +859,7 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                 <Encart compact ton="critique">
                   <p className="font-semibold text-critique">Validation impossible pour l’instant :</p>
                   <ul className="mt-0.5 max-h-[4.5rem] list-disc overflow-y-auto pl-5 text-[13px]">
-                    {[...new Set([...bloquants, ...erreurs])].map((b) => (
+                    {[...new Set([...erreursSaisie, ...(p?.bloquantsAffiches ?? []), ...erreurs])].map((b) => (
                       <li key={b}>{b}</li>
                     ))}
                   </ul>
@@ -844,7 +872,7 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                   <Check className="h-[18px] w-[18px]" strokeWidth={2.5} aria-hidden />
                   Valider <Touche sombre>Entrée</Touche>
                 </Bouton>
-                <Bouton taille="grand" onClick={() => (correction ? setCorrection(false) : ouvrirCorrection())} aria-expanded={correction}>
+                <Bouton taille="grand" onClick={() => (correction ? fermerCorrection() : ouvrirCorrection())} aria-expanded={correction}>
                   <Pencil className="h-4 w-4" aria-hidden />
                   Corriger <Touche>C</Touche>
                 </Bouton>

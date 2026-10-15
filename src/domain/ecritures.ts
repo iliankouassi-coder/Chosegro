@@ -94,6 +94,19 @@ export function totaux(lignes: readonly LigneEcriture[]): Totaux {
   return { debit, credit, ecart: debit - credit, equilibree: debit === credit }
 }
 
+/** État d'une écriture pour sa ligne de totaux : un compte à choisir ou des montants à zéro la laissent incomplète. */
+export type EtatEcriture = 'incomplete' | 'equilibree' | 'desequilibree'
+
+/**
+ * « Incomplète » quand une ligne n'a pas de compte ou que le total débit vaut 0 : des totaux à 0 = 0 ne disent
+ * pas qu'une écriture est équilibrée. Sinon équilibrée ou déséquilibrée, selon les totaux.
+ */
+export function etatEcriture(lignes: readonly LigneEcriture[]): EtatEcriture {
+  const t = totaux(lignes)
+  if (lignes.length === 0 || lignes.some((l) => l.compte.trim() === '') || t.debit === 0) return 'incomplete'
+  return t.equilibree ? 'equilibree' : 'desequilibree'
+}
+
 /** « Total débit 118 000 = total crédit 118 000 : écriture équilibrée. » */
 export function texteEquilibre(t: Totaux): string {
   return t.equilibree
@@ -196,7 +209,8 @@ export function raisonRegle(regle: Pick<RegleFournisseur, 'misAJourLe' | 'utilis
   return `Règle apprise le ${le} sur ${n} ${pluriel(n, 'facture', 'factures')} de ${tiers}`
 }
 
-const classesAttendues = (sens: Sens): readonly number[] => (sens === 'achat' ? [6, 2] : [7])
+/** Classes du compte de charge ou de produit : 6 puis 2 (immobilisation) pour un achat, 7 pour une vente. */
+export const classesAttendues = (sens: Sens): readonly number[] => (sens === 'achat' ? [6, 2] : [7])
 
 /** Construit l'écriture proposée et dit pourquoi. Ne valide rien. */
 export function proposerEcriture(entree: EntreeProposition): PropositionEcriture {

@@ -58,6 +58,30 @@ describe('preparerValidation', () => {
     expect(validerLaPiece(ctx(floue), saisie, action).ok).toBe(true)
   })
 
+  it('pour une pièce illisible, n’affiche près du bouton que la consigne, tant que la saisie manuelle n’est pas faite', () => {
+    const floue = fabriquerPiece({ extraction: fabriquerExtraction({ ht: null, tva: null, ttc: null, date: null, compteIa: null }, { lisible: false }) })
+    const p = preparer(ctx(floue))
+    expect(p.bloquants.length).toBeGreaterThan(1)
+    expect(p.bloquantsAffiches).toEqual([p.bloquants[0]])
+    expect(p.bloquantsAffiches[0]).toMatch(/^Pièce illisible : rejetez-la/)
+    // HT, TVA, TTC et date saisis : la consigne disparaît, le compte à choisir apparaît.
+    const saisie = preparer(ctx(floue), { champs: { ht: 100_000, tva: 18_000, ttc: 118_000, date: '2026-10-05' } })
+    expect(saisie.bloquantsAffiches).toEqual(saisie.bloquants)
+    expect(saisie.bloquantsAffiches.some((b) => b.includes('Compte de charge à choisir'))).toBe(true)
+    const lisible = preparer(ctx(fabriquerPiece()))
+    expect(lisible.bloquantsAffiches).toEqual(lisible.bloquants)
+  })
+
+  it('ne répète pas dans les alertes le contrôle des montants, affiché à part', () => {
+    const floue = preparer(ctx(fabriquerPiece({ extraction: fabriquerExtraction({ ht: null, tva: null, ttc: null, date: null }, { lisible: false }) })))
+    expect(floue.controle.statut).toBe('incomplet')
+    expect(floue.alertes.map((a) => a.code)).toEqual(['illisible', 'date_non_lue'])
+    const ecart = preparer(ctx(fabriquerPiece({ extraction: fabriquerExtraction({ ttc: 120_000 }) })))
+    expect(ecart.controle.statut).toBe('ecart')
+    expect(ecart.alertes.some((a) => a.code === 'ecart_montants')).toBe(false)
+    expect(ecart.alertes.some((a) => a.message === `${ecart.controle.texte}.`)).toBe(false)
+  })
+
   it('dit « première facture de ce client » pour une première vente, même après d’autres ventes', () => {
     const vente = (id: string, acheteur: string, statut: Piece['statut']): Piece =>
       fabriquerPiece({ id, statut, extraction: fabriquerExtraction({ fournisseur: client.raisonSociale, destinataire: acheteur, compteIa: '7011' }) })

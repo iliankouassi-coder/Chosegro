@@ -297,11 +297,11 @@ export function verifierColonnes(colonnes: readonly ColonneExport[]): string[] {
 }
 
 /**
- * Résumé du format, sur la ligne du bloc replié « Format du fichier » : « 8 colonnes, séparateur CSV point-virgule ».
+ * Résumé du format, sur la ligne du bloc replié « Format du fichier » : « 8 colonnes, séparateur point-virgule ».
  */
 export function resumeFormat(colonnes: readonly ColonneExport[], separateur: Separateur): string {
   const libelle = SEPARATEURS.find((s) => s.valeur === separateur)?.libelle.replace(/\s*\(.*\)$/, '').toLocaleLowerCase('fr') ?? 'inconnu'
-  return `${nombreDe(colonnes.length, 'colonne', 'colonnes')}, séparateur CSV ${libelle}`
+  return `${nombreDe(colonnes.length, 'colonne', 'colonnes')}, séparateur ${libelle}`
 }
 
 /**

@@ -687,9 +687,9 @@ describe('genererCsv', () => {
 
 describe('resumeFormat', () => {
   it('résume les colonnes et le séparateur sur une ligne', () => {
-    expect(resumeFormat(COLONNES_PAR_DEFAUT, ';')).toBe('8 colonnes, séparateur CSV point-virgule')
-    expect(resumeFormat(['debit'], ',')).toBe('1 colonne, séparateur CSV virgule')
-    expect(resumeFormat([], '\t')).toBe('0 colonne, séparateur CSV tabulation')
+    expect(resumeFormat(COLONNES_PAR_DEFAUT, ';')).toBe('8 colonnes, séparateur point-virgule')
+    expect(resumeFormat(['debit'], ',')).toBe('1 colonne, séparateur virgule')
+    expect(resumeFormat([], '\t')).toBe('0 colonne, séparateur tabulation')
   })
 })
 

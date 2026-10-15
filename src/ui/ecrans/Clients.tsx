@@ -1,5 +1,5 @@
 // Écran 4 — Clients : la liste, puis la fiche (pièces, écritures validées, règles apprises, fusion des fournisseurs).
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, BellRing, BookOpenCheck, CircleCheck, Contact, FileText, Merge, NotebookText, OctagonAlert, Pencil, Trash2 } from 'lucide-react'
 import { lienVers } from '../../app/routeur'
 import { maintenant } from '../../app/horloge'
@@ -172,6 +172,18 @@ function LigneRegle({ regle, nom }: { regle: RegleFournisseur; nom: string }) {
   const { etat, actions } = useApp()
   const [edition, setEdition] = useState(false)
   const [confirmerSuppression, setConfirmerSuppression] = useState(false)
+  // « Garder » referme la confirmation : le focus revient sur « Supprimer », pour ne pas le perdre au clavier.
+  const boutonSupprimer = useRef<HTMLButtonElement>(null)
+  const focusApresGarder = useRef(false)
+  useEffect(() => {
+    if (confirmerSuppression || !focusApresGarder.current) return
+    focusApresGarder.current = false
+    boutonSupprimer.current?.focus()
+  }, [confirmerSuppression])
+  const garder = (): void => {
+    focusApresGarder.current = true
+    setConfirmerSuppression(false)
+  }
   const [compte, setCompte] = useState(regle.compteChargeOuProduit)
   const [tiers, setTiers] = useState(regle.compteTiers)
   const [taux, setTaux] = useState(String(regle.tauxTva))
@@ -214,9 +226,10 @@ function LigneRegle({ regle, nom }: { regle: RegleFournisseur; nom: string }) {
               <Pencil className="h-3.5 w-3.5" aria-hidden />
               Modifier
             </Bouton>
-            <Bouton
-              variante="danger"
-              taille="petit"
+            <button
+              ref={boutonSupprimer}
+              type="button"
+              className={classesBouton('danger', 'petit')}
               onClick={() => {
                 setEdition(false)
                 setConfirmerSuppression(true)
@@ -224,13 +237,18 @@ function LigneRegle({ regle, nom }: { regle: RegleFournisseur; nom: string }) {
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden />
               Supprimer
-            </Bouton>
+            </button>
           </div>
         )}
       </div>
       {confirmerSuppression && (
         // Une suppression se confirme : la règle sert aux pièces suivantes de ce fournisseur.
-        <div role="group" aria-label="Confirmer la suppression" className="mt-3 flex flex-wrap items-center gap-2.5 rounded-xl border border-critique/20 bg-critique-pale/60 p-3">
+        <div
+          role="group"
+          aria-label="Confirmer la suppression"
+          className="mt-3 flex flex-wrap items-center gap-2.5 rounded-xl border border-critique/20 bg-critique-pale/60 p-3"
+          onKeyDown={(e) => e.key === 'Escape' && garder()}
+        >
           <p className="min-w-0 flex-1 basis-64 text-[13px] text-texte">
             <span className="font-semibold">Supprimer cette règle{'\u00A0'}?</span> Les prochaines pièces de{' '}
             {regle.sens === 'vente' ? 'ce client' : 'ce fournisseur'} seront proposées par l’IA.
@@ -240,7 +258,7 @@ function LigneRegle({ regle, nom }: { regle: RegleFournisseur; nom: string }) {
               <Trash2 className="h-3.5 w-3.5" aria-hidden />
               Supprimer
             </Bouton>
-            <Bouton taille="petit" autoFocus onClick={() => setConfirmerSuppression(false)}>
+            <Bouton taille="petit" autoFocus onClick={garder}>
               Garder
             </Bouton>
           </div>
@@ -267,7 +285,7 @@ function LigneRegle({ regle, nom }: { regle: RegleFournisseur; nom: string }) {
               <input
                 className={`${CHAMP_COMPACT} chiffres w-64 max-w-full`}
                 value={compte}
-                placeholder="ex. 6052 ou « électricité »"
+                placeholder={'ex. 6052 ou «\u00A0électricité\u00A0»'}
                 onChange={(e) => setCompte(e.target.value)}
               />
             </label>

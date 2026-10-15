@@ -270,11 +270,14 @@ type VarianteBouton = 'principal' | 'secondaire' | 'danger' | 'discret' | 'whats
 type TailleBouton = 'petit' | 'normal' | 'grand'
 
 const STYLES_BOUTON: Record<VarianteBouton, string> = {
-  principal: 'bg-marque text-white shadow-[0_1px_2px_rgb(10_111_80/0.35)] hover:bg-marque-fonce disabled:bg-marque/40 disabled:shadow-none',
-  secondaire: 'bg-surface text-texte border border-bord-fort shadow-[0_1px_1px_rgb(15_38_33/0.04)] hover:bg-surface-2 hover:border-texte-3 disabled:text-texte-3 disabled:hover:bg-surface',
+  // Désactivés, principal et secondaire prennent la même allure grise et plate : deux boutons voisins disent la même chose.
+  principal:
+    'bg-marque text-white shadow-[0_1px_2px_rgb(10_111_80/0.35)] hover:bg-marque-fonce disabled:bg-surface-2 disabled:text-texte-3 disabled:shadow-none disabled:ring-1 disabled:ring-inset disabled:ring-bord disabled:hover:bg-surface-2',
+  secondaire:
+    'bg-surface text-texte border border-bord-fort shadow-[0_1px_1px_rgb(15_38_33/0.04)] hover:bg-surface-2 hover:border-texte-3 disabled:bg-surface-2 disabled:text-texte-3 disabled:border-bord disabled:shadow-none disabled:hover:bg-surface-2 disabled:hover:border-bord',
   danger: 'bg-surface text-critique border border-critique/30 hover:bg-critique-pale disabled:opacity-40',
   discret: 'text-texte-2 hover:bg-texte/[0.05] hover:text-texte disabled:text-texte-3 disabled:hover:bg-transparent',
-  whatsapp: 'bg-whatsapp text-white shadow-[0_1px_2px_rgb(23_138_74/0.35)] hover:bg-[#127a40]',
+  whatsapp: 'bg-whatsapp text-white shadow-[0_1px_2px_rgb(18_122_64/0.35)] hover:bg-whatsapp-fonce',
 }
 
 const TAILLES_BOUTON: Record<TailleBouton, string> = {
@@ -302,7 +305,7 @@ export function Touche({ children, sombre = false }: { children: ReactNode; somb
   return (
     <kbd
       className={`inline-flex min-w-[1.5em] items-center justify-center rounded-md px-1.5 font-sans text-[11px] font-semibold leading-5 ${
-        sombre ? 'bg-white/20 text-white' : 'border border-bord bg-surface text-texte-2 shadow-[0_1px_0_var(--color-bord)]'
+        sombre ? 'bg-black/20 text-white' : 'border border-bord bg-surface text-texte-2 shadow-[0_1px_0_var(--color-bord)]'
       }`}
     >
       {children}
@@ -390,12 +393,13 @@ export function TuileCanal({ canal }: { canal: Canal }) {
   )
 }
 
+// Cinq teintes sans sens d'état : un client à jour ne doit pas avoir l'ambre « à vérifier » ni le rouge « en retard ».
 const TEINTES_AVATAR = [
   'bg-marque-pale text-marque-fonce',
   'bg-info-pale text-info',
   'bg-violet-pale text-violet',
-  'bg-attention-pale text-attention',
-  'bg-critique-pale text-critique',
+  'bg-ardoise-pale text-ardoise',
+  'bg-sarcelle-pale text-sarcelle',
 ]
 
 /** Initiales sur une pastille de couleur, toujours la même pour un même nom. */

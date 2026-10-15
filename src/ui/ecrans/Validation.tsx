@@ -173,7 +173,7 @@ function FileValidation({ lignes, courante }: { lignes: LignePiece[]; courante: 
     <nav aria-label="Pièces à valider" className="hidden min-h-0 flex-col border-r border-bord bg-surface xl:flex">
       <div className="flex items-center justify-between px-5 pb-3 pt-5">
         <h2 className="text-[15px] font-semibold text-texte">À valider</h2>
-        <span className="chiffres rounded-full bg-orange px-2 text-xs font-semibold leading-5 text-white">{lignes.length}</span>
+        <span className="chiffres rounded-full bg-orange px-2 text-xs font-semibold leading-5 text-nuit">{lignes.length}</span>
       </div>
       {lignes.length === 0 ? (
         <p className="px-5 text-sm text-texte-2">Plus rien à valider.</p>

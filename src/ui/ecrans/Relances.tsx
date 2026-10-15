@@ -32,7 +32,7 @@ function CarteRelance({ r }: { r: RelanceAPreparer }) {
 
   return (
     <li
-      className={`flex flex-col rounded-2xl border bg-surface shadow-carte transition ${envoyee ? 'border-bon/30 opacity-80' : 'border-bord'}`}
+      className={`flex flex-col rounded-2xl border bg-surface shadow-carte transition ${envoyee ? 'border-bon/30' : 'border-bord'}`}
     >
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 px-5 pb-3 pt-4">
         <div className="flex min-w-0 items-center gap-3">
@@ -50,7 +50,7 @@ function CarteRelance({ r }: { r: RelanceAPreparer }) {
                   Retard de {nomMois(r.mois)}
                 </Pastille>
               ) : r.motif === 'fne' ? (
-                <Pastille ton="violet" icone={QrCode}>
+                <Pastille ton="attention" icone={QrCode}>
                   Factures sans FNE
                 </Pastille>
               ) : (

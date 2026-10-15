@@ -26,7 +26,7 @@ const PARAMETRES: Onglet = { route: { ecran: 'parametres' }, libelle: 'Paramètr
 function Logo({ nomCabinet, compact = false }: { nomCabinet: string; compact?: boolean }) {
   return (
     <a href={lienVers({ ecran: 'accueil' })} className="flex min-w-0 items-center gap-3" title={compact ? 'Pièces Cabinet' : undefined}>
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-marque text-white shadow-[0_4px_12px_-4px_rgb(14_138_100/0.8)]">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-marque text-white shadow-[0_4px_12px_-4px_rgb(12_125_90/0.8)]">
         <FileCheck2 className="h-5 w-5" strokeWidth={2.2} aria-hidden />
       </span>
       <span className={`min-w-0 leading-tight ${compact ? 'sr-only' : ''}`}>
@@ -60,13 +60,13 @@ function LienOnglet({
         aria-current={actif ? 'page' : undefined}
         title={o.libelle}
         className={`relative grid h-11 w-11 place-items-center rounded-xl transition-colors ${
-          actif ? 'bg-white/[0.12] text-[#5fd3a6]' : 'text-nuit-texte hover:bg-white/[0.06] hover:text-white'
+          actif ? 'bg-white/[0.12] text-nuit-accent' : 'text-nuit-texte hover:bg-white/[0.06] hover:text-white'
         }`}
       >
         <Icone className="h-5 w-5" strokeWidth={2} aria-hidden />
         <span className="sr-only">{o.libelle}</span>
         {compteur > 0 && (
-          <span className="chiffres absolute -right-1 -top-1 min-w-[18px] rounded-full bg-orange px-1 text-center text-[10.5px] font-semibold leading-[18px] text-white ring-2 ring-nuit">
+          <span className="chiffres absolute -right-1 -top-1 min-w-[18px] rounded-full bg-orange px-1 text-center text-[11px] font-semibold leading-[18px] text-nuit ring-2 ring-nuit">
             {compteur}
             <span className="sr-only">{o.compteur === 'pieces' ? ' pièces à valider' : ' relances à envoyer'}</span>
           </span>
@@ -81,10 +81,10 @@ function LienOnglet({
         compact ? 'px-3 py-2 text-[13px]' : 'px-3 py-2.5 text-[14.5px]'
       } ${actif ? 'bg-white/[0.12] text-white' : 'text-nuit-texte hover:bg-white/[0.06] hover:text-white'}`}
     >
-      <Icone className={`h-[18px] w-[18px] shrink-0 ${actif ? 'text-[#5fd3a6]' : ''}`} strokeWidth={2} aria-hidden />
+      <Icone className={`h-[18px] w-[18px] shrink-0 ${actif ? 'text-nuit-accent' : ''}`} strokeWidth={2} aria-hidden />
       <span className="flex-1">{o.libelle}</span>
       {compteur > 0 && (
-        <span className="chiffres min-w-[22px] rounded-full bg-orange px-1.5 text-center text-xs font-semibold leading-5 text-white">
+        <span className="chiffres min-w-[22px] rounded-full bg-orange px-1.5 text-center text-xs font-semibold leading-5 text-nuit">
           {compteur}
           <span className="sr-only">{o.compteur === 'pieces' ? ' pièces à valider' : ' relances à envoyer'}</span>
         </span>
@@ -136,7 +136,7 @@ export function Coquille({
     <div className="min-h-screen">
       {/* Barre latérale (ordinateur) */}
       {rail ? (
-        <aside className="fixed inset-y-0 left-0 z-30 hidden w-[72px] flex-col items-center bg-nuit pb-4 pt-5 lg:flex">
+        <aside className="sur-nuit fixed inset-y-0 left-0 z-30 hidden w-[72px] flex-col items-center bg-nuit pb-4 pt-5 lg:flex">
           <Logo nomCabinet={nomCabinet} compact />
           <nav aria-label="Écrans" className="mt-8 flex flex-1 flex-col items-center gap-1.5">
             {ONGLETS.map((o) => (
@@ -154,7 +154,7 @@ export function Coquille({
           </span>
         </aside>
       ) : (
-        <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col bg-nuit px-3.5 pb-4 pt-5 lg:flex">
+        <aside className="sur-nuit fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col bg-nuit px-3.5 pb-4 pt-5 lg:flex">
           <div className="px-1.5">
             <Logo nomCabinet={nomCabinet} />
           </div>
@@ -173,7 +173,7 @@ export function Coquille({
       )}
 
       {/* Barre du haut (petit écran) */}
-      <header className="sticky top-0 z-30 bg-nuit lg:hidden">
+      <header className="sur-nuit sticky top-0 z-30 bg-nuit lg:hidden">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <Logo nomCabinet={nomCabinet} />
           <span

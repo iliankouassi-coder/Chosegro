@@ -328,7 +328,8 @@ export function Reception() {
                           {precedente && (
                             <Bouton
                               taille="petit"
-                              title={`Rattacher à la pièce du dessus (${libellePages(precedente.fichier.pages ?? [])})`}
+                              // La précédente encore à valider : une page rejetée entre les deux ne compte plus.
+                              title={`Rattacher à la pièce précédente (${libellePages(precedente.fichier.pages ?? [])})`}
                               onClick={() => void agirSurPapier(p.id, actions.fusionnerAvecPrecedente)}
                             >
                               Fusionner avec la précédente

@@ -68,6 +68,9 @@ const SAISIE_VIDE: Saisie = { nature: '', compte: '', date: '', ht: '', tva: '',
 
 const LIBELLES_NATURE: Record<NaturePiece, string> = { facture: 'Facture', avoir: 'Avoir', ticket: 'Ticket', recu: 'Reçu', autre: 'Autre' }
 
+/** Le champ du compte contient un numéro (« 6055 »), et non des mots à chercher dans le plan (« bureau »). */
+const estUnNumero = (texte: string): boolean => /^\d+$/.test(texte.trim())
+
 /** Transforme la saisie du collaborateur en corrections pour le domaine (montants et dates normalisés par lui). */
 function versCorrections(s: Saisie): { corrections: Corrections; erreurs: string[] } {
   const erreurs: string[] = []
@@ -92,7 +95,7 @@ function versCorrections(s: Saisie): { corrections: Corrections; erreurs: string
   // Des mots (« bureau ») sont une recherche en cours, pas un compte : l'écriture garde le compte proposé,
   // et la validation attend qu'un numéro soit choisi.
   const compte = s.compte.trim()
-  const numeroDeCompte = /^\d+$/.test(compte)
+  const numeroDeCompte = estUnNumero(compte)
   if (compte !== '' && !numeroDeCompte) erreurs.push('Compte\u00A0: choisissez un compte dans la liste des suggestions, ou tapez son numéro.')
   return {
     corrections: {
@@ -258,16 +261,21 @@ export function Validation({ pieceId }: { pieceId: string | null }) {
   const aValider = lignes.map((l) => l.piece)
   const piece = pieceId ? etat.donnees.pieces.find((p) => p.id === pieceId) : undefined
   const [chargementDemo, setChargementDemo] = useState(false)
+  const [erreurDemo, setErreurDemo] = useState<string | null>(null)
 
   useEffect(() => {
     if (!pieceId && aValider[0]) allerA({ ecran: 'validation', pieceId: aValider[0].id })
   }, [pieceId, aValider])
 
   // Une fois la boîte chargée, la file n'est plus vide : l'effet ci-dessus ouvre la première pièce.
+  // Un échec (fichier de démo introuvable…) s'affiche sous le bouton, comme sur l'écran Réception.
   const chargerBoiteDemo = async (): Promise<void> => {
     setChargementDemo(true)
+    setErreurDemo(null)
     try {
       await actions.chargerBoiteDemo()
+    } catch (e) {
+      setErreurDemo(e instanceof Error ? e.message : String(e))
     } finally {
       setChargementDemo(false)
     }
@@ -291,14 +299,17 @@ export function Validation({ pieceId }: { pieceId: string | null }) {
       return message('Aucune pièce à valider. Chargez la boîte de réception démo, ou recevez des pièces dans l’écran Réception.', {
         icone: Inbox,
         action: (
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <Bouton variante="principal" disabled={chargementDemo} aria-busy={chargementDemo} onClick={() => void chargerBoiteDemo()}>
-              <Inbox className="h-4 w-4" aria-hidden />
-              Charger la boîte de réception démo
-            </Bouton>
-            <a href={lienVers({ ecran: 'reception' })} className={classesBouton('secondaire')}>
-              Aller à la réception
-            </a>
+          <div className="grid justify-items-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Bouton variante="principal" disabled={chargementDemo} aria-busy={chargementDemo} onClick={() => void chargerBoiteDemo()}>
+                <Inbox className="h-4 w-4" aria-hidden />
+                Charger la boîte de réception démo
+              </Bouton>
+              <a href={lienVers({ ecran: 'reception' })} className={classesBouton('secondaire')}>
+                Aller à la réception
+              </a>
+            </div>
+            {erreurDemo && <Erreur>{erreurDemo}</Erreur>}
           </div>
         ),
       })
@@ -314,7 +325,7 @@ export function Validation({ pieceId }: { pieceId: string | null }) {
   }
   if (!piece) {
     // Lien ancien, démo réinitialisée ou pages fusionnées : la pièce n'existe plus.
-    return message('Pièce introuvable : elle a peut-être été fusionnée avec une autre page, ou la démo a été réinitialisée.', {
+    return message('Pièce introuvable\u00A0: elle a peut-être été fusionnée avec une autre page, ou la démo a été réinitialisée.', {
       icone: TriangleAlert,
       action: (
         <a href={lienVers({ ecran: 'validation', pieceId: null })} className={classesBouton('principal')}>
@@ -423,7 +434,7 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
   // Les corrections saisies restent appliquées ; une recherche de compte inachevée (des mots) est abandonnée.
   const fermerCorrection = (): void => {
     setCorrection(false)
-    if (saisie.compte.trim() !== '' && !/^\d+$/.test(saisie.compte.trim())) setSaisie({ ...saisie, compte: '' })
+    if (saisie.compte.trim() !== '' && !estUnNumero(saisie.compte)) setSaisie({ ...saisie, compte: '' })
   }
 
   // Raccourcis : Entrée valide, flèche droite passe à la suivante, C corrige.

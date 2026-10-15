@@ -242,7 +242,7 @@ function LigneRegle({ regle, nom }: { regle: RegleFournisseur; nom: string }) {
         )}
       </div>
       {confirmerSuppression && (
-        // Une suppression se confirme : la règle sert aux pièces suivantes de ce fournisseur.
+        // Une suppression se confirme : la règle donne le compte des pièces suivantes de ce fournisseur.
         <div
           role="group"
           aria-label="Confirmer la suppression"
@@ -250,8 +250,9 @@ function LigneRegle({ regle, nom }: { regle: RegleFournisseur; nom: string }) {
           onKeyDown={(e) => e.key === 'Escape' && garder()}
         >
           <p className="min-w-0 flex-1 basis-64 text-[13px] text-texte">
-            <span className="font-semibold">Supprimer cette règle{'\u00A0'}?</span> Les prochaines pièces de{' '}
-            {regle.sens === 'vente' ? 'ce client' : 'ce fournisseur'} seront proposées par l’IA.
+            <span className="font-semibold">Supprimer cette règle{'\u00A0'}?</span> Le compte des prochaines pièces de{' '}
+            {regle.sens === 'vente' ? 'ce client' : 'ce fournisseur'} ne viendra plus de cette règle{'\u00A0'}: l’IA le proposera, ou vous le
+            choisirez.
           </p>
           <div className="flex shrink-0 gap-1.5">
             <Bouton variante="danger" taille="petit" onClick={() => void actions.supprimerRegle(regle.id)}>

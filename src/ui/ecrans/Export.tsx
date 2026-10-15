@@ -83,7 +83,10 @@ function ChampDate({
         } else changerEtat(etat === 'invalide' ? 'invalide' : 'en_cours')
       }}
       onBlur={() => {
-        if (etat === 'en_cours') changerEtat('invalide')
+        if (etat === 'en_cours') return changerEtat('invalide')
+        // Le champ quitté, une date lisible s'affiche en JJ/MM/AAAA : « 20/10/26 » devient « 20/10/2026 ».
+        const iso = lireDate(texte)
+        if (iso) setTexte(formatDate(iso))
       }}
     />
   )

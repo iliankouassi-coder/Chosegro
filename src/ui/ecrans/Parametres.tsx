@@ -1,6 +1,6 @@
 // Écran 7 — Paramètres : cabinet, TVA par défaut, seuil de retard, textes de relance, comptes par défaut,
 // import du plan comptable et des échéances, remise à zéro de la démo.
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   BookMarked,
   Bot,
@@ -127,6 +127,11 @@ function ChampDateFne({ valeur, surChangement }: { valeur: string | null; surCha
         onChange={(e) => {
           setTexte(e.target.value)
           surChangement(lue(e.target.value))
+        }}
+        onBlur={() => {
+          // Le champ quitté, une date lisible s'affiche en JJ/MM/AAAA : « 1/12/25 » devient « 01/12/2025 ».
+          const iso = lireDate(texte)
+          if (iso) setTexte(formatDate(iso))
         }}
       />
     </Champ>
@@ -255,8 +260,21 @@ export function Parametres() {
   const aVerifier = plan ? [...plan.comptes.values()].filter((c) => c.aVerifier !== null).length : 0
   const erreursBarre = [...erreursSaisie, ...erreurs.filter((e) => !erreursSaisie.includes(e))]
 
+  // La barre du bas se pose sur le contenu : le champ en cours de saisie ne doit pas passer dessous.
+  const refBarre = useRef<HTMLDivElement>(null)
+  const degager = (cible: EventTarget | null): void => {
+    const barre = refBarre.current
+    if (!barre || !(cible instanceof HTMLElement) || barre.contains(cible)) return
+    const recouvrement = cible.getBoundingClientRect().bottom - barre.getBoundingClientRect().top + 12
+    if (recouvrement > 0) window.scrollBy({ top: recouvrement })
+  }
+  // La barre apparaît, ou grandit avec une erreur de plus, pendant la frappe.
+  useEffect(() => {
+    if (modifie) degager(document.activeElement)
+  }, [modifie, erreursBarre.length])
+
   return (
-    <div>
+    <div onFocus={(e) => degager(e.target)}>
       <EnTetePage
         titre="Paramètres"
         description="Le cabinet, les règles de calcul, les textes de relance et les données de référence."
@@ -491,7 +509,7 @@ export function Parametres() {
         enregistrer, et pourquoi on ne peut pas encore. Après l'enregistrement, elle le confirme puis s'efface.
       */}
       {(modifie || message) && (
-        <div className="sticky bottom-4 z-10 mt-6">
+        <div ref={refBarre} className="sticky bottom-4 z-10 mt-6">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-bord bg-surface px-5 py-3 shadow-flottant">
             {modifie ? (
               <>

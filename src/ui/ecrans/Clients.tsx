@@ -8,7 +8,7 @@ import { formatDate, formatDateHeure, formatJourMois } from '../../domain/dates'
 import { totaux } from '../../domain/ecritures'
 import { LIBELLES_JOURNAL } from '../../domain/export'
 import { LIBELLES_CANAL } from '../../domain/pieces'
-import { libelleCompte } from '../../domain/plan'
+import { libelleCompletCompte } from '../../domain/plan'
 import { formatMontant } from '../../domain/montants'
 import { ficheClient, listeClients } from '../../domain/tableaux'
 import type { Client, RegleFournisseur } from '../../domain/types'
@@ -168,7 +168,7 @@ function LigneRegle({ regle }: { regle: RegleFournisseur }) {
   const [tiers, setTiers] = useState(regle.compteTiers)
   const [taux, setTaux] = useState(String(regle.tauxTva))
   const [erreurs, setErreurs] = useState<string[]>([])
-  const libelle = (code: string): string => (etat.plan && libelleCompte(etat.plan, code)) ?? 'absent du plan'
+  const libelle = (code: string): string => (etat.plan && libelleCompletCompte(etat.plan, code)) ?? 'absent du plan'
   return (
     <li className="px-5 py-4 text-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -353,7 +353,7 @@ export function FicheClient({ clientId }: { clientId: string }) {
                       <tr key={i}>
                         <td className="py-1 pl-5">
                           <span className="chiffres font-semibold text-marque-fonce">{l.compte}</span>
-                          <span className="ml-2 text-xs text-texte-2">{(etat.plan && libelleCompte(etat.plan, l.compte)) ?? ''}</span>
+                          <span className="ml-2 text-xs text-texte-2">{(etat.plan && libelleCompletCompte(etat.plan, l.compte)) ?? ''}</span>
                         </td>
                         <td className="chiffres py-1 text-right">{l.debit ? formatMontant(l.debit) : ''}</td>
                         <td className="chiffres py-1 pr-5 text-right">{l.credit ? formatMontant(l.credit) : ''}</td>

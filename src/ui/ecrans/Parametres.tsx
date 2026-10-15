@@ -5,7 +5,7 @@ import { BookMarked, Bot, Building2, CalendarDays, CircleCheck, MessageSquareTex
 import { useApp } from '../../app/store'
 import { CLES_MODELE_RELANCE, CLES_MODELE_RELANCE_FNE, CLES_MODELE_RELANCE_ILLISIBLE, PARAMETRES_DEFAUT } from '../../domain/parametres'
 import { formatDate, lireDate } from '../../domain/dates'
-import { verifierCompteImputable } from '../../domain/plan'
+import { libelleCompletCompte, verifierCompteImputable } from '../../domain/plan'
 import type { ComptesParDefaut, Parametres as TypeParametres } from '../../domain/types'
 import { BadgeDemo, Bouton, Carte, classesBouton, Encart, EnTetePage, Erreur, Raison } from '../composants'
 import { CHAMP, CHAMP_COMPACT } from '../styles'
@@ -262,7 +262,7 @@ export function Parametres() {
                   <span
                     className={`col-span-2 text-xs sm:col-span-1 ${verification && !verification.ok ? 'font-medium text-critique' : 'text-texte-2'}`}
                   >
-                    {verification === null ? '' : verification.ok ? verification.compte.libelle : verification.erreur}
+                    {verification === null ? '' : verification.ok ? (plan && libelleCompletCompte(plan, verification.compte.code)) : verification.erreur}
                   </span>
                 </label>
               ))}

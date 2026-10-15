@@ -4,6 +4,7 @@ import {
   avertissementCompte,
   construirePlan,
   estImputable,
+  libelleCompletCompte,
   rechercherComptes,
   trouverCompte,
   verifierCompteImputable,
@@ -32,6 +33,17 @@ describe('plan réel (data/plan_syscohada.xlsx)', () => {
     expect(trouverCompte(plan, '4452')?.libelle).toBe('T.V.A. récupérable sur achats')
     expect(trouverCompte(plan, '6052')?.libelle).toBe('Fournitures non stockables- Electricité')
     expect(trouverCompte(plan, '6052')?.parent).toBe('605')
+  })
+
+  it('affiche un libellé qui se lit seul : sans renvoi « (1) », avec son parent quand il commence par une minuscule', () => {
+    expect(libelleCompletCompte(plan, '6011')).toBe('ACHATS DE MARCHANDISES — dans la Région')
+    expect(libelleCompletCompte(plan, '7061')).toBe('SERVICES VENDUS — dans la Région')
+    expect(libelleCompletCompte(plan, '1661')).toBe('INTERÊTS COURUS — sur emprunts obligataires')
+    expect(libelleCompletCompte(plan, '6281')).toBe('Frais de téléphone')
+    expect(libelleCompletCompte(plan, '601')).toBe('ACHATS DE MARCHANDISES')
+    expect(libelleCompletCompte(plan, '545')).toBe("AVOIRS D'OR ET AUTRES METAUX PRECIEUX")
+    expect(libelleCompletCompte(plan, ' 4452 ')).toBe('T.V.A. récupérable sur achats')
+    expect(libelleCompletCompte(plan, '6099')).toBeNull()
   })
 
   it("n'accepte que les comptes sans sous-compte", () => {
@@ -98,6 +110,11 @@ describe('construirePlan', () => {
       expect(r.erreur.some((e) => e.includes('60A'))).toBe(true)
       expect(r.erreur.some((e) => e.includes('deux fois'))).toBe(true)
     }
+  })
+
+  it('garde un libellé en minuscule tel quel quand le compte n’a pas de parent', () => {
+    const r = construirePlan([['Code', 'Libellé'], ['9', 'divers (2)']])
+    expect(r.ok && libelleCompletCompte(r.valeur, '9')).toBe('divers')
   })
 
   it('ignore les lignes vides', () => {

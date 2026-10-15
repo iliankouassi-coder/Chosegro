@@ -10,7 +10,7 @@ import { texteEquilibre, totaux } from '../../domain/ecritures'
 import { exportDeLEcriture, LIBELLES_JOURNAL } from '../../domain/export'
 import { LIBELLES_STATUT, pieceSuivante } from '../../domain/pieces'
 import { fileDeValidation, type LignePiece } from '../../domain/tableaux'
-import { libelleCompte, rechercherComptes } from '../../domain/plan'
+import { libelleCompletCompte, rechercherComptes } from '../../domain/plan'
 import { formatMontant, lireMontant } from '../../domain/montants'
 import type { ChampLu, NaturePiece, Piece, PresenceQr } from '../../domain/types'
 import { preparerValidation, type Corrections } from '../../domain/validation'
@@ -541,7 +541,7 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                     </thead>
                     <tbody>
                       {lignesEcriture.map((l, i) => {
-                        const libelle = l.compte === '' ? null : ((plan && libelleCompte(plan, l.compte)) ?? 'absent du plan')
+                        const libelle = l.compte === '' ? null : ((plan && libelleCompletCompte(plan, l.compte)) ?? 'absent du plan')
                         return (
                           <tr key={i} className="border-t border-bord">
                             <td className="py-2 pl-3 pr-2">
@@ -642,7 +642,7 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                                 onClick={() => setSaisie({ ...saisie, compte: c.code })}
                               >
                                 <span className="chiffres font-semibold text-marque-fonce">{c.code}</span>
-                                <span className="text-texte">{c.libelle}</span>
+                                <span className="text-texte">{(plan && libelleCompletCompte(plan, c.code)) ?? c.libelle}</span>
                                 {c.aVerifier && <span className="text-attention">(à vérifier)</span>}
                               </button>
                             </li>

@@ -160,8 +160,20 @@ export function verifierCompteImputable(plan: PlanComptable, code: string): Veri
   return { ok: true, compte, avertissement: avertissementCompte(compte) }
 }
 
-export function libelleCompte(plan: PlanComptable, code: string): string | null {
-  return plan.comptes.get(code.trim())?.libelle ?? null
+/** Retire le renvoi final d'un libellé du plan : « ACHATS DE MARCHANDISES (1) » → « ACHATS DE MARCHANDISES ». */
+const sansRenvoi = (libelle: string): string => libelle.replace(/\s*\(\d+\)$/, '')
+
+/**
+ * Libellé d'un compte tel qu'on l'affiche à l'écran : sans le renvoi « (1) » du plan, et précédé du libellé
+ * du compte parent quand il commence par une minuscule, car il n'a alors pas de sens seul
+ * (6011 « dans la Région » devient « ACHATS DE MARCHANDISES — dans la Région »). La casse du fichier est gardée.
+ */
+export function libelleCompletCompte(plan: PlanComptable, code: string): string | null {
+  const compte = plan.comptes.get(code.trim())
+  if (!compte) return null
+  const libelle = sansRenvoi(compte.libelle)
+  const parent = compte.libelleParent === null ? '' : sansRenvoi(compte.libelleParent)
+  return /^\p{Ll}/u.test(libelle) && parent !== '' ? `${parent} — ${libelle}` : libelle
 }
 
 const motsRecherche = (texte: string): string[] =>

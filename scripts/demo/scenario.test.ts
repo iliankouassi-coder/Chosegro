@@ -148,7 +148,7 @@ describe('test d’acceptation 1 : lecture et proposition', () => {
     const p = preparer(pieces, regles, piece)
     expect(p.extraction.fournisseur.valeur).toBe('Énergie des Lagunes')
     expect(p.controle.statut).toBe('conforme')
-    expect(p.controle.texte.replace(/ /g, ' ')).toBe('HT 84 500 + TVA 15 210 = 99 710 ; TTC lu 99 710 ; écart 0')
+    expect(p.controle.texte.replace(/\u00A0/g, ' ')).toBe('HT 84 500 + TVA 15 210 = 99 710 ; TTC lu 99 710 ; écart 0')
     expect(p.proposition.ecriture.source).toBe('regle')
     expect(p.proposition.ecriture.raison).toMatch(/^Règle apprise le \d\d\/\d\d sur 3 factures de ce fournisseur$/)
     expect(totaux(p.proposition.ecriture.lignes).equilibree).toBe(true)

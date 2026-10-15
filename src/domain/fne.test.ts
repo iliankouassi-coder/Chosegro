@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { fabriquerExtraction } from '../test/fabriques'
 import { analyserFne, DATE_OBLIGATION_FNE_DEFAUT, type ContexteFne } from './fne'
 
-const nb = (t: string | undefined): string => (t ?? '').replace(/ /g, ' ')
+const nb = (t: string | undefined): string => (t ?? '').replace(/\u00A0/g, ' ')
 const ctx = (autres: Partial<ContexteFne> = {}): ContexteFne => ({ sens: 'achat', exigeeDepuis: '2025-12-01', ...autres })
 
 describe('analyserFne', () => {

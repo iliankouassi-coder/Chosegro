@@ -60,6 +60,22 @@ export const PARAMETRES_DEFAUT: Readonly<Parametres> = {
   collaborateur: 'Collaborateur DÉMO',
 }
 
+/**
+ * Nom du cabinet tel que l'affiche la barre latérale. Le paramètre est rédigé pour la phrase de relance
+ * (« Bonjour, ici le cabinet Exemple Conseil (DÉMO) ») : on retire « le cabinet » ou l'article du début,
+ * la mention « (DÉMO) » de la fin (la barre porte déjà la mention DÉMO), et on met une majuscule.
+ * « le cabinet Exemple Conseil (DÉMO) » devient « Exemple Conseil ».
+ */
+export function nomAffichageCabinet(nom: string): string {
+  const court = nom
+    .trim()
+    .replace(/^(?:le\s+cabinet\s+|les\s+|la\s+|le\s+|l['’]\s*)/i, '')
+    .replace(/\s*\(\s*d[ée]mo\s*\)$/i, '')
+    .trim()
+  if (court === '') return nom.trim()
+  return court.charAt(0).toLocaleUpperCase('fr') + court.slice(1)
+}
+
 /** Vérifie les valeurs saisies dans l'écran Paramètres. Renvoie la liste des erreurs, vide si tout va bien. */
 export function verifierParametres(p: Parametres): string[] {
   const erreurs: string[] = []

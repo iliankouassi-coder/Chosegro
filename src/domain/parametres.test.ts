@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { planReel } from '../test/planReel'
 import { verifierCompteImputable } from './plan'
-import { COMPTES_PAR_DEFAUT, PARAMETRES_DEFAUT, verifierParametres } from './parametres'
+import { COMPTES_PAR_DEFAUT, nomAffichageCabinet, PARAMETRES_DEFAUT, verifierParametres } from './parametres'
 
 describe('comptes par défaut', () => {
   const plan = planReel()
@@ -79,5 +79,29 @@ describe('FNE dans les paramètres', () => {
     expect(verifierParametres({ ...PARAMETRES_DEFAUT, modeleRelanceFne: 'Bonjour {inconnue}' })).toEqual([
       "Texte de la relance « factures sans FNE » : {inconnue} n'est pas une clé connue ({cabinet}, {client}, {pieces}, {tva}).",
     ])
+  })
+})
+
+describe('nomAffichageCabinet', () => {
+  it('retire « le cabinet » et « (DÉMO) » du nom rédigé pour la relance', () => {
+    expect(nomAffichageCabinet(PARAMETRES_DEFAUT.nomCabinet)).toBe('Exemple Conseil')
+    expect(nomAffichageCabinet('Le Cabinet Kouassi & Associés (démo)')).toBe('Kouassi & Associés')
+  })
+
+  it("retire l'article du début et met une majuscule", () => {
+    expect(nomAffichageCabinet('la fiduciaire Ivoire Audit')).toBe('Fiduciaire Ivoire Audit')
+    expect(nomAffichageCabinet('le groupe Comptable du Plateau')).toBe('Groupe Comptable du Plateau')
+    expect(nomAffichageCabinet('l’agence Comptable de Cocody')).toBe('Agence Comptable de Cocody')
+    expect(nomAffichageCabinet("l'Expertise Lagunaire")).toBe('Expertise Lagunaire')
+    expect(nomAffichageCabinet('  cabinet Alpha  ')).toBe('Cabinet Alpha')
+  })
+
+  it('ne touche pas à un nom qui commence par « La » ou « Le » sans être un article', () => {
+    expect(nomAffichageCabinet('Lagune Conseil')).toBe('Lagune Conseil')
+    expect(nomAffichageCabinet('Legrand Expertise')).toBe('Legrand Expertise')
+  })
+
+  it('garde le nom tel quel s’il ne resterait rien', () => {
+    expect(nomAffichageCabinet('(DÉMO)')).toBe('(DÉMO)')
   })
 })

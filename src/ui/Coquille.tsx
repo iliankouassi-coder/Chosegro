@@ -2,8 +2,10 @@
 // Sur un petit écran, la barre latérale devient une barre du haut avec les écrans en défilement.
 // L'écran Validation occupe toute la hauteur : file, pièce et saisie côte à côte.
 import type { ReactNode } from 'react'
-import { BellRing, Download, FileCheck2, House, Inbox, Settings, Users, type LucideIcon } from 'lucide-react'
+import { BellRing, Download, FileCheck2, FolderOpen, House, Inbox, Settings, Users, type LucideIcon } from 'lucide-react'
 import { lienVers, type Route } from '../app/routeur'
+import { formatDate } from '../domain/dates'
+import { nomAffichageCabinet } from '../domain/parametres'
 
 interface Onglet {
   route: Route
@@ -27,11 +29,13 @@ function Logo({ nomCabinet, compact = false }: { nomCabinet: string; compact?: b
   return (
     <a href={lienVers({ ecran: 'accueil' })} className="flex min-w-0 items-center gap-3" title={compact ? 'Pièces Cabinet' : undefined}>
       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-marque text-white shadow-[0_4px_12px_-4px_rgb(12_125_90/0.8)]">
-        <FileCheck2 className="h-5 w-5" strokeWidth={2.2} aria-hidden />
+        <FolderOpen className="h-5 w-5" strokeWidth={2.2} aria-hidden />
       </span>
       <span className={`min-w-0 leading-tight ${compact ? 'sr-only' : ''}`}>
         <span className="block text-[16px] font-semibold tracking-[-0.01em] text-white">Pièces Cabinet</span>
-        <span className="block truncate text-xs text-nuit-texte">{nomCabinet}</span>
+        <span className="block truncate text-xs text-nuit-texte" title={nomCabinet}>
+          {nomAffichageCabinet(nomCabinet)}
+        </span>
       </span>
     </a>
   )
@@ -106,7 +110,7 @@ function MentionDemo({ dateDemo }: { dateDemo: string | null }) {
       <p className="mt-1">Clients, pièces et échéances fictifs. Plan SYSCOHADA provisoire.</p>
       {dateDemo && (
         <p className="mt-1.5 font-semibold text-[#f2c14e]">
-          Démo calée au {dateDemo.slice(8, 10)}/{dateDemo.slice(5, 7)}/{dateDemo.slice(0, 4)}
+          Démo calée au {formatDate(dateDemo)}
         </p>
       )}
     </div>
@@ -129,8 +133,9 @@ export function Coquille({
   children: ReactNode
 }) {
   const pleineHauteur = route.ecran === 'validation'
-  // Sur l'écran Validation, la barre latérale se réduit à ses icônes : la pièce et la saisie ont la place.
-  const rail = pleineHauteur
+  // Sur une pièce à valider, la barre latérale se réduit à ses icônes : la pièce et la saisie ont la place.
+  // L'état vide « Aucune pièce à valider » garde la barre complète : rien n'y occupe la largeur.
+  const rail = route.ecran === 'validation' && (route.pieceId !== null || piecesAValider > 0)
   const compteur = (o: Onglet): number => (o.compteur === 'pieces' ? piecesAValider : o.compteur === 'relances' ? relancesAEnvoyer : 0)
   return (
     <div className="min-h-screen">

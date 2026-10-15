@@ -261,6 +261,11 @@ export interface RelanceAPreparer {
   statut: StatutRelance
 }
 
+/** Relances qui restent à envoyer (à faire ou préparées) : le compteur de la barre latérale et de l'écran Relances. */
+export function nombreRelancesAEnvoyer(relances: readonly Pick<RelanceAPreparer, 'statut'>[]): number {
+  return relances.filter((r) => r.statut !== 'envoyee_main').length
+}
+
 /**
  * Écran Relances : un message prêt pour chaque client en retard, et pour chaque pièce rejetée
  * comme illisible. Rien n'est envoyé : seuls un lien wa.me et le texte à copier sont préparés.

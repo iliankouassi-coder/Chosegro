@@ -1,7 +1,7 @@
 import { useRoute } from './app/routeur'
 import { maintenant } from './app/horloge'
 import { FournisseurApp, nombreAValider, useApp } from './app/store'
-import { relancesAPreparer } from './domain/tableaux'
+import { nombreRelancesAEnvoyer, relancesAPreparer } from './domain/tableaux'
 import { Erreur } from './ui/composants'
 import { Coquille } from './ui/Coquille'
 import { Accueil } from './ui/ecrans/Accueil'
@@ -31,7 +31,7 @@ function Ecran() {
         </p>
       </div>
     )
-  const relancesAEnvoyer = relancesAPreparer(etat.donnees, maintenant()).filter((r) => r.statut !== 'envoyee_main').length
+  const relancesAEnvoyer = nombreRelancesAEnvoyer(relancesAPreparer(etat.donnees, maintenant()))
   return (
     <Coquille
       route={route}

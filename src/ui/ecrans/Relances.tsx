@@ -7,7 +7,7 @@ import { lienVers } from '../../app/routeur'
 import { maintenant } from '../../app/horloge'
 import { useApp } from '../../app/store'
 import { formatDateHeure, nomMois } from '../../domain/dates'
-import { relancesAPreparer, type RelanceAPreparer } from '../../domain/tableaux'
+import { nombreRelancesAEnvoyer, relancesAPreparer, type RelanceAPreparer } from '../../domain/tableaux'
 import { Avatar, Bouton, classesBouton, Encart, EnTetePage, Erreur, IconeCanal, Pastille, PastilleRelance, Raison, Vide } from '../composants'
 
 function CarteRelance({ r }: { r: RelanceAPreparer }) {
@@ -125,7 +125,7 @@ function CarteRelance({ r }: { r: RelanceAPreparer }) {
 export function Relances() {
   const { etat } = useApp()
   const relances = relancesAPreparer(etat.donnees, maintenant())
-  const restantes = relances.filter((r) => r.statut !== 'envoyee_main').length
+  const restantes = nombreRelancesAEnvoyer(relances)
   return (
     <section aria-labelledby="titre-relances">
       <EnTetePage

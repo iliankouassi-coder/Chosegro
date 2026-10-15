@@ -2,7 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { fabriquerClient, fabriquerExtraction, fabriquerPiece, fabriquerRegle } from '../test/fabriques'
 import { pieceSuivante } from './pieces'
 import { PARAMETRES_DEFAUT } from './parametres'
-import { ficheClient, fileDeValidation, listeClients, regrouperParClient, relancesAPreparer, tableauAccueil, type Donnees } from './tableaux'
+import {
+  ficheClient,
+  fileDeValidation,
+  listeClients,
+  nombreRelancesAEnvoyer,
+  regrouperParClient,
+  relancesAPreparer,
+  tableauAccueil,
+  type Donnees,
+} from './tableaux'
 import type { Echeance, Piece, Relance } from './types'
 
 const MAINTENANT = '2026-10-13T10:00:00.000Z'
@@ -184,6 +193,25 @@ describe('relancesAPreparer', () => {
     }
     const [r] = relancesAPreparer(donnees([piece('a1')], { relances: [relance] }), MAINTENANT)
     expect(r).toMatchObject({ texte: 'Texte déjà envoyé.', statut: 'envoyee_main' })
+  })
+
+  it('compte celles qui restent à envoyer : à faire ou préparées, pas celles envoyées à la main', () => {
+    const envoyee: Relance = {
+      id: 'r',
+      clientId: 'resto',
+      mois: '2026-10',
+      texte: 'Texte déjà envoyé.',
+      statut: 'envoyee_main',
+      date: MAINTENANT,
+      motif: 'retard',
+      pieceId: null,
+    }
+    const floue = piece('f', { statut: 'rejetee', motifRejet: 'illisible', extraction: fabriquerExtraction({ fournisseur: 'Eaux de Cocody' }) })
+    const relances = relancesAPreparer(donnees([piece('a1'), floue], { relances: [envoyee] }), MAINTENANT)
+    expect(relances.map((r) => r.statut)).toEqual(['envoyee_main', 'a_faire'])
+    expect(nombreRelancesAEnvoyer(relances)).toBe(1)
+    expect(nombreRelancesAEnvoyer([{ statut: 'preparee' }, { statut: 'a_faire' }])).toBe(2)
+    expect(nombreRelancesAEnvoyer([])).toBe(0)
   })
 
   it('prépare « Pouvez-vous renvoyer la photo de… » pour une pièce rejetée comme illisible', () => {

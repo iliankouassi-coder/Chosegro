@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { planReel } from '../test/planReel'
 import { verifierCompteImputable } from './plan'
-import { COMPTES_PAR_DEFAUT, nomAffichageCabinet, PARAMETRES_DEFAUT, verifierParametres } from './parametres'
+import {
+  COMPTES_PAR_DEFAUT,
+  ecrireNombreSaisi,
+  expliquerRegleRetard,
+  lireNombreSaisi,
+  nomAffichageCabinet,
+  PARAMETRES_DEFAUT,
+  parametresEgaux,
+  verifierParametres,
+} from './parametres'
+
+const nb = (texte: string): string => texte.replace(/[\u00A0\u202F]/g, ' ')
 
 describe('comptes par défaut', () => {
   const plan = planReel()
@@ -103,5 +114,72 @@ describe('nomAffichageCabinet', () => {
 
   it('garde le nom tel quel s’il ne resterait rien', () => {
     expect(nomAffichageCabinet('(DÉMO)')).toBe('(DÉMO)')
+  })
+})
+
+describe('lireNombreSaisi et ecrireNombreSaisi', () => {
+  it('lit un nombre tapé : virgule ou point, espaces retirés', () => {
+    expect(lireNombreSaisi('18')).toBe(18)
+    expect(lireNombreSaisi(' 12,5 ')).toBe(12.5)
+    expect(lireNombreSaisi('12.5')).toBe(12.5)
+    expect(lireNombreSaisi('1 000')).toBe(1000)
+    expect(lireNombreSaisi('1\u00A0000')).toBe(1000)
+    expect(lireNombreSaisi('1\u202F000')).toBe(1000)
+    expect(lireNombreSaisi(',5')).toBe(0.5)
+    expect(lireNombreSaisi('-3')).toBe(-3)
+  })
+
+  it('accepte une virgule en fin de frappe : « 18, » se lit 18 en attendant la suite', () => {
+    expect(lireNombreSaisi('18,')).toBe(18)
+  })
+
+  it('rend null pour un champ vide ou du texte, jamais NaN', () => {
+    for (const texte of ['', '   ', 'dix-huit', '5O', '1e3', '12,5,1', '--1', ',', 'NaN', 'Infinity']) {
+      expect(lireNombreSaisi(texte), texte).toBeNull()
+    }
+  })
+
+  it('affiche la valeur avec une virgule, et rien pour une valeur illisible', () => {
+    expect(ecrireNombreSaisi(18)).toBe('18')
+    expect(ecrireNombreSaisi(12.5)).toBe('12,5')
+    expect(ecrireNombreSaisi(0.07 * 100)).toBe('7')
+    expect(ecrireNombreSaisi(Number.NaN)).toBe('')
+    expect(lireNombreSaisi(ecrireNombreSaisi(12.5))).toBe(12.5)
+  })
+})
+
+describe('parametresEgaux', () => {
+  it('compare champ par champ, comptes par défaut et mots courants compris', () => {
+    const base = { ...PARAMETRES_DEFAUT }
+    expect(parametresEgaux(base, { ...PARAMETRES_DEFAUT, comptesParDefaut: { ...COMPTES_PAR_DEFAUT } })).toBe(true)
+    expect(parametresEgaux(base, { ...base, nomCabinet: 'Autre' })).toBe(false)
+    expect(parametresEgaux(base, { ...base, tauxTvaDefaut: 9 })).toBe(false)
+    expect(parametresEgaux(base, { ...base, fneExigeeDepuis: null })).toBe(false)
+    expect(parametresEgaux(base, { ...base, comptesParDefaut: { ...COMPTES_PAR_DEFAUT, fournisseur: '4012' } })).toBe(false)
+    expect(parametresEgaux(base, { ...base, motsCourantsFournisseur: [...base.motsCourantsFournisseur, 'ets'] })).toBe(false)
+    // L'ordre des mots courants compte, comme pour toute liste.
+    expect(parametresEgaux({ ...base, motsCourantsFournisseur: ['sarl', 'ets'] }, { ...base, motsCourantsFournisseur: ['ets', 'sarl'] })).toBe(false)
+  })
+
+  it('tient un nombre illisible (NaN) pour égal à lui-même : un champ vidé reste une modification', () => {
+    const vide = { ...PARAMETRES_DEFAUT, tauxTvaDefaut: Number.NaN }
+    expect(parametresEgaux(vide, { ...vide })).toBe(true)
+    expect(parametresEgaux(vide, { ...PARAMETRES_DEFAUT })).toBe(false)
+  })
+})
+
+describe('expliquerRegleRetard', () => {
+  it('écrit la règle avec le jour seuil et la part minimale saisis', () => {
+    expect(nb(expliquerRegleRetard(PARAMETRES_DEFAUT))).toBe(
+      "À partir du 10 du mois, un client est en retard s'il n'a envoyé aucune pièce depuis le 1er, ou moins de 50 % des pièces attendues.",
+    )
+    expect(nb(expliquerRegleRetard({ jourSeuilRetard: 1, ratioVolumeMinimum: 0.125 }))).toContain('À partir du 1er du mois')
+    expect(nb(expliquerRegleRetard({ jourSeuilRetard: 1, ratioVolumeMinimum: 0.125 }))).toContain('moins de 12,5 % des pièces')
+  })
+
+  it('reste lisible pendant la saisie d’une valeur invalide', () => {
+    const texte = expliquerRegleRetard({ jourSeuilRetard: Number.NaN, ratioVolumeMinimum: 1.5 })
+    expect(texte).toBe("À partir du jour seuil, un client est en retard s'il n'a envoyé aucune pièce depuis le 1er, ou moins de la part minimale des pièces attendues.")
+    expect(texte).not.toContain('NaN')
   })
 })

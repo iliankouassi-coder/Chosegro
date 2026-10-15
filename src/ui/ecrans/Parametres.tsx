@@ -1,10 +1,32 @@
 // Écran 7 — Paramètres : cabinet, TVA par défaut, seuil de retard, textes de relance, comptes par défaut,
 // import du plan comptable et des échéances, remise à zéro de la démo.
 import { useEffect, useState, type ReactNode } from 'react'
-import { BookMarked, Bot, Building2, CalendarDays, CircleCheck, MessageSquareText, RotateCcw, TriangleAlert, Upload, Wallet } from 'lucide-react'
+import {
+  BookMarked,
+  Bot,
+  Building2,
+  CalendarDays,
+  CircleCheck,
+  MessageSquareText,
+  PenLine,
+  RotateCcw,
+  TriangleAlert,
+  Upload,
+  Wallet,
+} from 'lucide-react'
 import { useApp } from '../../app/store'
-import { CLES_MODELE_RELANCE, CLES_MODELE_RELANCE_FNE, CLES_MODELE_RELANCE_ILLISIBLE, PARAMETRES_DEFAUT } from '../../domain/parametres'
-import { formatDate, lireDate } from '../../domain/dates'
+import {
+  CLES_MODELE_RELANCE,
+  CLES_MODELE_RELANCE_FNE,
+  CLES_MODELE_RELANCE_ILLISIBLE,
+  ecrireNombreSaisi,
+  expliquerRegleRetard,
+  lireNombreSaisi,
+  PARAMETRES_DEFAUT,
+  parametresEgaux,
+  verifierParametres,
+} from '../../domain/parametres'
+import { estIsoDate, formatDate, lireDate } from '../../domain/dates'
 import { BADGE_DEMO } from '../../domain/echeances'
 import { messageLecture } from '../../domain/lecture'
 import { libelleCompletCompte, verifierCompteImputable } from '../../domain/plan'
@@ -32,11 +54,46 @@ function Champ({ libelle, aide, children }: { libelle: ReactNode; aide?: ReactNo
 }
 
 /**
- * Date d'obligation de la FNE, saisie en JJ/MM/AAAA. Vide : la règle est désactivée et la TVA d'un achat
- * sans QR code FNE reste déductible. Une saisie incomplète n'est pas enregistrée : la valeur précédente reste.
+ * Champ nombre : le texte tapé reste tel quel (jamais « NaN », un champ vidé reste vide). La valeur transmise est le
+ * nombre lu, ou NaN si le texte n'en est pas un : l'enregistrement le refuse alors avec un message.
+ * `echelle` : 100 pour un pourcentage saisi (« 50 ») et rangé en part (0,5).
  */
-function ChampDateFne({ valeur, surChangement }: { valeur: string | null; surChangement: (iso: string | null) => void }) {
-  const [texte, setTexte] = useState(valeur ? formatDate(valeur) : '')
+function ChampNombre({ valeur, echelle = 1, surChangement }: { valeur: number; echelle?: number; surChangement: (n: number) => void }) {
+  const versValeur = (t: string): number => {
+    const n = lireNombreSaisi(t)
+    return n === null ? Number.NaN : n / echelle
+  }
+  const [texte, setTexte] = useState(() => ecrireNombreSaisi(valeur * echelle))
+  // « Valeurs par défaut » ou « Annuler » changent la valeur : le texte suit. Une frappe ne le réécrit jamais.
+  useEffect(() => {
+    if (!Object.is(versValeur(texte), valeur)) setTexte(ecrireNombreSaisi(valeur * echelle))
+  }, [valeur])
+  return (
+    <input
+      className={`${CHAMP} chiffres ${Number.isNaN(valeur) ? '!border-critique' : ''}`}
+      inputMode="decimal"
+      aria-invalid={Number.isNaN(valeur)}
+      value={texte}
+      onChange={(e) => {
+        setTexte(e.target.value)
+        surChangement(versValeur(e.target.value))
+      }}
+    />
+  )
+}
+
+/**
+ * Date d'obligation de la FNE, saisie en JJ/MM/AAAA. Vide : la règle est désactivée et la TVA d'un achat
+ * sans QR code FNE reste déductible. Une saisie illisible est transmise telle quelle : l'enregistrement la refuse
+ * avec un message, au lieu de garder en silence la date précédente.
+ */
+function ChampDateFne({ valeur, surChangement }: { valeur: string | null; surChangement: (date: string | null) => void }) {
+  const lue = (t: string): string | null => (t.trim() === '' ? null : (lireDate(t) ?? t))
+  const [texte, setTexte] = useState(valeur === null ? '' : estIsoDate(valeur) ? formatDate(valeur) : valeur)
+  // « Valeurs par défaut » ou « Annuler » changent la date : le texte suit.
+  useEffect(() => {
+    if (lue(texte) !== valeur) setTexte(valeur === null ? '' : estIsoDate(valeur) ? formatDate(valeur) : valeur)
+  }, [valeur])
   const invalide = texte.trim() !== '' && lireDate(texte) === null
   return (
     <Champ
@@ -55,11 +112,7 @@ function ChampDateFne({ valeur, surChangement }: { valeur: string | null; surCha
         value={texte}
         onChange={(e) => {
           setTexte(e.target.value)
-          if (e.target.value.trim() === '') surChangement(null)
-          else {
-            const iso = lireDate(e.target.value)
-            if (iso) surChangement(iso)
-          }
+          surChangement(lue(e.target.value))
         }}
       />
     </Champ>
@@ -128,7 +181,10 @@ function BoutonImport({ libelle, accept, surFichier }: { libelle: string; accept
 
 export function Parametres() {
   const { etat, actions } = useApp()
-  const [p, setP] = useState<TypeParametres>(etat.donnees.parametres)
+  const enregistres = etat.donnees.parametres
+  const [p, setP] = useState<TypeParametres>(enregistres)
+  // Les paramètres enregistrés sur lesquels l'écran s'est calé.
+  const [base, setBase] = useState<TypeParametres>(enregistres)
   const [erreurs, setErreurs] = useState<string[]>([])
   const [message, setMessage] = useState<string | null>(null)
   const [messageImport, setMessageImport] = useState<string | null>(null)
@@ -136,22 +192,44 @@ export function Parametres() {
   const [confirmer, setConfirmer] = useState(false)
   const plan = etat.plan
 
+  // Les paramètres enregistrés ont changé (enregistrement, démo rechargée) : sans modification en cours, l'écran suit.
+  if (!parametresEgaux(base, enregistres)) {
+    setBase(enregistres)
+    if (parametresEgaux(p, base)) setP(enregistres)
+  }
+
   // Le moteur a pu changer depuis le démarrage (Ollama lancé, serveur arrêté) : on le redemande à l'ouverture.
   useEffect(() => {
     void actions.actualiserSante()
   }, [actions])
 
+  // « Paramètres enregistrés. » s'efface de lui-même.
+  useEffect(() => {
+    if (message === null) return
+    const minuteur = setTimeout(() => setMessage(null), 4000)
+    return () => clearTimeout(minuteur)
+  }, [message])
+
   const verifComptes = (Object.keys(LIBELLES_COMPTES) as (keyof ComptesParDefaut)[]).map((cle) => ({
     cle,
     verification: plan ? verifierCompteImputable(plan, p.comptesParDefaut[cle]) : null,
   }))
+  const erreursComptes = verifComptes.flatMap(({ cle, verification }) =>
+    verification && !verification.ok ? [`${LIBELLES_COMPTES[cle]} : ${verification.erreur}`] : [],
+  )
+  const modifie = !parametresEgaux(p, enregistres)
+  // Ce qui empêche d'enregistrer, à jour à chaque frappe : la barre du bas le dit avant le clic.
+  const erreursSaisie = modifie ? [...erreursComptes, ...verifierParametres(p)] : []
+
+  const modifier = (q: TypeParametres): void => {
+    setP(q)
+    setMessage(null)
+    setErreurs([])
+  }
+  const annuler = (): void => modifier(enregistres)
 
   const enregistrer = async (): Promise<void> => {
-    setMessage(null)
-    const erreursComptes = verifComptes.flatMap(({ cle, verification }) =>
-      verification && !verification.ok ? [`${LIBELLES_COMPTES[cle]} : ${verification.erreur}`] : [],
-    )
-    if (erreursComptes.length > 0) return setErreurs(erreursComptes)
+    if (erreursSaisie.length > 0) return
     const r = await actions.enregistrerParametres(p)
     if (r.ok) {
       setErreurs([])
@@ -159,10 +237,8 @@ export function Parametres() {
     } else setErreurs(r.erreur)
   }
 
-  const nombre = (cle: 'tauxTvaDefaut' | 'toleranceEcart' | 'jourSeuilRetard', valeur: string): void =>
-    setP({ ...p, [cle]: Number(valeur.replace(',', '.')) })
-
   const aVerifier = plan ? [...plan.comptes.values()].filter((c) => c.aVerifier !== null).length : 0
+  const erreursBarre = [...erreursSaisie, ...erreurs.filter((e) => !erreursSaisie.includes(e))]
 
   return (
     <div>
@@ -170,109 +246,76 @@ export function Parametres() {
         titre="Paramètres"
         description="Le cabinet, les règles de calcul, les textes de relance et les données de référence."
         actions={
-          <>
-            <Bouton variante="discret" onClick={() => setP({ ...PARAMETRES_DEFAUT })}>
-              Valeurs par défaut
-            </Bouton>
-            <Bouton variante="principal" onClick={() => void enregistrer()}>
-              Enregistrer
-            </Bouton>
-          </>
+          <Bouton variante="discret" onClick={() => modifier({ ...PARAMETRES_DEFAUT })}>
+            Valeurs par défaut
+          </Bouton>
         }
       />
-      {(message || erreurs.length > 0) && (
-        <div className="mb-6 grid gap-2">
-          {message && (
-            <Encart ton="bon" icone={CircleCheck}>
-              {message}
-            </Encart>
-          )}
-          {erreurs.length > 0 && <Erreur>{erreurs.join(' ')}</Erreur>}
-        </div>
-      )}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="grid grid-cols-1 content-start gap-6">
           <Carte titre="Cabinet et règles" icone={Building2}>
             <div className="grid grid-cols-1 gap-5">
               <Champ libelle="Nom du cabinet" aide="Tel qu’il apparaît dans les relances : « Bonjour, ici … ».">
-                <input className={CHAMP} value={p.nomCabinet} onChange={(e) => setP({ ...p, nomCabinet: e.target.value })} />
+                <input className={CHAMP} value={p.nomCabinet} onChange={(e) => modifier({ ...p, nomCabinet: e.target.value })} />
               </Champ>
               <Champ libelle="Collaborateur qui utilise la démo" aide="Enregistré sur chaque validation.">
-                <input className={CHAMP} value={p.collaborateur} onChange={(e) => setP({ ...p, collaborateur: e.target.value })} />
+                <input className={CHAMP} value={p.collaborateur} onChange={(e) => modifier({ ...p, collaborateur: e.target.value })} />
               </Champ>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Champ libelle="TVA par défaut (%)" aide={<>18{'\u00A0'}%, à confirmer.</>}>
-                  <input className={`${CHAMP} chiffres`} value={String(p.tauxTvaDefaut)} onChange={(e) => nombre('tauxTvaDefaut', e.target.value)} />
+                  <ChampNombre valeur={p.tauxTvaDefaut} surChangement={(tauxTvaDefaut) => modifier({ ...p, tauxTvaDefaut })} />
                 </Champ>
-                <Champ libelle="Tolérance HT + TVA = TTC (FCFA)">
-                  <input className={`${CHAMP} chiffres`} value={String(p.toleranceEcart)} onChange={(e) => nombre('toleranceEcart', e.target.value)} />
-                </Champ>
-                <Champ libelle="Seuil de retard (jour du mois)">
-                  <input
-                    className={`${CHAMP} chiffres`}
-                    value={String(p.jourSeuilRetard)}
-                    onChange={(e) => nombre('jourSeuilRetard', e.target.value)}
-                  />
+                <Champ libelle="Tolérance d’écart (FCFA)" aide="Entre HT + TVA et le TTC lu.">
+                  <ChampNombre valeur={p.toleranceEcart} surChangement={(toleranceEcart) => modifier({ ...p, toleranceEcart })} />
                 </Champ>
               </div>
-              <ChampDateFne valeur={p.fneExigeeDepuis} surChangement={(fneExigeeDepuis) => setP({ ...p, fneExigeeDepuis })} />
-              <Champ
-                libelle="Volume minimal attendu (%)"
-                aide={
-                  <>
-                    En retard : aucune pièce depuis le 1er du mois au jour seuil, ou moins de {Math.round(p.ratioVolumeMinimum * 100)}
-                    {'\u00A0'}% des pièces attendues.
-                  </>
-                }
-              >
-                <input
-                  className={`${CHAMP} chiffres !w-32`}
-                  value={String(Math.round(p.ratioVolumeMinimum * 100))}
-                  onChange={(e) => setP({ ...p, ratioVolumeMinimum: Number(e.target.value.replace(',', '.')) / 100 })}
-                />
-              </Champ>
+              <div className="grid grid-cols-1 gap-x-4 gap-y-1.5 sm:grid-cols-2">
+                <Champ libelle="Jour seuil du retard">
+                  <ChampNombre valeur={p.jourSeuilRetard} surChangement={(jourSeuilRetard) => modifier({ ...p, jourSeuilRetard })} />
+                </Champ>
+                <Champ libelle="Volume minimal attendu (%)">
+                  <ChampNombre
+                    valeur={p.ratioVolumeMinimum}
+                    echelle={100}
+                    surChangement={(ratioVolumeMinimum) => modifier({ ...p, ratioVolumeMinimum })}
+                  />
+                </Champ>
+                <div className="sm:col-span-2">
+                  <Raison>{expliquerRegleRetard(p)}</Raison>
+                </div>
+              </div>
+              <ChampDateFne valeur={p.fneExigeeDepuis} surChangement={(fneExigeeDepuis) => modifier({ ...p, fneExigeeDepuis })} />
             </div>
           </Carte>
 
           <Carte titre="Textes des relances" icone={MessageSquareText}>
-            <div className="grid grid-cols-1 gap-5">
-              <Champ libelle="Client en retard" aide={<>Clés : {CLES_MODELE_RELANCE.map((c) => `{${c}}`).join(', ')}.</>}>
-                <textarea rows={4} className={CHAMP} value={p.modeleRelance} onChange={(e) => setP({ ...p, modeleRelance: e.target.value })} />
-              </Champ>
-              <Champ libelle="Photo illisible" aide={<>Clés : {CLES_MODELE_RELANCE_ILLISIBLE.map((c) => `{${c}}`).join(', ')}.</>}>
-                <textarea
-                  rows={3}
-                  className={CHAMP}
-                  value={p.modeleRelanceIllisible}
-                  onChange={(e) => setP({ ...p, modeleRelanceIllisible: e.target.value })}
-                />
-              </Champ>
-              <Champ libelle="Factures sans QR code FNE" aide={<>Clés : {CLES_MODELE_RELANCE_FNE.map((c) => `{${c}}`).join(', ')}.</>}>
-                <textarea rows={4} className={CHAMP} value={p.modeleRelanceFne} onChange={(e) => setP({ ...p, modeleRelanceFne: e.target.value })} />
-              </Champ>
-            </div>
-          </Carte>
-
-          <Carte titre="Comptes par défaut" icone={Wallet} sousTitre="Choisis dans le plan, à confirmer par un expert-comptable.">
-            <div className="grid grid-cols-1 divide-y divide-bord overflow-hidden rounded-xl border border-bord">
-              {verifComptes.map(({ cle, verification }) => (
-                <label
-                  key={cle}
-                  className="grid grid-cols-[minmax(0,1fr)_96px] items-center gap-x-3 gap-y-0.5 px-3.5 py-2.5 text-sm sm:grid-cols-[minmax(0,190px)_96px_minmax(0,1fr)]"
+            <div className="grid grid-cols-1 gap-6">
+              <div className="grid gap-2">
+                <Champ libelle="Client en retard" aide={<>Clés remplacées à l’envoi{'\u00A0'}: {CLES_MODELE_RELANCE.map((c) => `{${c}}`).join(', ')}.</>}>
+                  <textarea rows={4} className={CHAMP} value={p.modeleRelance} onChange={(e) => modifier({ ...p, modeleRelance: e.target.value })} />
+                </Champ>
+              </div>
+              <div className="grid gap-2">
+                <Champ
+                  libelle="Photo illisible"
+                  aide={<>Clés remplacées à l’envoi{'\u00A0'}: {CLES_MODELE_RELANCE_ILLISIBLE.map((c) => `{${c}}`).join(', ')}.</>}
                 >
-                  <span className="font-medium text-texte">{LIBELLES_COMPTES[cle]}</span>
-                  <input
-                    className={`${CHAMP_COMPACT} chiffres w-full font-semibold text-marque-fonce`}
-                    value={p.comptesParDefaut[cle]}
-                    onChange={(e) => setP({ ...p, comptesParDefaut: { ...p.comptesParDefaut, [cle]: e.target.value.trim() } })}
+                  <textarea
+                    rows={3}
+                    className={CHAMP}
+                    value={p.modeleRelanceIllisible}
+                    onChange={(e) => modifier({ ...p, modeleRelanceIllisible: e.target.value })}
                   />
-                  <span
-                    className={`col-span-2 text-xs sm:col-span-1 ${verification && !verification.ok ? 'font-medium text-critique' : 'text-texte-2'}`}
-                  >
-                    {verification === null ? '' : verification.ok ? (plan && libelleCompletCompte(plan, verification.compte.code)) : verification.erreur}
-                  </span>
-                </label>
-              ))}
+                </Champ>
+              </div>
+              <div className="grid gap-2">
+                <Champ
+                  libelle="Factures sans QR code FNE"
+                  aide={<>Clés remplacées à l’envoi{'\u00A0'}: {CLES_MODELE_RELANCE_FNE.map((c) => `{${c}}`).join(', ')}.</>}
+                >
+                  <textarea rows={4} className={CHAMP} value={p.modeleRelanceFne} onChange={(e) => modifier({ ...p, modeleRelanceFne: e.target.value })} />
+                </Champ>
+              </div>
             </div>
           </Carte>
         </div>
@@ -305,6 +348,30 @@ export function Parametres() {
                   Revenir au plan fourni
                 </Bouton>
               )}
+            </div>
+          </Carte>
+
+          {/* Juste sous le plan : les comptes par défaut sont vérifiés contre lui. */}
+          <Carte titre="Comptes par défaut" icone={Wallet} sousTitre="Choisis dans le plan, à confirmer par un expert-comptable.">
+            <div className="grid grid-cols-1 divide-y divide-bord overflow-hidden rounded-xl border border-bord">
+              {verifComptes.map(({ cle, verification }) => (
+                <label
+                  key={cle}
+                  className="grid grid-cols-[minmax(0,1fr)_88px] items-center gap-x-3 gap-y-0.5 px-3.5 py-2.5 text-sm sm:grid-cols-[minmax(0,1fr)_88px_minmax(0,1.1fr)]"
+                >
+                  <span className="font-medium text-texte">{LIBELLES_COMPTES[cle]}</span>
+                  <input
+                    className={`${CHAMP_COMPACT} chiffres w-full font-semibold text-marque-fonce`}
+                    value={p.comptesParDefaut[cle]}
+                    onChange={(e) => modifier({ ...p, comptesParDefaut: { ...p.comptesParDefaut, [cle]: e.target.value.trim() } })}
+                  />
+                  <span
+                    className={`col-span-2 text-xs sm:col-span-1 ${verification && !verification.ok ? 'font-medium text-critique' : 'text-texte-2'}`}
+                  >
+                    {verification === null ? '' : verification.ok ? (plan && libelleCompletCompte(plan, verification.compte.code)) : verification.erreur}
+                  </span>
+                </label>
+              ))}
             </div>
           </Carte>
 
@@ -400,6 +467,47 @@ export function Parametres() {
           </Carte>
         </div>
       </div>
+
+      {/*
+        Barre collée au bas de l'écran dès qu'une valeur change : où que l'on soit dans la page, on voit qu'il reste à
+        enregistrer, et pourquoi on ne peut pas encore. Après l'enregistrement, elle le confirme puis s'efface.
+      */}
+      {(modifie || message) && (
+        <div className="sticky bottom-4 z-10 mt-6">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-bord bg-surface px-5 py-3 shadow-flottant">
+            {modifie ? (
+              <>
+                <div className="min-w-0 flex-1">
+                  <p role="status" className="inline-flex items-center gap-2 text-sm font-semibold text-texte">
+                    <PenLine className="h-4 w-4 text-attention" aria-hidden />
+                    Modifications non enregistrées
+                  </p>
+                  {erreursBarre.length > 0 && (
+                    <ul className="mt-1 grid gap-0.5 text-[13px] leading-snug text-critique">
+                      {erreursBarre.map((e) => (
+                        <li key={e}>{e}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Bouton variante="discret" onClick={annuler}>
+                    Annuler
+                  </Bouton>
+                  <Bouton variante="principal" disabled={erreursSaisie.length > 0} onClick={() => void enregistrer()}>
+                    Enregistrer
+                  </Bouton>
+                </div>
+              </>
+            ) : (
+              <p role="status" className="inline-flex items-center gap-2 text-sm font-medium text-bon">
+                <CircleCheck className="h-4 w-4" aria-hidden />
+                {message}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

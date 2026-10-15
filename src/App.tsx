@@ -47,7 +47,7 @@ function Ecran() {
       {route.ecran === 'client' && <FicheClient clientId={route.clientId} />}
       {route.ecran === 'relances' && <Relances />}
       {route.ecran === 'export' && <Export />}
-      {route.ecran === 'parametres' && <Parametres key={JSON.stringify(etat.donnees.parametres)} />}
+      {route.ecran === 'parametres' && <Parametres />}
     </Coquille>
   )
 }

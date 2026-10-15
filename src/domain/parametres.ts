@@ -76,6 +76,56 @@ export function nomAffichageCabinet(nom: string): string {
   return court.charAt(0).toLocaleUpperCase('fr') + court.slice(1)
 }
 
+/**
+ * Nombre tapé dans un champ des Paramètres : espaces retirés (insécables comprises), virgule ou point décimal.
+ * « 18 », « 12,5 », « 1 000 » se lisent ; un champ vide ou du texte (« dix-huit », « 5O ») donne null.
+ */
+export function lireNombreSaisi(texte: string): number | null {
+  const t = texte.replace(/[\s\u00A0\u202F]/g, '')
+  if (!/^[+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(t)) return null
+  return Number(t.replace(',', '.'))
+}
+
+/** Valeur affichée dans un champ nombre : « 18 », « 12,5 » ; rien pour une valeur illisible. */
+export function ecrireNombreSaisi(n: number): string {
+  if (!Number.isFinite(n)) return ''
+  return String(Math.round(n * 1e6) / 1e6).replace('.', ',')
+}
+
+const egales = (x: unknown, y: unknown): boolean => {
+  if (Object.is(x, y)) return true
+  if (Array.isArray(x) && Array.isArray(y)) return x.length === y.length && x.every((v, i) => egales(v, y[i]))
+  if (x === null || y === null || typeof x !== 'object' || typeof y !== 'object' || Array.isArray(x) || Array.isArray(y)) return false
+  // Deux objets simples : mêmes clés, mêmes valeurs.
+  const a = x as Record<string, unknown>
+  const b = y as Record<string, unknown>
+  return [...new Set([...Object.keys(a), ...Object.keys(b)])].every((cle) => egales(a[cle], b[cle]))
+}
+
+/**
+ * Mêmes paramètres, champ par champ, comptes par défaut et mots courants compris : l'écran Paramètres
+ * sait ainsi s'il a des modifications non enregistrées. Un nombre illisible (NaN) est égal à lui-même.
+ */
+export function parametresEgaux(a: Parametres, b: Parametres): boolean {
+  return egales(a, b)
+}
+
+/**
+ * La règle de retard en une phrase, avec les valeurs saisies : « À partir du 10 du mois, un client est en retard
+ * s'il n'a envoyé aucune pièce depuis le 1er, ou moins de 50 % des pièces attendues. »
+ */
+export function expliquerRegleRetard(p: Pick<Parametres, 'jourSeuilRetard' | 'ratioVolumeMinimum'>): string {
+  const jour = p.jourSeuilRetard
+  const ratio = p.ratioVolumeMinimum
+  const apartir =
+    Number.isInteger(jour) && jour >= 1 && jour <= 28 ? `À partir du ${jour === 1 ? '1er' : String(jour)} du mois` : 'À partir du jour seuil'
+  const part =
+    Number.isFinite(ratio) && ratio >= 0 && ratio <= 1
+      ? `${String(Math.round(ratio * 1000) / 10).replace('.', ',')}\u00A0%`
+      : 'la part minimale'
+  return `${apartir}, un client est en retard s'il n'a envoyé aucune pièce depuis le 1er, ou moins de ${part} des pièces attendues.`
+}
+
 /** Vérifie les valeurs saisies dans l'écran Paramètres. Renvoie la liste des erreurs, vide si tout va bien. */
 export function verifierParametres(p: Parametres): string[] {
   const erreurs: string[] = []

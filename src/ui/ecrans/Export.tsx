@@ -57,8 +57,10 @@ function ChampDate({
 }) {
   const [texte, setTexte] = useState(formatDate(valeur))
   const [etat, setEtat] = useState<EtatSaisie>('ok')
+  // La période a changé ailleurs : le texte suit. Pas pendant la frappe : « 01/10/20 » se lit déjà 2020 et ne doit
+  // pas devenir « 01/10/2020 » avant que l'année soit finie. Seul un changement de la valeur reçue resynchronise.
   useEffect(() => {
-    setTexte(formatDate(valeur))
+    if (lireDate(texte) !== valeur) setTexte(formatDate(valeur))
   }, [valeur])
   const changerEtat = (e: EtatSaisie): void => {
     setEtat(e)

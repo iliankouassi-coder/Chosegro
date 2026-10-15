@@ -89,6 +89,29 @@ describe('listeClients', () => {
     expect(l[0]?.retard).toMatchObject({ recuesCeMois: 1, attendues: 2, dernierEnvoi: '2026-10-13T08:00:00.000Z', enRetard: false })
     expect(l[1]).toMatchObject({ relance: 'a_faire', retard: { enRetard: true, motif: 'aucune_piece' } })
   })
+
+  it('ne demande pas de relance pour un client à jour : relance null, « à faire » seulement en retard', () => {
+    const l = listeClients(donnees([piece('a1')]), MAINTENANT)
+    expect(l.map((x) => [x.client.id, x.retard.enRetard, x.relance])).toEqual([
+      ['awa', false, null],
+      ['resto', true, 'a_faire'],
+    ])
+  })
+
+  it('garde visible une relance déjà préparée pour un client remis à jour', () => {
+    const preparee: Relance = {
+      id: 'r',
+      clientId: 'awa',
+      mois: '2026-10',
+      texte: 'x',
+      statut: 'preparee',
+      date: MAINTENANT,
+      motif: 'retard',
+      pieceId: null,
+    }
+    const l = listeClients(donnees([piece('a1')], { relances: [preparee] }), MAINTENANT)
+    expect(l.find((x) => x.client.id === 'awa')).toMatchObject({ relance: 'preparee', retard: { enRetard: false } })
+  })
 })
 
 describe('état de la relance', () => {

@@ -162,7 +162,11 @@ export function tableauAccueil(d: Donnees, maintenant: IsoDateHeure): Accueil {
 export interface LigneClient {
   client: Client
   retard: EtatRetard
-  relance: StatutRelance
+  /**
+   * État de la relance de retard du mois, ou null quand il n'y a rien à relancer : client à jour, sans relance
+   * préparée ni envoyée ce mois-ci. Une relance déjà préparée ou envoyée reste affichée, même si le client s'est remis à jour.
+   */
+  relance: StatutRelance | null
 }
 
 /** Écran Clients : reçues ce mois face aux attendues, dernier envoi, collaborateur, état de la relance. */
@@ -171,16 +175,16 @@ export function listeClients(d: Donnees, maintenant: IsoDateHeure): LigneClient[
   const mois = moisDe(aujourdhui)
   return [...d.clients]
     .sort((a, b) => a.raisonSociale.localeCompare(b.raisonSociale, 'fr'))
-    .map((client) => ({
-      client,
-      retard: evaluerRetard(
+    .map((client) => {
+      const retard = evaluerRetard(
         client,
         d.pieces.filter((p) => p.clientId === client.id),
         aujourdhui,
         d.parametres,
-      ),
-      relance: statutRelance(d.relances, client.id, mois),
-    }))
+      )
+      const relance = retard.enRetard ? statutRelance(d.relances, client.id, mois) : (relanceDuMois(d.relances, client.id, mois)?.statut ?? null)
+      return { client, retard, relance }
+    })
 }
 
 /** Un tiers du client (fournisseur, ou acheteur pour ses ventes), tel qu'il apparaît sur ses pièces. */

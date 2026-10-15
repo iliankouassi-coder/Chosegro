@@ -96,9 +96,13 @@ export function Clients() {
                 </div>
                 <div className="col-span-2 flex items-center gap-2">
                   <dt className="text-texte-2">Relance</dt>
-                  <dd>
-                    <PastilleRelance statut={relance} neutre={!retard.enRetard} />
-                  </dd>
+                  {relance === null ? (
+                    <dd className="text-texte-3">pas nécessaire</dd>
+                  ) : (
+                    <dd>
+                      <PastilleRelance statut={relance} neutre={!retard.enRetard} />
+                    </dd>
+                  )}
                 </div>
               </dl>
 

@@ -308,7 +308,7 @@ export function Accueil() {
                             <span className="flex flex-wrap items-center gap-1">
                               <PastilleConfiance confiance={l.confiance} />
                               {l.sansFne && (
-                                <Pastille ton="attention" icone={QrCode} title="Pas de QR code FNE : TVA non déductible">
+                                <Pastille ton="attention" icone={QrCode} title={'Pas de QR code FNE\u00A0: TVA non déductible'}>
                                   Sans FNE
                                 </Pastille>
                               )}
@@ -340,7 +340,7 @@ export function Accueil() {
                   </button>
                 }
               >
-                Avant le {seuil} du mois, aucun client n’est en retard : c’est la règle. Pour montrer un retard pendant la démo, calez-la sur une
+                Avant le {seuil} du mois, aucun client n’est en retard{'\u00A0'}: c’est la règle. Pour montrer un retard pendant la démo, calez-la sur une
                 date après le seuil (la démo est rechargée, tout reste fictif).
               </Vide>
             ) : clientsEnRetard.length === 0 ? (
@@ -359,7 +359,7 @@ export function Accueil() {
                           {client.raisonSociale}
                         </a>
                         <p className="text-xs text-texte-2">
-                          Dernier envoi : {retard.dernierEnvoi ? formatDate(retard.dernierEnvoi.slice(0, 10)) : 'jamais'}
+                          Dernier envoi{'\u00A0'}: {retard.dernierEnvoi ? formatDate(retard.dernierEnvoi.slice(0, 10)) : 'jamais'}
                         </p>
                       </div>
                     </div>
@@ -416,7 +416,7 @@ export function Accueil() {
                             <li key={d.client.id} className="flex items-start gap-1.5">
                               <OctagonAlert className="mt-0.5 h-4 w-4 shrink-0 text-critique" aria-hidden />
                               <span>
-                                <span className="font-semibold text-critique">Pas prêt : </span>
+                                <span className="font-semibold text-critique">{'Pas prêt\u00A0: '}</span>
                                 <a href={lienVers({ ecran: 'client', clientId: d.client.id })} className="font-medium hover:underline">
                                   {d.client.raisonSociale}
                                 </a>

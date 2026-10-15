@@ -161,7 +161,7 @@ function FormulaireClient({ client }: { client: Client }) {
         )}
       </div>
       <div className="md:col-span-2">
-        <Raison>Numéros fictifs : mettez votre propre numéro avant une démo, pour que le lien WhatsApp s’ouvre sur votre conversation.</Raison>
+        <Raison>Numéros fictifs{'\u00A0'}: mettez votre propre numéro avant une démo, pour que le lien WhatsApp s’ouvre sur votre conversation.</Raison>
       </div>
     </form>
   )
@@ -232,7 +232,7 @@ function LigneRegle({ regle, nom }: { regle: RegleFournisseur; nom: string }) {
         // Une suppression se confirme : la règle sert aux pièces suivantes de ce fournisseur.
         <div role="group" aria-label="Confirmer la suppression" className="mt-3 flex flex-wrap items-center gap-2.5 rounded-xl border border-critique/20 bg-critique-pale/60 p-3">
           <p className="min-w-0 flex-1 basis-64 text-[13px] text-texte">
-            <span className="font-semibold">Supprimer cette règle{' '}?</span> Les prochaines pièces de{' '}
+            <span className="font-semibold">Supprimer cette règle{'\u00A0'}?</span> Les prochaines pièces de{' '}
             {regle.sens === 'vente' ? 'ce client' : 'ce fournisseur'} seront proposées par l’IA.
           </p>
           <div className="flex shrink-0 gap-1.5">
@@ -307,9 +307,9 @@ function LigneRegle({ regle, nom }: { regle: RegleFournisseur; nom: string }) {
           ) : (
             saisie.length >= 2 && (
               <p className="text-xs text-texte-2">
-                Aucun compte du plan ne correspond à «{' '}
+                Aucun compte du plan ne correspond à «{'\u00A0'}
                 {saisie}
-                {' '}».
+                {'\u00A0'}».
               </p>
             )
           )}
@@ -378,7 +378,7 @@ export function FicheClient({ clientId }: { clientId: string }) {
       <Carte titre={`Règles apprises (${regles.length})`} icone={BookOpenCheck} plein>
         {regles.length === 0 ? (
           <div className="px-5 pb-2">
-            <Vide>Aucune règle pour l’instant{' '}: elles se créent quand un collaborateur corrige le compte d’un fournisseur.</Vide>
+            <Vide>Aucune règle pour l’instant{'\u00A0'}: elles se créent quand un collaborateur corrige le compte d’un fournisseur.</Vide>
           </div>
         ) : (
           <ul className="divide-y divide-bord border-t border-bord">

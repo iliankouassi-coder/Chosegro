@@ -52,7 +52,7 @@ describe('evaluerRetard : avant le jour seuil', () => {
       recuesCeMois: 0,
       attendues: 12,
       dernierEnvoi: null,
-      raison: 'Pas encore évalué : le seuil est le 10 du mois.',
+      raison: 'Pas encore évalué\u00A0: le seuil est le 10 du mois.',
     })
   })
 
@@ -66,7 +66,7 @@ describe('evaluerRetard : avant le jour seuil', () => {
   it('suit le jour seuil choisi dans les paramètres', () => {
     const params = { ...PARAMS, jourSeuilRetard: 15 }
     expect(evaluerRetard(client('a', 4), [], '2026-10-14', params).raison).toBe(
-      'Pas encore évalué : le seuil est le 15 du mois.',
+      'Pas encore évalué\u00A0: le seuil est le 15 du mois.',
     )
     expect(evaluerRetard(client('a', 4), [], '2026-10-15', params).enRetard).toBe(true)
   })
@@ -74,7 +74,7 @@ describe('evaluerRetard : avant le jour seuil', () => {
   it('écrit « le 1er du mois » quand le seuil est le premier jour', () => {
     const etat = evaluerRetard(client('a', 4), [], '2026-10-01', { ...PARAMS, jourSeuilRetard: 1 })
     expect(etat.enRetard).toBe(true)
-    expect(etat.raison).toBe('Aucune pièce reçue depuis le 01/10/2026 (seuil : le 1er du mois).')
+    expect(etat.raison).toBe('Aucune pièce reçue depuis le 01/10/2026 (seuil\u00A0: le 1er du mois).')
   })
 })
 
@@ -84,7 +84,7 @@ describe('evaluerRetard : aucune pièce ce mois-ci', () => {
     expect(etat.enRetard).toBe(true)
     expect(etat.motif).toBe('aucune_piece')
     expect(etat.recuesCeMois).toBe(0)
-    expect(etat.raison).toBe('Aucune pièce reçue depuis le 01/10/2026 (seuil : le 10 du mois).')
+    expect(etat.raison).toBe('Aucune pièce reçue depuis le 01/10/2026 (seuil\u00A0: le 10 du mois).')
   })
 
   it('ne compte pas les pièces du mois précédent, mais les garde comme dernier envoi', () => {
@@ -105,14 +105,14 @@ describe('evaluerRetard : aucune pièce ce mois-ci', () => {
     expect(etat.motif).toBe('aucune_piece')
     expect(etat.recuesCeMois).toBe(0)
     expect(etat.dernierEnvoi).toBe('2026-10-03T10:00:00.000Z')
-    expect(etat.raison).toBe('Aucune pièce reçue depuis le 01/10/2026, hors doublons (seuil : le 10 du mois).')
+    expect(etat.raison).toBe('Aucune pièce reçue depuis le 01/10/2026, hors doublons (seuil\u00A0: le 10 du mois).')
   })
 
   it('passe le changement d’année', () => {
     const recues = [piece('a', '2026-12-31T23:59:59.000Z')]
     const etat = evaluerRetard(client('a', 3), recues, '2027-01-12', PARAMS)
     expect(etat.motif).toBe('aucune_piece')
-    expect(etat.raison).toBe('Aucune pièce reçue depuis le 01/01/2027 (seuil : le 10 du mois).')
+    expect(etat.raison).toBe('Aucune pièce reçue depuis le 01/01/2027 (seuil\u00A0: le 10 du mois).')
     expect(etat.dernierEnvoi).toBe('2026-12-31T23:59:59.000Z')
   })
 })
@@ -124,35 +124,47 @@ describe('evaluerRetard : volume du mois', () => {
     expect(etat.motif).toBe('volume_bas')
     expect(etat.recuesCeMois).toBe(2)
     expect(etat.attendues).toBe(12)
-    expect(etat.raison).toBe('2 pièces reçues sur 12 attendues ce mois-ci (moins de 50\u00A0%).')
+    expect(etat.raison).toBe('2 pièces reçues sur 12 attendues ce mois-\u2060ci (moins de 50\u00A0%).')
   })
 
   it('accorde au singulier une seule pièce reçue', () => {
     const etat = evaluerRetard(client('a', 3), pieces('a', 1), '2026-10-13', PARAMS)
     expect(etat.motif).toBe('volume_bas')
-    expect(etat.raison).toBe('1 pièce reçue sur 3 attendues ce mois-ci (moins de 50\u00A0%).')
+    expect(etat.raison).toBe('1 pièce reçue sur 3 attendues ce mois-\u2060ci (moins de 50\u00A0%).')
   })
 
   it("n'est pas en retard à exactement 50 % (la comparaison est stricte)", () => {
     const etat = evaluerRetard(client('a', 12), pieces('a', 6), '2026-10-13', PARAMS)
     expect(etat.enRetard).toBe(false)
     expect(etat.motif).toBeNull()
-    expect(etat.raison).toBe('6 pièces reçues sur 12 attendues ce mois-ci.')
+    expect(etat.raison).toBe('6 pièces reçues sur 12 attendues ce mois-\u2060ci.')
   })
 
   it("n'est pas en retard au-dessus du seuil", () => {
     const etat = evaluerRetard(client('a', 12), pieces('a', 8), '2026-10-13', PARAMS)
     expect(etat.enRetard).toBe(false)
-    expect(etat.raison).toBe('8 pièces reçues sur 12 attendues ce mois-ci.')
+    expect(etat.raison).toBe('8 pièces reçues sur 12 attendues ce mois-\u2060ci.')
   })
 
   it('accorde au singulier une seule pièce attendue', () => {
     expect(evaluerRetard(client('a', 1), pieces('a', 1), '2026-10-13', PARAMS).raison).toBe(
-      '1 pièce reçue sur 1 attendue ce mois-ci.',
+      '1 pièce reçue sur 1 attendue ce mois-\u2060ci.',
     )
     expect(evaluerRetard(client('a', 1), pieces('a', 3), '2026-10-13', PARAMS).raison).toBe(
-      '3 pièces reçues sur 1 attendue ce mois-ci.',
+      '3 pièces reçues sur 1 attendue ce mois-\u2060ci.',
     )
+  })
+
+  it('ne laisse pas la ligne se couper avant « : » ni dans « mois-ci » : la raison s’affiche dans des cartes étroites', () => {
+    const raisons = [
+      evaluerRetard(client('a', 12), pieces('a', 2), '2026-10-13', PARAMS).raison,
+      evaluerRetard(client('a', 4), [], '2026-10-13', PARAMS).raison,
+      evaluerRetard(client('a', 4), [], '2026-10-09', PARAMS).raison,
+    ]
+    for (const raison of raisons) {
+      expect(raison).not.toMatch(/ [:;?!]/)
+      expect(raison).not.toMatch(/-(?!\u2060)\p{L}/u)
+    }
   })
 
   it('compte les pièces à lire, à valider, validées et rejetées, mais pas les doublons', () => {
@@ -173,19 +185,19 @@ describe('evaluerRetard : volume du mois', () => {
   it('affiche le pourcentage tiré des paramètres', () => {
     const params = { ...PARAMS, ratioVolumeMinimum: 0.25 }
     expect(evaluerRetard(client('a', 12), pieces('a', 2), '2026-10-13', params).raison).toBe(
-      '2 pièces reçues sur 12 attendues ce mois-ci (moins de 25\u00A0%).',
+      '2 pièces reçues sur 12 attendues ce mois-\u2060ci (moins de 25\u00A0%).',
     )
     expect(evaluerRetard(client('a', 12), pieces('a', 3), '2026-10-13', params).enRetard).toBe(false)
     const unHuitieme = { ...PARAMS, ratioVolumeMinimum: 0.125 }
     expect(evaluerRetard(client('a', 16), pieces('a', 1), '2026-10-13', unHuitieme).raison).toBe(
-      '1 pièce reçue sur 16 attendues ce mois-ci (moins de 12,5\u00A0%).',
+      '1 pièce reçue sur 16 attendues ce mois-\u2060ci (moins de 12,5\u00A0%).',
     )
   })
 
   it('avec une part minimale de 100 %, il faut tout le volume attendu', () => {
     const params = { ...PARAMS, ratioVolumeMinimum: 1 }
     expect(evaluerRetard(client('a', 12), pieces('a', 11), '2026-10-13', params).raison).toBe(
-      '11 pièces reçues sur 12 attendues ce mois-ci (moins de 100\u00A0%).',
+      '11 pièces reçues sur 12 attendues ce mois-\u2060ci (moins de 100\u00A0%).',
     )
     expect(evaluerRetard(client('a', 12), pieces('a', 12), '2026-10-13', params).enRetard).toBe(false)
   })
@@ -200,7 +212,7 @@ describe('evaluerRetard : volume du mois', () => {
     const params = { ...PARAMS, ratioVolumeMinimum: 0.55 }
     expect(evaluerRetard(client('a', 20), pieces('a', 11), '2026-10-13', params).enRetard).toBe(false)
     expect(evaluerRetard(client('a', 20), pieces('a', 10), '2026-10-13', params).raison).toBe(
-      '10 pièces reçues sur 20 attendues ce mois-ci (moins de 55\u00A0%).',
+      '10 pièces reçues sur 20 attendues ce mois-\u2060ci (moins de 55\u00A0%).',
     )
   })
 })
@@ -320,7 +332,7 @@ describe('clientsEnRetard', () => {
     const etats = clientsEnRetard(clients, recues, '2026-10-13', PARAMS)
     expect(etats.map((e) => e.clientId)).toEqual(['vide', 'peu', 'moitie'])
     expect(etats.map((e) => e.motif)).toEqual(['aucune_piece', 'volume_bas', 'volume_bas'])
-    expect(etats[1]?.raison).toBe('1 pièce reçue sur 10 attendues ce mois-ci (moins de 50\u00A0%).')
+    expect(etats[1]?.raison).toBe('1 pièce reçue sur 10 attendues ce mois-\u2060ci (moins de 50\u00A0%).')
   })
 
   it('départage par raison sociale, sans tenir compte des accents ni de la casse', () => {
@@ -345,7 +357,7 @@ describe('clientsEnRetard', () => {
   it('accepte directement les paramètres du cabinet', () => {
     const etats = clientsEnRetard([client('a', 3)], [], '2026-10-13', PARAMETRES_DEFAUT)
     expect(etats).toHaveLength(1)
-    expect(etats[0]?.raison).toBe('Aucune pièce reçue depuis le 01/10/2026 (seuil : le 10 du mois).')
+    expect(etats[0]?.raison).toBe('Aucune pièce reçue depuis le 01/10/2026 (seuil\u00A0: le 10 du mois).')
   })
 
   it('reproduit la démo : le client sans pièce ce mois apparaît, avec son dernier envoi', () => {
@@ -368,7 +380,7 @@ describe('clientsEnRetard', () => {
         recuesCeMois: 0,
         attendues: 6,
         dernierEnvoi: '2026-09-27T11:15:00.000Z',
-        raison: 'Aucune pièce reçue depuis le 01/10/2026 (seuil : le 10 du mois).',
+        raison: 'Aucune pièce reçue depuis le 01/10/2026 (seuil\u00A0: le 10 du mois).',
       },
     ])
   })

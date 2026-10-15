@@ -102,7 +102,7 @@ export function evaluerRetard(
 
   const jourDuJour = Number(aujourdhui.slice(8, 10))
   if (jourDuJour < params.jourSeuilRetard) {
-    return etat(false, null, `Pas encore évalué : le seuil est ${jourDuMois(params.jourSeuilRetard)}.`)
+    return etat(false, null, `Pas encore évalué\u00A0: le seuil est ${jourDuMois(params.jourSeuilRetard)}.`)
   }
 
   if (recues === 0) {
@@ -110,13 +110,15 @@ export function evaluerRetard(
     return etat(
       true,
       'aucune_piece',
-      `Aucune pièce reçue depuis le ${formatDate(debutMois)}${horsDoublons} (seuil : ${jourDuMois(params.jourSeuilRetard)}).`,
+      `Aucune pièce reçue depuis le ${formatDate(debutMois)}${horsDoublons} (seuil\u00A0: ${jourDuMois(params.jourSeuilRetard)}).`,
     )
   }
 
+  // « mois-ci » ne se coupe pas en fin de ligne : un gluon de mots (U+2060) suit le trait d'union, car Instrument Sans
+  // n'a pas de trait d'union insécable (U+2011). De même, une espace insécable précède chaque deux-points.
   const bilan =
     `${recues} ${accord(recues, 'pièce reçue', 'pièces reçues')} ` +
-    `sur ${attendues} ${accord(attendues, 'attendue', 'attendues')} ce mois-ci`
+    `sur ${attendues} ${accord(attendues, 'attendue', 'attendues')} ce mois-\u2060ci`
   if (recues < params.ratioVolumeMinimum * attendues - EPSILON) {
     return etat(true, 'volume_bas', `${bilan} (moins de ${pourcentage(params.ratioVolumeMinimum)}).`)
   }

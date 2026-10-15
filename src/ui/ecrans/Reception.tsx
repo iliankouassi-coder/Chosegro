@@ -1,15 +1,16 @@
 // Écran 2 — Réception : simule l'arrivée des pièces par WhatsApp, e-mail ou papier.
 // Trois étapes numérotées (client, canal, fichiers), la boîte de réception démo, et les dernières pièces reçues.
-import { useState, type DragEvent, type ReactNode } from 'react'
-import { CircleCheck, CloudUpload, Inbox, Sparkles, TriangleAlert } from 'lucide-react'
+import { useEffect, useState, type DragEvent, type ReactNode } from 'react'
+import { CloudUpload, Inbox, Sparkles } from 'lucide-react'
 import { lienVers } from '../../app/routeur'
 import { SEED } from '../../app/demo'
 import { useApp } from '../../app/store'
 import { formatDateHeure } from '../../domain/dates'
+import { messageLecture } from '../../domain/lecture'
 import { decoupageEnTacheDeFond, LIBELLES_CANAL } from '../../domain/pieces'
 import type { Canal, Piece } from '../../domain/types'
 import { genreFichier } from '../../infra/fichiers'
-import { BadgeDemo, Bouton, Carte, EnTetePage, Erreur, IconeCanal, PastilleStatutPiece, Raison, TuileCanal, Vide } from '../composants'
+import { BadgeDemo, Bouton, Carte, EnTetePage, Erreur, EtatLecture, IconeCanal, PastilleStatutPiece, Raison, TuileCanal, Vide } from '../composants'
 import { CHAMP } from '../styles'
 
 const CANAUX: Canal[] = ['whatsapp', 'email', 'papier']
@@ -42,6 +43,11 @@ export function Reception() {
   const [enCours, setEnCours] = useState(false)
 
   const clientChoisi = clients.find((c) => c.id === clientId) ?? clients[0]
+
+  // Le moteur a pu changer depuis le démarrage (Ollama lancé, serveur arrêté) : on le redemande à l'ouverture.
+  useEffect(() => {
+    void actions.actualiserSante()
+  }, [actions])
 
   const deposer = async (liste: FileList | File[]): Promise<void> => {
     setErreur(null)
@@ -175,28 +181,7 @@ export function Reception() {
                       </div>
                     </div>
                   ))}
-                  <div className="flex flex-wrap items-start gap-x-2 gap-y-1 text-[13px] leading-snug text-texte-2">
-                    {etat.sante === null ? (
-                      <span className="inline-flex items-center gap-1.5 font-medium text-attention">
-                        <TriangleAlert className="h-4 w-4" aria-hidden />
-                        Serveur local de lecture injoignable : lancez « npm run dev ».
-                      </span>
-                    ) : etat.sante.disponible ? (
-                      <span className="inline-flex items-center gap-1.5 font-medium text-bon">
-                        <CircleCheck className="h-4 w-4" aria-hidden />
-                        {etat.sante.detail}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 font-medium text-attention">
-                        <TriangleAlert className="h-4 w-4" aria-hidden />
-                        {etat.sante.detail}
-                      </span>
-                    )}
-                    <span>
-                      Lecture par {etat.sante?.nom ?? 'Claude Code'} sur cet ordinateur, une pièce à la fois,{' '}
-                      {etat.sante?.moteur === 'ollama' ? '5 minutes' : '2 minutes'} au plus chacune.
-                    </span>
-                  </div>
+                  <EtatLecture message={messageLecture(etat.sante, etat.santeVerifiee)} />
                 </div>
               </Etape>
             </div>

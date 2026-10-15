@@ -65,12 +65,17 @@ export interface EtatApp {
   donnees: Donnees
   plan: PlanComptable | null
   sourcePlan: 'fichier' | 'importe'
+  /** Échéances de data/echeances.json, ou importées depuis l'écran Paramètres. */
+  sourceEcheances: 'fichier' | 'importe'
   erreursEcheances: string[]
   /** État des lectures en cours, par pièce : « En attente (2e) », « Lecture en cours… 35 s ». */
   lectures: Record<string, string>
   /** Découpages de PDF papier en cours, pour la barre de progression. */
   decoupages: Record<string, Progression>
+  /** État du moteur de lecture, ou null si le serveur local ne répond pas. */
   sante: Sante | null
+  /** Faux tant que le serveur local n'a pas encore répondu une première fois. */
+  santeVerifiee: boolean
   boiteDemoChargee: boolean
   /** Exports déjà réalisés, du plus récent au plus ancien. */
   exports: ExportRealise[]
@@ -107,10 +112,11 @@ async function lirePlan(): Promise<{ plan: PlanComptable; source: 'fichier' | 'i
   return { plan: r.valeur, source: 'fichier' }
 }
 
-async function lireEcheancesActives(): Promise<{ echeances: Echeance[]; erreurs: string[] }> {
+async function lireEcheancesActives(): Promise<{ echeances: Echeance[]; erreurs: string[]; source: 'fichier' | 'importe' }> {
   const importees = await lireMeta<unknown>(CLES_META.echeancesImportees)
+  const source = importees === undefined || importees === null ? 'fichier' : 'importe'
   const r = lireEcheances(importees ?? echeancesJson)
-  return r.ok ? { echeances: r.valeur, erreurs: [] } : { echeances: [], erreurs: r.erreur }
+  return r.ok ? { echeances: r.valeur, erreurs: [], source } : { echeances: [], erreurs: r.erreur, source }
 }
 
 async function lireDonnees(): Promise<Omit<Donnees, 'echeances'>> {
@@ -201,6 +207,8 @@ function demarrer(): Promise<{ plan: PlanComptable; source: 'fichier' | 'importe
 
 export interface Actions {
   recharger: () => Promise<void>
+  /** Relit l'état du moteur de lecture (Ollama lancé, Claude Code connecté ou serveur arrêté depuis le démarrage). */
+  actualiserSante: () => Promise<void>
   recevoir: (p: { clientId: string; canal: Canal; fichiers: File[] }) => Promise<string[]>
   chargerBoiteDemo: () => Promise<void>
   relire: (pieceId: string) => Promise<void>
@@ -247,10 +255,12 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
     donnees: DONNEES_VIDES,
     plan: null,
     sourcePlan: 'fichier',
+    sourceEcheances: 'fichier',
     erreursEcheances: [],
     lectures: {},
     decoupages: {},
     sante: null,
+    santeVerifiee: false,
     boiteDemoChargee: false,
     exports: [],
     dateDemo: null,
@@ -271,6 +281,7 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
       ...e,
       donnees: complet,
       erreursEcheances: echeances.erreurs,
+      sourceEcheances: echeances.source,
       boiteDemoChargee: boiteDemoChargee === true,
       exports,
       dateDemo: lireDateDemo(),
@@ -288,6 +299,24 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
 
   /** Nom du moteur de lecture (Claude Code ou modèle local), pour les messages d'attente. */
   const nomMoteur = useRef('Claude Code')
+
+  /**
+   * Interroge le serveur local sur son moteur de lecture. Une seule demande à la fois : le serveur lance
+   * « claude --version » à chaque fois, l'écran qui s'ouvre pendant le démarrage reprend donc la demande en cours.
+   */
+  const santeEnCours = useRef<Promise<void> | null>(null)
+  const actualiserSante = useCallback((): Promise<void> => {
+    santeEnCours.current ??= (async () => {
+      try {
+        const s = await lireSante()
+        if (s) nomMoteur.current = s.nom
+        setEtat((e) => ({ ...e, sante: s, santeVerifiee: true }))
+      } finally {
+        santeEnCours.current = null
+      }
+    })()
+    return santeEnCours.current
+  }, [])
 
   /** Lecture par le moteur du serveur local. La pièce reste « à lire » en cas d'échec, avec l'erreur. */
   const lancerLecture = useCallback(
@@ -346,9 +375,7 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
         setEtat((e) => ({ ...e, plan, sourcePlan: source }))
         await recharger()
         setEtat((e) => ({ ...e, pret: true }))
-        const s = await lireSante()
-        if (s) nomMoteur.current = s.nom
-        if (!annule) setEtat((e) => ({ ...e, sante: s }))
+        if (!annule) await actualiserSante()
       } catch (erreur) {
         if (!annule) setEtat((e) => ({ ...e, erreurChargement: erreur instanceof Error ? erreur.message : String(erreur) }))
       }
@@ -356,7 +383,7 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
     return () => {
       annule = true
     }
-  }, [recharger])
+  }, [recharger, actualiserSante])
 
   const contexteValidation = useCallback(async (pieceId: string) => {
     const d = donneesRef.current
@@ -468,6 +495,7 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
 
     return {
       recharger,
+      actualiserSante,
       fichierDe: (pieceId) => db.fichiers.get(pieceId),
 
       recevoir: ({ clientId, canal, fichiers }) =>
@@ -776,7 +804,7 @@ export function FournisseurApp({ children }: { children: ReactNode }) {
           if (plan) await chargerDemo(plan)
         }),
     }
-  }, [recharger, lancerLecture, contexteValidation])
+  }, [recharger, actualiserSante, lancerLecture, contexteValidation])
 
   const valeur = useMemo(() => ({ etat, actions }), [etat, actions])
   return <Contexte.Provider value={valeur}>{children}</Contexte.Provider>

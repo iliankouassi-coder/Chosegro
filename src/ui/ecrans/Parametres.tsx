@@ -1,13 +1,15 @@
 // Écran 7 — Paramètres : cabinet, TVA par défaut, seuil de retard, textes de relance, comptes par défaut,
 // import du plan comptable et des échéances, remise à zéro de la démo.
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { BookMarked, Bot, Building2, CalendarDays, CircleCheck, MessageSquareText, RotateCcw, TriangleAlert, Upload, Wallet } from 'lucide-react'
 import { useApp } from '../../app/store'
 import { CLES_MODELE_RELANCE, CLES_MODELE_RELANCE_FNE, CLES_MODELE_RELANCE_ILLISIBLE, PARAMETRES_DEFAUT } from '../../domain/parametres'
 import { formatDate, lireDate } from '../../domain/dates'
+import { BADGE_DEMO } from '../../domain/echeances'
+import { messageLecture } from '../../domain/lecture'
 import { libelleCompletCompte, verifierCompteImputable } from '../../domain/plan'
 import type { ComptesParDefaut, Parametres as TypeParametres } from '../../domain/types'
-import { BadgeDemo, Bouton, Carte, classesBouton, Encart, EnTetePage, Erreur, Raison } from '../composants'
+import { BadgeDemo, Bouton, Carte, classesBouton, Encart, EnTetePage, Erreur, EtatLecture, Raison } from '../composants'
 import { CHAMP, CHAMP_COMPACT } from '../styles'
 
 const LIBELLES_COMPTES: Record<keyof ComptesParDefaut, string> = {
@@ -133,6 +135,11 @@ export function Parametres() {
   const [erreursImport, setErreursImport] = useState<string[]>([])
   const [confirmer, setConfirmer] = useState(false)
   const plan = etat.plan
+
+  // Le moteur a pu changer depuis le démarrage (Ollama lancé, serveur arrêté) : on le redemande à l'ouverture.
+  useEffect(() => {
+    void actions.actualiserSante()
+  }, [actions])
 
   const verifComptes = (Object.keys(LIBELLES_COMPTES) as (keyof ComptesParDefaut)[]).map((cle) => ({
     cle,
@@ -274,7 +281,7 @@ export function Parametres() {
           <Carte titre="Plan comptable" icone={BookMarked}>
             <p className="flex items-baseline gap-2 text-sm text-texte-2">
               <span className="chiffres text-[30px] font-semibold leading-none tracking-[-0.02em] text-texte">{plan ? plan.comptes.size : '…'}</span>
-              comptes, {etat.sourcePlan === 'importe' ? 'plan importé depuis cet écran' : 'data/plan_syscohada.xlsx (fourni)'}.
+              comptes, {etat.sourcePlan === 'importe' ? 'plan importé depuis cet écran' : 'plan SYSCOHADA fourni avec la démo'}.
             </p>
             <div className="mt-3 grid gap-2">
               <Encart ton="attention" icone={TriangleAlert}>
@@ -304,7 +311,7 @@ export function Parametres() {
           <Carte
             titre={
               <span className="flex flex-wrap items-center gap-2">
-                Échéances fiscales <BadgeDemo texte="fictives, à valider" />
+                Échéances fiscales <BadgeDemo texte={BADGE_DEMO} />
               </span>
             }
             icone={CalendarDays}
@@ -312,7 +319,7 @@ export function Parametres() {
             <p className="text-sm text-texte-2">
               <span className="chiffres font-semibold text-texte">{etat.donnees.echeances.length}</span> échéances, dont{' '}
               <span className="chiffres font-semibold text-texte">{etat.donnees.echeances.filter((e) => e.demo).length}</span> fictives
-              (data/echeances.json).
+              {etat.sourceEcheances === 'importe' ? ', importées depuis cet écran' : ''}.
             </p>
             {etat.erreursEcheances.length > 0 && (
               <div className="mt-3">
@@ -330,9 +337,11 @@ export function Parametres() {
                   })
                 }
               />
-              <Bouton variante="discret" onClick={() => void actions.revenirAuxEcheancesFournies()}>
-                Revenir à data/echeances.json
-              </Bouton>
+              {etat.sourceEcheances === 'importe' && (
+                <Bouton variante="discret" onClick={() => void actions.revenirAuxEcheancesFournies()}>
+                  Revenir aux échéances fournies
+                </Bouton>
+              )}
             </div>
           </Carte>
 
@@ -343,26 +352,23 @@ export function Parametres() {
           )}
           {erreursImport.length > 0 && <Erreur>{erreursImport.join(' ')}</Erreur>}
 
-          <Carte titre="Lecture des pièces" icone={Bot} sousTitre={etat.sante ? `Moteur : ${etat.sante.nom}` : undefined}>
-            <Encart ton={etat.sante?.disponible ? 'bon' : 'attention'}>
-              <span className="font-medium">
-                {etat.sante === null ? 'Serveur local injoignable : lancez la démo avec « npm run dev ».' : etat.sante.detail}
-              </span>
-            </Encart>
-            <div className="mt-3 grid gap-2">
+          <Carte titre="Lecture des pièces" icone={Bot}>
+            <EtatLecture message={messageLecture(etat.sante, etat.santeVerifiee)}>
               {etat.sante?.moteur === 'ollama' ? (
-                <Raison>
-                  Modèle local servi par Ollama sur cet ordinateur : rien ne part sur Internet, pas de coût par pièce, 5 minutes au plus par pièce. Il
-                  lit la pièce mais ne propose aucun compte : le compte vient des règles apprises ou du collaborateur. Prompt :
-                  prompts/extraction_locale.md. Pour revenir à Claude Code : « npm run dev ».
-                </Raison>
+                <p>
+                  {'Modèle local servi par Ollama\u00A0: rien ne part sur Internet, pas de coût par pièce. Il lit la pièce mais ne propose aucun ' +
+                    'compte\u00A0: le compte vient des règles apprises ou du collaborateur. Prompt\u00A0: prompts/extraction_locale.md. ' +
+                    'Pour revenir à Claude Code\u00A0: «\u00A0npm run dev\u00A0».'}
+                </p>
               ) : (
-                <Raison>
-                  Commande lancée pour chaque pièce : claude -p … --output-format json --json-schema … --allowedTools "Read" (sans --bare), une pièce à
-                  la fois, 120 s au plus. Le prompt est dans prompts/extraction.md. Pour lire avec un modèle local (Ollama) : « npm run dev:locale ».
-                </Raison>
+                <p>
+                  {'Commande lancée pour chaque pièce\u00A0: '}
+                  <code>claude -p … --output-format json --json-schema … --allowedTools "Read"</code>
+                  {' (sans --bare), 120\u00A0s au plus. Prompt\u00A0: prompts/extraction.md. ' +
+                    'Pour lire avec un modèle local (Ollama)\u00A0: «\u00A0npm run dev:locale\u00A0».'}
+                </p>
               )}
-            </div>
+            </EtatLecture>
           </Carte>
 
           <Carte titre="Démo" icone={RotateCcw}>

@@ -65,6 +65,18 @@ const estDemande = (v: unknown): v is DemandeLecture => {
   )
 }
 
+/**
+ * Détail technique de l'état de Claude Code, affiché replié sous la phrase destinée au collaborateur.
+ * `claude --version` répond « 2.1.300 (Claude Code) » : seul le numéro est gardé.
+ */
+export function detailClaude(version: string | null): string {
+  if (version === null) {
+    return 'Claude Code introuvable sur cet ordinateur (commande «\u00A0claude\u00A0»)\u00A0: installez-le et connectez-le avec l’abonnement.'
+  }
+  const numero = /\d+(?:\.\d+)+/.exec(version)?.[0]
+  return numero ? `Claude Code prêt sur cet ordinateur (version ${numero}).` : 'Claude Code prêt sur cet ordinateur.'
+}
+
 const versionClaude = (): Promise<string | null> =>
   new Promise((resoudre) => {
     execFile('claude', ['--version'], { timeout: 10_000 }, (erreur, stdout) => resoudre(erreur ? null : stdout.trim()))
@@ -125,7 +137,7 @@ export function serveurLecture(options: { commande?: readonly string[] } = {}): 
                 moteur: 'claude',
                 nom: file.nomMoteur,
                 disponible: version !== null,
-                detail: version !== null ? `Claude Code détecté (${version}).` : 'Claude Code introuvable sur cet ordinateur : les pièces resteront « à lire ».',
+                detail: detailClaude(version),
                 version,
                 file: file.charge(),
               })

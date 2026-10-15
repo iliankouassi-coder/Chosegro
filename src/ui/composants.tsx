@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { formatFcfa, formatMontant } from '../domain/montants'
+import type { MessageLecture } from '../domain/lecture'
 import { LIBELLES_CANAL, LIBELLES_STATUT } from '../domain/pieces'
 import { LIBELLES_STATUT_RELANCE } from '../domain/relances'
 import type { TonJauge } from '../domain/retards'
@@ -193,6 +194,28 @@ export function ListeAlertes({ alertes, compact = false }: { alertes: readonly A
 
 export function Erreur({ children }: { children: ReactNode }) {
   return <Encart ton="critique">{children}</Encart>
+}
+
+/**
+ * L'état de la lecture automatique, le même sur Réception et Paramètres : une phrase claire pour le collaborateur,
+ * puis les détails techniques (version, commande à lancer…), repliés.
+ */
+export function EtatLecture({ message, children }: { message: MessageLecture; children?: ReactNode }) {
+  const details = message.detail !== null || children
+  return (
+    <Encart ton={message.ton} compact>
+      <p className="font-medium">{message.texte}</p>
+      {details && (
+        <details className="mt-1 text-[12.5px] leading-snug text-texte-2">
+          <summary className="cursor-pointer select-none rounded hover:text-texte">Détails techniques</summary>
+          <div className="mt-1 grid gap-1">
+            {message.detail !== null && <p>{message.detail}</p>}
+            {children}
+          </div>
+        </details>
+      )}
+    </Encart>
+  )
 }
 
 // ——— Mise en page ———

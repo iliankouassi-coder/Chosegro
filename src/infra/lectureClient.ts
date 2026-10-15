@@ -1,5 +1,6 @@
 // Côté navigateur : envoi d'une pièce au serveur local de lecture, puis suivi de son état.
 import type { ExtractionBrute } from '../domain/extraction'
+import type { MoteurLecture } from '../domain/lecture'
 
 export type EtatServeur =
   | { etat: 'en_attente'; position: number }
@@ -7,15 +8,8 @@ export type EtatServeur =
   | { etat: 'terminee'; brut: ExtractionBrute; dureeMs: number }
   | { etat: 'echec'; erreur: string; dureeMs: number }
 
-export interface Sante {
-  /** Moteur de lecture choisi au lancement du serveur local. */
-  moteur: 'claude' | 'ollama'
-  /** « Claude Code », « Ollama · qwen3-vl:2b ». */
-  nom: string
-  /** Le moteur est installé et prêt (Claude Code trouvé, ou Ollama lancé avec son modèle). */
-  disponible: boolean
-  /** Phrase d'état à afficher. */
-  detail: string
+/** Réponse de GET /api/sante : le moteur de lecture choisi au lancement du serveur local, et sa file. */
+export interface Sante extends MoteurLecture {
   version: string | null
   file: { enAttente: number; enCours: boolean }
 }

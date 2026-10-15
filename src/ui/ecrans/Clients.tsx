@@ -376,7 +376,7 @@ export function FicheClient({ clientId }: { clientId: string }) {
       <Carte titre="Fournisseurs, acheteurs et fusion des noms" icone={Merge}>
         <Raison>
           Les noms sont rapprochés automatiquement (casse, accents, mots courants retirés). Quand un même fournisseur est écrit de deux façons très
-          différentes, rattachez un nom à l’autre : règles et doublons les traiteront comme un seul fournisseur.
+          différentes, rattachez un nom à l’autre{'\u00A0'}: règles et doublons les traiteront comme un seul fournisseur.
         </Raison>
         <div className="relative mt-4 overflow-x-auto rounded-xl border border-bord">
           <table className="w-full min-w-[620px] text-sm">

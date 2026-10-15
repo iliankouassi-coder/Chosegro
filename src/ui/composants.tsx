@@ -182,7 +182,7 @@ export function ListeAlertes({ alertes, compact = false }: { alertes: readonly A
         return (
           <li key={`${a.code}-${i}`}>
             <Encart ton={s.ton} compact={compact}>
-              <span className="font-semibold">{s.libelle} : </span>
+              <span className="font-semibold">{`${s.libelle}\u00A0: `}</span>
               {a.message}
             </Encart>
           </li>

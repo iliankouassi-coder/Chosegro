@@ -207,7 +207,7 @@ export function Reception() {
                   <Bouton variante="principal" disabled={etat.boiteDemoChargee || enCours} onClick={() => void actions.chargerBoiteDemo()}>
                     Charger la boîte de réception démo
                   </Bouton>
-                  {etat.boiteDemoChargee && <Raison>Déjà chargée. Pour recommencer : Paramètres, puis « Réinitialiser la démo ».</Raison>}
+                  {etat.boiteDemoChargee && <Raison>{'Déjà chargée. Pour recommencer\u00A0: Paramètres, puis «\u00A0Réinitialiser la démo\u00A0».'}</Raison>}
                 </div>
               </div>
             </div>

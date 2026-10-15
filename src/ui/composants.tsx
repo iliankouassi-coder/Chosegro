@@ -18,6 +18,7 @@ import {
 import { formatFcfa, formatMontant } from '../domain/montants'
 import { LIBELLES_CANAL, LIBELLES_STATUT } from '../domain/pieces'
 import { LIBELLES_STATUT_RELANCE } from '../domain/relances'
+import type { TonJauge } from '../domain/retards'
 import type { Alerte, Canal, Confiance, StatutPiece, StatutRelance } from '../domain/types'
 
 // ——— Tons ———
@@ -335,15 +336,19 @@ export function Raison({ children }: { children: ReactNode }) {
 
 // ——— Jauge, canal, avatar ———
 
-/** Jauge « reçu / attendu » : le remplissage porte l'état, la piste est la même teinte diluée. */
-export function Jauge({ valeur, max, largeur = 'w-28' }: { valeur: number; max: number; largeur?: string }) {
+const TONS_JAUGE: Record<TonJauge, { plein: string; piste: string }> = {
+  bon: { plein: 'bg-bon', piste: 'bg-bon-pale' },
+  attention: { plein: 'bg-attention-vif', piste: 'bg-attention-pale' },
+  critique: { plein: 'bg-critique', piste: 'bg-critique-pale' },
+}
+
+/**
+ * Jauge « reçu / attendu » : le remplissage porte l'état, la piste est la même teinte diluée.
+ * Le ton vient du domaine (tonJauge) : seule la largeur est calculée ici.
+ */
+export function Jauge({ valeur, max, ton, largeur = 'w-28' }: { valeur: number; max: number; ton: TonJauge; largeur?: string }) {
   const ratio = max > 0 ? valeur / max : 1
-  const etat =
-    ratio >= 1
-      ? { plein: 'bg-bon', piste: 'bg-bon-pale' }
-      : ratio >= 0.5
-        ? { plein: 'bg-attention-vif', piste: 'bg-attention-pale' }
-        : { plein: 'bg-critique', piste: 'bg-critique-pale' }
+  const etat = TONS_JAUGE[ton]
   return (
     <span
       className={`relative inline-block h-2 ${largeur} overflow-hidden rounded-full align-middle ${etat.piste}`}

@@ -6,7 +6,7 @@ import { lienVers } from '../../app/routeur'
 import { maintenant } from '../../app/horloge'
 import { useApp } from '../../app/store'
 import { dateAbidjan, formatDate, formatDateHeure } from '../../domain/dates'
-import { avantSeuilRetard, dateDemoConseillee } from '../../domain/retards'
+import { avantSeuilRetard, dateDemoConseillee, tonJauge } from '../../domain/retards'
 import { formatFcfa } from '../../domain/montants'
 import { regrouperParClient, tableauAccueil } from '../../domain/tableaux'
 import {
@@ -321,7 +321,7 @@ export function Accueil() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2.5 text-xs text-texte-2">
-                      <Jauge valeur={retard.recuesCeMois} max={retard.attendues} largeur="flex-1" />
+                      <Jauge valeur={retard.recuesCeMois} max={retard.attendues} ton={tonJauge(retard)} largeur="flex-1" />
                       <span className="chiffres whitespace-nowrap font-medium text-texte">
                         {retard.recuesCeMois} / {retard.attendues} pièces ce mois
                       </span>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { avantSeuilRetard, clientsEnRetard, dateDemoConseillee, evaluerRetard } from './retards'
+import { avantSeuilRetard, clientsEnRetard, dateDemoConseillee, evaluerRetard, tonJauge } from './retards'
 import { PARAMETRES_DEFAUT } from './parametres'
 import type { Client, IsoDateHeure, Piece, StatutPiece } from './types'
 
@@ -400,5 +400,33 @@ describe('début de mois et démo', () => {
   it('conseille de caler la démo quatre jours après le seuil, dans le même mois, au plus tard le 28', () => {
     expect(dateDemoConseillee('2026-11-03', 10)).toBe('2026-11-14')
     expect(dateDemoConseillee('2026-11-03', 25)).toBe('2026-11-28')
+  })
+})
+
+describe('tonJauge', () => {
+  it('suit l’état de retard du domaine : rouge seulement pour un client en retard', () => {
+    const resto = client('resto', 4)
+    expect(tonJauge(evaluerRetard(resto, [], '2026-10-14', PARAMS))).toBe('critique')
+    expect(tonJauge(evaluerRetard(resto, pieces('resto', 1), '2026-10-14', PARAMS))).toBe('critique')
+    expect(tonJauge(evaluerRetard(resto, pieces('resto', 2), '2026-10-14', PARAMS))).toBe('attention')
+    expect(tonJauge(evaluerRetard(resto, pieces('resto', 4), '2026-10-14', PARAMS))).toBe('bon')
+    expect(tonJauge(evaluerRetard(resto, pieces('resto', 6), '2026-10-14', PARAMS))).toBe('bon')
+  })
+
+  it('avant le jour seuil, un client incomplet est ambre, pas rouge', () => {
+    const lagune = client('lagune', 5)
+    expect(tonJauge(evaluerRetard(lagune, pieces('lagune', 2, '2026-10-03'), '2026-10-05', PARAMS))).toBe('attention')
+    expect(tonJauge(evaluerRetard(lagune, [], '2026-10-05', PARAMS))).toBe('attention')
+  })
+
+  it('suit le volume minimal choisi par le cabinet', () => {
+    const awa = client('awa', 3)
+    const etat = evaluerRetard(awa, pieces('awa', 2), '2026-10-14', { jourSeuilRetard: 10, ratioVolumeMinimum: 0.7 })
+    expect(etat.enRetard).toBe(true)
+    expect(tonJauge(etat)).toBe('critique')
+  })
+
+  it('est vert quand aucune pièce n’est attendue', () => {
+    expect(tonJauge(evaluerRetard(client('zero', 0), [], '2026-10-14', PARAMS))).toBe('bon')
   })
 })

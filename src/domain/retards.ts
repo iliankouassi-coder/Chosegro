@@ -123,6 +123,19 @@ export function evaluerRetard(
   return etat(false, null, `${bilan}.`)
 }
 
+export type TonJauge = 'bon' | 'attention' | 'critique'
+
+/**
+ * Couleur de la jauge « reçues / attendues » d'un client, tirée de son état de retard : rouge seulement
+ * s'il est en retard (jour seuil et volume minimal du cabinet compris), vert quand le volume attendu est
+ * atteint, ambre entre les deux. Avant le jour seuil, un client incomplet est donc ambre, jamais rouge.
+ */
+export function tonJauge(etat: EtatRetard): TonJauge {
+  if (etat.enRetard) return 'critique'
+  if (etat.attendues === 0 || etat.recuesCeMois >= etat.attendues) return 'bon'
+  return 'attention'
+}
+
 /**
  * Clients en retard, pour l'accueil et les relances : ceux sans pièce d'abord,
  * puis par part reçue croissante, puis par raison sociale.

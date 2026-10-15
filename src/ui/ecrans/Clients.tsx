@@ -9,6 +9,7 @@ import { totaux } from '../../domain/ecritures'
 import { LIBELLES_JOURNAL } from '../../domain/export'
 import { LIBELLES_CANAL } from '../../domain/pieces'
 import { libelleCompletCompte } from '../../domain/plan'
+import { tonJauge } from '../../domain/retards'
 import { formatMontant } from '../../domain/montants'
 import { ficheClient, listeClients } from '../../domain/tableaux'
 import type { Client, RegleFournisseur } from '../../domain/types'
@@ -81,7 +82,7 @@ export function Clients() {
                     {retard.recuesCeMois} / {retard.attendues}
                   </span>
                 </div>
-                <Jauge valeur={retard.recuesCeMois} max={retard.attendues} largeur="w-full" />
+                <Jauge valeur={retard.recuesCeMois} max={retard.attendues} ton={tonJauge(retard)} largeur="w-full" />
               </div>
 
               <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-[13px]">

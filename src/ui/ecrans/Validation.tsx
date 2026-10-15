@@ -1,7 +1,24 @@
 // Écran 3 — Validation d'une pièce : la file à gauche, la pièce posée sur la table, la saisie à droite.
 // Deux gestes pour une pièce sans correction : l'ouvrir, puis Entrée. Flèche droite : pièce suivante. C : corriger.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { ArrowRight, Ban, BookOpenCheck, Check, CircleCheck, Copy, OctagonAlert, PartyPopper, Pencil, RotateCcw, Sparkles, TriangleAlert, Undo2 } from 'lucide-react'
+import {
+  ArrowRight,
+  Ban,
+  BookOpenCheck,
+  Check,
+  CircleCheck,
+  Copy,
+  Inbox,
+  OctagonAlert,
+  PartyPopper,
+  Pencil,
+  RotateCcw,
+  Sparkles,
+  TriangleAlert,
+  Undo2,
+  type LucideIcon,
+} from 'lucide-react'
+import { lectureDemo } from '../../app/demo'
 import { allerA, lienVers } from '../../app/routeur'
 import { maintenant } from '../../app/horloge'
 import { useApp } from '../../app/store'
@@ -12,7 +29,7 @@ import { LIBELLES_STATUT, pieceSuivante } from '../../domain/pieces'
 import { fileDeValidation, type LignePiece } from '../../domain/tableaux'
 import { libelleCompletCompte, rechercherComptes } from '../../domain/plan'
 import { formatMontant, lireMontant } from '../../domain/montants'
-import type { ChampLu, NaturePiece, Piece, PresenceQr } from '../../domain/types'
+import type { ChampLu, Ecriture, NaturePiece, Piece, PresenceQr } from '../../domain/types'
 import { preparerValidation, type Corrections } from '../../domain/validation'
 import { ApercuPiece } from '../ApercuPiece'
 import { CHAMP } from '../styles'
@@ -226,36 +243,76 @@ function FileValidation({ lignes, courante }: { lignes: LignePiece[]; courante: 
 const champSaisie = CHAMP
 
 export function Validation({ pieceId }: { pieceId: string | null }) {
-  const { etat } = useApp()
+  const { etat, actions } = useApp()
   const lignes = fileDeValidation(etat.donnees)
   const aValider = lignes.map((l) => l.piece)
   const piece = pieceId ? etat.donnees.pieces.find((p) => p.id === pieceId) : undefined
+  const [chargementDemo, setChargementDemo] = useState(false)
 
   useEffect(() => {
     if (!pieceId && aValider[0]) allerA({ ecran: 'validation', pieceId: aValider[0].id })
   }, [pieceId, aValider])
 
-  const message = (texte: string, fini = false) => (
+  // Une fois la boîte chargée, la file n'est plus vide : l'effet ci-dessus ouvre la première pièce.
+  const chargerBoiteDemo = async (): Promise<void> => {
+    setChargementDemo(true)
+    try {
+      await actions.chargerBoiteDemo()
+    } finally {
+      setChargementDemo(false)
+    }
+  }
+
+  const message = (texte: string, { icone = CircleCheck, action }: { icone?: LucideIcon; action?: ReactNode } = {}) => (
     <div className="mx-auto max-w-[640px] px-4 py-16">
       <div className="rounded-2xl border border-bord bg-surface shadow-carte">
-        <Vide
-          icone={fini ? PartyPopper : CircleCheck}
-          action={
-            fini && (
-              <a href={lienVers({ ecran: 'reception' })} className={classesBouton('principal')}>
-                Aller à la réception
-              </a>
-            )
-          }
-        >
+        <Vide icone={icone} action={action}>
           {texte}
         </Vide>
       </div>
     </div>
   )
   if (!etat.plan) return message('Chargement du plan comptable…')
-  if (!pieceId) return message('Aucune pièce à valider. Recevez des pièces dans l’écran Réception.', true)
-  if (!piece) return message('Pièce introuvable.')
+  // La première pièce de la file s'ouvre (effet ci-dessus) : rien à montrer entre-temps.
+  if (!pieceId && aValider[0]) return null
+  if (!pieceId) {
+    // Au premier lancement, le chemin de la démo est la boîte de réception démo : elle se charge d'ici.
+    if (!etat.boiteDemoChargee) {
+      return message('Aucune pièce à valider. Chargez la boîte de réception démo, ou recevez des pièces dans l’écran Réception.', {
+        icone: Inbox,
+        action: (
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Bouton variante="principal" disabled={chargementDemo} aria-busy={chargementDemo} onClick={() => void chargerBoiteDemo()}>
+              <Inbox className="h-4 w-4" aria-hidden />
+              Charger la boîte de réception démo
+            </Bouton>
+            <a href={lienVers({ ecran: 'reception' })} className={classesBouton('secondaire')}>
+              Aller à la réception
+            </a>
+          </div>
+        ),
+      })
+    }
+    return message('Aucune pièce à valider. Recevez des pièces dans l’écran Réception.', {
+      icone: PartyPopper,
+      action: (
+        <a href={lienVers({ ecran: 'reception' })} className={classesBouton('principal')}>
+          Aller à la réception
+        </a>
+      ),
+    })
+  }
+  if (!piece) {
+    // Lien ancien, démo réinitialisée ou pages fusionnées : la pièce n'existe plus.
+    return message('Pièce introuvable : elle a peut-être été fusionnée avec une autre page, ou la démo a été réinitialisée.', {
+      icone: TriangleAlert,
+      action: (
+        <a href={lienVers({ ecran: 'validation', pieceId: null })} className={classesBouton('principal')}>
+          Ouvrir la file de validation
+        </a>
+      ),
+    })
+  }
   return <ValidationPiece key={piece.id} piece={piece} file={aValider} lignes={lignes} />
 }
 
@@ -297,6 +354,16 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
   const p = preparation?.ok ? preparation.valeur : null
   const bloquants = [...erreursSaisie, ...(p?.bloquants ?? [])]
 
+  // Une pièce validée montre l'écriture enregistrée, jamais une proposition recalculée avec les règles du moment.
+  // Une pièce rejetée ou marquée doublon n'a pas d'écriture.
+  const ecritureValidee = piece.ecritureId ? etat.donnees.ecritures.find((e) => e.id === piece.ecritureId) : undefined
+  const validee = piece.statut === 'validee'
+  const ecriture: Pick<Ecriture, 'journal' | 'lignes' | 'raison' | 'source'> | null = validee
+    ? (ecritureValidee ?? null)
+    : modifiable
+      ? (p?.proposition.ecriture ?? null)
+      : null
+
   const apres = (): void => {
     const prochaine = pieceSuivante(etat.donnees.pieces, piece.id)
     allerA(prochaine ? { ecran: 'validation', pieceId: prochaine.id } : { ecran: 'accueil' })
@@ -323,7 +390,6 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
   }
 
   // Une validation s'annule tant que l'écriture n'a pas été exportée (le domaine le vérifie aussi).
-  const ecritureValidee = piece.ecritureId ? etat.donnees.ecritures.find((e) => e.id === piece.ecritureId) : undefined
   const exportee = ecritureValidee ? exportDeLEcriture(ecritureValidee, etat.exports) : null
   const annulerValidation = async (): Promise<void> => {
     setOccupe(true)
@@ -369,12 +435,13 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
   const position = file.findIndex((x) => x.id === piece.id)
   const suggestions =
     plan && saisie.compte.trim().length >= 2 && !/^\d{4,}$/.test(saisie.compte.trim()) ? rechercherComptes(plan, saisie.compte, { limite: 8 }) : []
-  const t = p ? totaux(p.proposition.ecriture.lignes) : null
-
-  const lignesEcriture = p?.proposition.ecriture.lignes ?? []
+  const lignesEcriture = ecriture?.lignes ?? []
+  const t = totaux(lignesEcriture)
   const libelleUnique =
     lignesEcriture.length > 0 && lignesEcriture.every((l) => l.libelle === lignesEcriture[0]?.libelle) ? lignesEcriture[0]?.libelle : null
-  const parIa = p?.proposition.ecriture.source === 'ia'
+  const parIa = ecriture?.source === 'ia'
+  // Le secours « lecture enregistrée » n'existe que pour les fichiers de la démo, reconnus à leur nom.
+  const lectureDemoDisponible = piece.statut === 'a_lire' && lectureDemo(piece.fichier.nom, piece.fichier.pages) !== null
 
   return (
     <div className="grid grid-cols-1 lg:h-screen lg:min-h-[640px] lg:grid-cols-[minmax(0,1fr)_minmax(460px,1.1fr)] lg:overflow-hidden xl:grid-cols-[248px_minmax(0,1fr)_minmax(540px,1.2fr)]">
@@ -428,9 +495,20 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                     <RotateCcw className="h-4 w-4" aria-hidden />
                     Réessayer
                   </Bouton>
-                  <Bouton onClick={() => void actions.utiliserLectureDemo(piece.id)}>Utiliser la lecture enregistrée (DÉMO)</Bouton>
+                  {lectureDemoDisponible && (
+                    <Bouton
+                      onClick={async () => {
+                        setErreurs([])
+                        const r = await actions.utiliserLectureDemo(piece.id)
+                        if (!r.ok) setErreurs([r.erreur])
+                      }}
+                    >
+                      Utiliser la lecture enregistrée (DÉMO)
+                    </Bouton>
+                  )}
                 </div>
               )}
+              {erreurs.length > 0 && <Erreur>{erreurs.join(' ')}</Erreur>}
             </section>
           )}
 
@@ -440,7 +518,7 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
             </div>
           )}
 
-          {p && t && (
+          {p && (
             <>
               {/* Ce qui a été lu sur la pièce */}
               <section aria-labelledby="titre-lu" className="pt-4">
@@ -487,8 +565,9 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                   <Encart compact ton={p.controle.statut === 'conforme' ? 'bon' : 'attention'}>
                     <span className="font-medium">{p.controle.texte}</span>
                   </Encart>
-                  {p.alertes.length > 0 && <ListeAlertes compact alertes={p.alertes} />}
-                  {p.doublon && (
+                  {/* Alertes et doublon probable servent à décider : une pièce traitée ne les montre plus. */}
+                  {modifiable && p.alertes.length > 0 && <ListeAlertes compact alertes={p.alertes} />}
+                  {modifiable && p.doublon && (
                     <Encart compact ton="critique" icone={Copy}>
                       <strong className="font-semibold text-critique">Doublon probable.</strong> {p.doublon.raison}{' '}
                       <a
@@ -497,115 +576,121 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                       >
                         Voir la pièce d’origine
                       </a>
-                      {modifiable && (
-                        <div className="mt-2">
-                          <Bouton variante="danger" taille="petit" disabled={occupe} onClick={() => void executer(() => actions.marquerDoublon(piece.id))}>
-                            <Copy className="h-4 w-4" aria-hidden />
-                            Marquer comme doublon
-                          </Bouton>
-                        </div>
-                      )}
+                      <div className="mt-2">
+                        <Bouton variante="danger" taille="petit" disabled={occupe} onClick={() => void executer(() => actions.marquerDoublon(piece.id))}>
+                          <Copy className="h-4 w-4" aria-hidden />
+                          Marquer comme doublon
+                        </Bouton>
+                      </div>
                     </Encart>
                   )}
                 </div>
               </section>
 
-              {/* L'écriture */}
-              <section aria-labelledby="titre-ecriture" className="mt-5 pb-5">
-                <TitrePartie
-                  action={
-                    <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-texte-2 ring-1 ring-inset ring-bord">
-                      Journal : {LIBELLES_JOURNAL[p.proposition.ecriture.journal]}
-                    </span>
-                  }
-                >
-                  <span id="titre-ecriture">Écriture proposée</span>
-                </TitrePartie>
-                <Encart compact ton="info" icone={parIa ? Sparkles : BookOpenCheck} className="mb-2">
-                  <p>
-                    <span className="font-semibold">Pourquoi : </span>
-                    {p.proposition.ecriture.raison}
-                    {parIa ? ' (source : IA)' : ' (source : règle apprise)'}
-                  </p>
-                </Encart>
-                {libelleUnique && <p className="mb-1.5 truncate text-[12.5px] text-texte-2">Libellé : {libelleUnique}</p>}
-                <div className="relative overflow-x-auto rounded-xl border border-bord">
-                  <table className="w-full table-fixed text-[14px]">
-                    <thead>
-                      <tr className="bg-surface-2 text-left text-xs text-texte-2">
-                        <th className={`py-1.5 pl-3 pr-2 font-medium ${libelleUnique ? '' : 'w-[38%]'}`}>Compte</th>
-                        {!libelleUnique && <th className="pr-2 font-medium">Libellé</th>}
-                        <th className="w-[22%] pr-3 text-right font-medium">Débit</th>
-                        <th className="w-[22%] pr-3 text-right font-medium">Crédit</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {lignesEcriture.map((l, i) => {
-                        const libelle = l.compte === '' ? null : ((plan && libelleCompletCompte(plan, l.compte)) ?? 'absent du plan')
-                        return (
-                          <tr key={i} className="border-t border-bord">
-                            <td className="py-2 pl-3 pr-2">
-                              {l.compte === '' ? (
-                                <span className="inline-flex items-center gap-1 font-semibold text-critique">
-                                  <TriangleAlert className="h-4 w-4" aria-hidden />à choisir
+              {validee && !ecriture && (
+                <div className="mt-5">
+                  <Erreur>L’écriture enregistrée de cette pièce est introuvable.</Erreur>
+                </div>
+              )}
+
+              {/* L'écriture : proposée, ou celle enregistrée à la validation */}
+              {ecriture && (
+                <section aria-labelledby="titre-ecriture" className="mt-5 pb-5">
+                  <TitrePartie
+                    action={
+                      <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-texte-2 ring-1 ring-inset ring-bord">
+                        Journal : {LIBELLES_JOURNAL[ecriture.journal]}
+                      </span>
+                    }
+                  >
+                    <span id="titre-ecriture">{validee ? 'Écriture validée' : 'Écriture proposée'}</span>
+                  </TitrePartie>
+                  <Encart compact ton="info" icone={parIa ? Sparkles : BookOpenCheck} className="mb-2">
+                    <p>
+                      <span className="font-semibold">Pourquoi : </span>
+                      {ecriture.raison}
+                      {parIa ? ' (source : IA)' : ' (source : règle apprise)'}
+                    </p>
+                  </Encart>
+                  {libelleUnique && <p className="mb-1.5 truncate text-[12.5px] text-texte-2">Libellé : {libelleUnique}</p>}
+                  <div className="relative overflow-x-auto rounded-xl border border-bord">
+                    <table className="w-full table-fixed text-[14px]">
+                      <thead>
+                        <tr className="bg-surface-2 text-left text-xs text-texte-2">
+                          <th className={`py-1.5 pl-3 pr-2 font-medium ${libelleUnique ? '' : 'w-[38%]'}`}>Compte</th>
+                          {!libelleUnique && <th className="pr-2 font-medium">Libellé</th>}
+                          <th className="w-[22%] pr-3 text-right font-medium">Débit</th>
+                          <th className="w-[22%] pr-3 text-right font-medium">Crédit</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {lignesEcriture.map((l, i) => {
+                          const libelle = l.compte === '' ? null : ((plan && libelleCompletCompte(plan, l.compte)) ?? 'absent du plan')
+                          return (
+                            <tr key={i} className="border-t border-bord">
+                              <td className="py-2 pl-3 pr-2">
+                                {l.compte === '' ? (
+                                  <span className="inline-flex items-center gap-1 font-semibold text-critique">
+                                    <TriangleAlert className="h-4 w-4" aria-hidden />à choisir
+                                  </span>
+                                ) : (
+                                  <span className="flex min-w-0 items-baseline gap-2" title={`${l.compte} ${libelle}`}>
+                                    <span className="chiffres shrink-0 rounded-md bg-marque-pale px-1.5 py-0.5 font-semibold text-marque-fonce">{l.compte}</span>
+                                    <span className="truncate text-[12.5px] text-texte-2">{libelle}</span>
+                                  </span>
+                                )}
+                              </td>
+                              {!libelleUnique && <td className="truncate py-2 pr-2 text-[13px]" title={l.libelle}>{l.libelle}</td>}
+                              <td className="chiffres py-2 pr-3 text-right font-medium">{l.debit ? formatMontant(l.debit) : ''}</td>
+                              <td className="chiffres py-2 pr-3 text-right font-medium">{l.credit ? formatMontant(l.credit) : ''}</td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t border-bord-fort bg-surface-2 font-semibold">
+                          <td className="py-2 pl-3" colSpan={libelleUnique ? 1 : 2}>
+                            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              Totaux
+                              {t.equilibree ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-bon-pale px-2 text-xs font-semibold leading-5 text-bon">
+                                  <CircleCheck className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden />
+                                  écriture équilibrée
                                 </span>
                               ) : (
-                                <span className="flex min-w-0 items-baseline gap-2" title={`${l.compte} ${libelle}`}>
-                                  <span className="chiffres shrink-0 rounded-md bg-marque-pale px-1.5 py-0.5 font-semibold text-marque-fonce">{l.compte}</span>
-                                  <span className="truncate text-[12.5px] text-texte-2">{libelle}</span>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-critique-pale px-2 text-xs font-semibold leading-5 text-critique">
+                                  <OctagonAlert className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden />
+                                  déséquilibrée
                                 </span>
                               )}
-                            </td>
-                            {!libelleUnique && <td className="truncate py-2 pr-2 text-[13px]" title={l.libelle}>{l.libelle}</td>}
-                            <td className="chiffres py-2 pr-3 text-right font-medium">{l.debit ? formatMontant(l.debit) : ''}</td>
-                            <td className="chiffres py-2 pr-3 text-right font-medium">{l.credit ? formatMontant(l.credit) : ''}</td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                    <tfoot>
-                      <tr className="border-t border-bord-fort bg-surface-2 font-semibold">
-                        <td className="py-2 pl-3" colSpan={libelleUnique ? 1 : 2}>
-                          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            Totaux
-                            {t.equilibree ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-bon-pale px-2 text-xs font-semibold leading-5 text-bon">
-                                <CircleCheck className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden />
-                                écriture équilibrée
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-critique-pale px-2 text-xs font-semibold leading-5 text-critique">
-                                <OctagonAlert className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden />
-                                déséquilibrée
-                              </span>
-                            )}
-                          </span>
-                        </td>
-                        <td className="chiffres py-2 pr-3 text-right">{formatMontant(t.debit)}</td>
-                        <td className="chiffres py-2 pr-3 text-right">{formatMontant(t.credit)}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-                <div className="mt-2 grid gap-1.5 empty:hidden">
-                  {!t.equilibree && (
-                    <Encart compact ton="critique">
-                      <span className="font-medium">{texteEquilibre(t)}</span>
-                    </Encart>
-                  )}
-                  {p.proposition.avertissements.length > 0 && (
-                    <ul className="grid gap-1.5">
-                      {p.proposition.avertissements.map((a) => (
-                        <li key={a}>
-                          <Encart compact ton="attention">
-                            {a}
-                          </Encart>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </section>
+                            </span>
+                          </td>
+                          <td className="chiffres py-2 pr-3 text-right">{formatMontant(t.debit)}</td>
+                          <td className="chiffres py-2 pr-3 text-right">{formatMontant(t.credit)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                  <div className="mt-2 grid gap-1.5 empty:hidden">
+                    {!t.equilibree && (
+                      <Encart compact ton="critique">
+                        <span className="font-medium">{texteEquilibre(t)}</span>
+                      </Encart>
+                    )}
+                    {modifiable && p.proposition.avertissements.length > 0 && (
+                      <ul className="grid gap-1.5">
+                        {p.proposition.avertissements.map((a) => (
+                          <li key={a}>
+                            <Encart compact ton="attention">
+                              {a}
+                            </Encart>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </section>
+              )}
 
               {correction && modifiable && (
                 <section aria-labelledby="titre-corriger" className="mb-6 rounded-2xl border border-marque/30 bg-marque-pale/30 p-4">
@@ -794,10 +879,28 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                     <Copy className="h-4 w-4 shrink-0" aria-hidden />
                   )}
                   <span>
-                    {LIBELLES_STATUT[piece.statut]}
+                    {piece.statut === 'doublon' ? 'Marquée comme doublon' : LIBELLES_STATUT[piece.statut]}
                     {piece.traiteePar && ` par ${piece.traiteePar}`}
                     {piece.traiteeLe && ` le ${formatDateHeure(piece.traiteeLe)}`}
-                    {piece.motifRejet === 'illisible' && ' (illisible) : le message de relance est prêt dans l’écran Relances.'}
+                    {piece.statut === 'rejetee' && piece.motifRejet === 'illisible' && (
+                      <>
+                        {' (illisible). Message de relance prêt : '}
+                        <a href={lienVers({ ecran: 'relances' })} className="font-semibold underline underline-offset-2">
+                          ouvrir les relances
+                        </a>
+                      </>
+                    )}
+                    {piece.statut === 'doublon' && piece.doublonDe && (
+                      <>
+                        {'. '}
+                        <a
+                          href={lienVers({ ecran: 'validation', pieceId: piece.doublonDe })}
+                          className="font-semibold underline underline-offset-2"
+                        >
+                          Voir la pièce d’origine
+                        </a>
+                      </>
+                    )}
                   </span>
                 </span>
                 {(piece.statut === 'rejetee' || piece.statut === 'doublon') && (

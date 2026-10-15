@@ -1,7 +1,8 @@
 // Écran 1 — Accueil : pièces à valider, clients en retard, échéances de la semaine (dans cet ordre).
 // En tête, quatre cartes chiffrées sur une rangée, qui mènent chacune à son bloc ; dessous, la file des pièces regroupée par client.
-import { AlarmClock, ArrowRight, CalendarClock, CalendarDays, CircleCheck, FileCheck2, Inbox, OctagonAlert, QrCode, type LucideIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { AlarmClock, ArrowRight, CalendarClock, CalendarDays, CircleCheck, FileCheck2, Inbox, OctagonAlert, QrCode, Sparkles, type LucideIcon } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { SEED } from '../../app/demo'
 import { lienVers } from '../../app/routeur'
 import { maintenant } from '../../app/horloge'
 import { useApp } from '../../app/store'
@@ -14,6 +15,7 @@ import type { Canal } from '../../domain/types'
 import {
   Avatar,
   BadgeDemo,
+  Bouton,
   Carte,
   classesBouton,
   EnTetePage,
@@ -116,6 +118,12 @@ export function Accueil() {
   const prochaine = echeancesDeLaSemaine[0]
   const allerA = (pieceId: string): void => {
     window.location.hash = lienVers({ ecran: 'validation', pieceId })
+  }
+  // Le bouton reste grisé pendant le chargement : un second clic chargerait la boîte deux fois.
+  const [chargementDemo, setChargementDemo] = useState(false)
+  const chargerBoiteDemo = (): void => {
+    setChargementDemo(true)
+    void actions.chargerBoiteDemo().finally(() => setChargementDemo(false))
   }
 
   return (
@@ -230,12 +238,25 @@ export function Accueil() {
             <Vide
               icone={Inbox}
               action={
-                <a href={lienVers({ ecran: 'reception' })} className={classesBouton('secondaire')}>
-                  Aller à la réception
-                </a>
+                // Avant le premier chargement, le chemin de la démo est ici même : la boîte démo, déjà lue, sans attendre de lecture.
+                <div className="flex flex-wrap items-center justify-center gap-2.5">
+                  {!etat.boiteDemoChargee && (
+                    <Bouton variante="principal" disabled={chargementDemo} onClick={chargerBoiteDemo}>
+                      <Sparkles className="h-4 w-4" aria-hidden />
+                      Charger la boîte de réception démo
+                    </Bouton>
+                  )}
+                  <a href={lienVers({ ecran: 'reception' })} className={classesBouton('secondaire')}>
+                    Aller à la réception
+                  </a>
+                </div>
               }
             >
-              Aucune pièce arrivée depuis la veille. Pour la démo, chargez la boîte de réception démo dans l’écran Réception.
+              {etat.boiteDemoChargee
+                ? 'Aucune pièce arrivée depuis la veille.'
+                : chargementDemo
+                  ? 'Chargement de la boîte de réception démo…'
+                  : `Aucune pièce arrivée depuis la veille. Pour la démo, chargez la boîte de réception démo\u00A0: ${SEED.boiteDeReception.length} envois fictifs, déjà lus.`}
             </Vide>
           ) : (
             <div className="@container relative overflow-x-auto border-t border-bord">

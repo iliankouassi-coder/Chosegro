@@ -14,8 +14,10 @@ import {
   Upload,
   Wallet,
 } from 'lucide-react'
+import { maintenant } from '../../app/horloge'
 import { useApp } from '../../app/store'
 import {
+  apercusRelances,
   CLES_MODELE_RELANCE,
   CLES_MODELE_RELANCE_FNE,
   CLES_MODELE_RELANCE_ILLISIBLE,
@@ -26,7 +28,7 @@ import {
   parametresEgaux,
   verifierParametres,
 } from '../../domain/parametres'
-import { estIsoDate, formatDate, lireDate } from '../../domain/dates'
+import { dateAbidjan, estIsoDate, formatDate, lireDate, moisDe } from '../../domain/dates'
 import { BADGE_DEMO } from '../../domain/echeances'
 import { messageLecture } from '../../domain/lecture'
 import { libelleCompletCompte, verifierCompteImputable } from '../../domain/plan'
@@ -79,6 +81,18 @@ function ChampNombre({ valeur, echelle = 1, surChangement }: { valeur: number; e
         surChangement(versValeur(e.target.value))
       }}
     />
+  )
+}
+
+/** Le message tel que le recevrait un client fictif, en bulle WhatsApp : les clés sont remplacées. */
+function ApercuMessage({ texte }: { texte: string }) {
+  return (
+    <div className="rounded-xl bg-[#efeae2] p-2.5">
+      <p className="mb-1.5 px-1 text-xs font-medium text-texte-2">Aperçu pour un client fictif</p>
+      <p className="whitespace-pre-wrap rounded-xl rounded-tl-sm bg-[#d9fdd3] px-3 py-2 text-[13.5px] leading-relaxed text-texte shadow-[0_1px_1px_rgb(0_0_0/0.08)]">
+        {texte}
+      </p>
+    </div>
   )
 }
 
@@ -220,6 +234,7 @@ export function Parametres() {
   const modifie = !parametresEgaux(p, enregistres)
   // Ce qui empêche d'enregistrer, à jour à chaque frappe : la barre du bas le dit avant le clic.
   const erreursSaisie = modifie ? [...erreursComptes, ...verifierParametres(p)] : []
+  const apercus = apercusRelances(p, moisDe(dateAbidjan(maintenant())))
 
   const modifier = (q: TypeParametres): void => {
     setP(q)
@@ -294,6 +309,7 @@ export function Parametres() {
                 <Champ libelle="Client en retard" aide={<>Clés remplacées à l’envoi{'\u00A0'}: {CLES_MODELE_RELANCE.map((c) => `{${c}}`).join(', ')}.</>}>
                   <textarea rows={4} className={CHAMP} value={p.modeleRelance} onChange={(e) => modifier({ ...p, modeleRelance: e.target.value })} />
                 </Champ>
+                <ApercuMessage texte={apercus.retard} />
               </div>
               <div className="grid gap-2">
                 <Champ
@@ -307,14 +323,16 @@ export function Parametres() {
                     onChange={(e) => modifier({ ...p, modeleRelanceIllisible: e.target.value })}
                   />
                 </Champ>
+                <ApercuMessage texte={apercus.illisible} />
               </div>
               <div className="grid gap-2">
                 <Champ
                   libelle="Factures sans QR code FNE"
                   aide={<>Clés remplacées à l’envoi{'\u00A0'}: {CLES_MODELE_RELANCE_FNE.map((c) => `{${c}}`).join(', ')}.</>}
                 >
-                  <textarea rows={4} className={CHAMP} value={p.modeleRelanceFne} onChange={(e) => modifier({ ...p, modeleRelanceFne: e.target.value })} />
+                  <textarea rows={5} className={CHAMP} value={p.modeleRelanceFne} onChange={(e) => modifier({ ...p, modeleRelanceFne: e.target.value })} />
                 </Champ>
+                <ApercuMessage texte={apercus.fne} />
               </div>
             </div>
           </Carte>

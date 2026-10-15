@@ -3,7 +3,8 @@ import { MOTS_COURANTS_DEFAUT } from './fournisseurs'
 import { TOLERANCE_ECART_DEFAUT } from './controle'
 import { estIsoDate } from './dates'
 import { DATE_OBLIGATION_FNE_DEFAUT } from './fne'
-import type { ComptesParDefaut, Parametres } from './types'
+import { redigerRelanceFne, redigerRelanceIllisible, redigerRelanceRetard } from './relances'
+import type { ChampLu, Client, ComptesParDefaut, IsoDate, IsoMois, NaturePiece, Parametres, Piece } from './types'
 
 /**
  * Comptes utilisés quand aucune règle apprise ne s'applique. Ils ont été choisis dans
@@ -41,6 +42,99 @@ export const MODELE_RELANCE_FNE_DEFAUT =
 export const CLES_MODELE_RELANCE = ['cabinet', 'client', 'mois', 'de_mois', 'nombre', 'recues'] as const
 export const CLES_MODELE_RELANCE_ILLISIBLE = ['cabinet', 'client', 'piece', 'de_piece'] as const
 export const CLES_MODELE_RELANCE_FNE = ['cabinet', 'client', 'pieces', 'tva'] as const
+
+/** Client fictif des aperçus de l'écran Paramètres : un collaborateur voit le message qu'un client recevrait. */
+export const CLIENT_APERCU: Readonly<Client> = {
+  id: 'apercu',
+  raisonSociale: 'Boutique Exemple SARL',
+  secteur: 'Commerce',
+  regimeFiscal: 'RSI',
+  telephoneWhatsapp: '',
+  email: '',
+  collaborateur: '',
+  piecesAttenduesParMois: 12,
+}
+
+/** Un champ lu avec certitude. */
+const lu = <T>(valeur: T): ChampLu<T> => ({ valeur, confiance: 'haut' })
+
+/** Un champ non lu : valeur nulle, confiance basse. */
+const nonLu = <T>(): ChampLu<T> => ({ valeur: null, confiance: 'bas' })
+
+/** Pièce d'achat fictive du client des aperçus, reçue le jour de sa date. */
+function pieceApercu(id: string, nature: NaturePiece, fournisseur: string, date: IsoDate): Piece {
+  return {
+    id,
+    clientId: CLIENT_APERCU.id,
+    canal: 'whatsapp',
+    fichier: { nom: `${id}.jpg`, type: 'image/jpeg', taille: 0, pages: null },
+    empreinte: id,
+    recueLe: `${date}T09:00:00.000Z`,
+    statut: 'a_valider',
+    extraction: {
+      lisible: true,
+      motifIllisible: null,
+      manuscrit: false,
+      fournisseur: lu(fournisseur),
+      destinataire: lu(CLIENT_APERCU.raisonSociale),
+      date: lu(date),
+      numeroFacture: nonLu(),
+      ht: nonLu(),
+      tva: nonLu(),
+      ttc: nonLu(),
+      devise: lu('XOF'),
+      nature: lu(nature),
+      qrFne: lu('non'),
+      compteIa: nonLu(),
+      raisonCompteIa: null,
+      problemes: [],
+    },
+    erreurLecture: null,
+    ecritureId: null,
+    doublonDe: null,
+    motifRejet: null,
+    traiteePar: null,
+    traiteeLe: null,
+    demo: true,
+  }
+}
+
+export interface ApercusRelances {
+  retard: string
+  illisible: string
+  fne: string
+}
+
+/**
+ * Les trois messages de relance tels que les rédige l'écran Relances, pour le client fictif CLIENT_APERCU
+ * (12 pièces attendues par mois, 3 reçues, une facture floue, deux achats sans QR code FNE pour 18 000 FCFA
+ * de TVA). Une clé inconnue reste écrite telle quelle, entre accolades : l'erreur se voit dans l'aperçu.
+ */
+export function apercusRelances(
+  p: Pick<Parametres, 'nomCabinet' | 'modeleRelance' | 'modeleRelanceIllisible' | 'modeleRelanceFne'>,
+  mois: IsoMois,
+): ApercusRelances {
+  const client = CLIENT_APERCU
+  return {
+    retard: redigerRelanceRetard({ modele: p.modeleRelance, nomCabinet: p.nomCabinet, client, mois, recues: 3 }),
+    illisible: redigerRelanceIllisible({
+      modele: p.modeleRelanceIllisible,
+      nomCabinet: p.nomCabinet,
+      client,
+      piece: pieceApercu('apercu-floue', 'facture', 'Imprimerie Exemple', `${mois}-08`),
+    }),
+    fne: redigerRelanceFne({
+      modele: p.modeleRelanceFne,
+      nomCabinet: p.nomCabinet,
+      client,
+      pieces: [
+        pieceApercu('apercu-fne-1', 'facture', 'Papeterie Exemple', `${mois}-05`),
+        pieceApercu('apercu-fne-2', 'ticket', 'Station Exemple', `${mois}-12`),
+      ],
+      tva: 18_000,
+    }),
+  }
+}
 
 const clesInconnues = (modele: string, connues: readonly string[]): string[] =>
   [...modele.matchAll(/\{([A-Za-z0-9_]+)\}/g)].map((m) => m[1] ?? '').filter((cle) => !connues.includes(cle))

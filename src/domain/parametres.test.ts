@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { planReel } from '../test/planReel'
 import { verifierCompteImputable } from './plan'
 import {
+  apercusRelances,
+  CLES_MODELE_RELANCE,
+  CLES_MODELE_RELANCE_FNE,
+  CLES_MODELE_RELANCE_ILLISIBLE,
   COMPTES_PAR_DEFAUT,
   ecrireNombreSaisi,
   expliquerRegleRetard,
@@ -181,5 +185,39 @@ describe('expliquerRegleRetard', () => {
     const texte = expliquerRegleRetard({ jourSeuilRetard: Number.NaN, ratioVolumeMinimum: 1.5 })
     expect(texte).toBe("À partir du jour seuil, un client est en retard s'il n'a envoyé aucune pièce depuis le 1er, ou moins de la part minimale des pièces attendues.")
     expect(texte).not.toContain('NaN')
+  })
+})
+
+describe('apercusRelances', () => {
+  it('rédige les trois messages par défaut pour un client fictif, comme l’écran Relances', () => {
+    const a = apercusRelances(PARAMETRES_DEFAUT, '2026-10')
+    expect(a.retard).toBe(
+      "Bonjour, ici le cabinet Exemple Conseil (DÉMO). Nous n'avons pas encore reçu toutes vos pièces d'octobre " +
+        "(d'habitude 12 pièces par mois). Pouvez-vous nous les envoyer par WhatsApp ou par e-mail ? Merci.",
+    )
+    expect(a.illisible).toContain('Nous ne parvenons pas à lire la facture Imprimerie Exemple du 08/10/2026')
+    expect(a.illisible).toContain('Pouvez-vous renvoyer la photo de la facture Imprimerie Exemple du 08/10/2026 ?')
+    expect(nb(a.fne)).toContain('la facture Papeterie Exemple du 05/10/2026 et le ticket Station Exemple du 12/10/2026')
+    expect(nb(a.fne)).toContain('18 000 FCFA de TVA ne sont pas déductibles')
+  })
+
+  it('remplace chaque clé connue, y compris {client}, {mois} et {recues}', () => {
+    const tout = (cles: readonly string[]): string => cles.map((c) => `[{${c}}]`).join(' ')
+    const a = apercusRelances(
+      {
+        nomCabinet: 'Cabinet Test',
+        modeleRelance: tout(CLES_MODELE_RELANCE),
+        modeleRelanceIllisible: tout(CLES_MODELE_RELANCE_ILLISIBLE),
+        modeleRelanceFne: tout(CLES_MODELE_RELANCE_FNE),
+      },
+      '2026-09',
+    )
+    for (const texte of [a.retard, a.illisible, a.fne]) expect(texte).not.toMatch(/\{[a-z_]+\}/)
+    expect(a.retard).toBe("[Cabinet Test] [Boutique Exemple SARL] [septembre 2026] [de septembre] [12] [3]")
+  })
+
+  it('laisse une clé inconnue entre accolades : la faute se voit dans l’aperçu', () => {
+    const a = apercusRelances({ ...PARAMETRES_DEFAUT, modeleRelance: 'Vos pièces {de_moi}, {de_mois}' }, '2026-10')
+    expect(a.retard).toBe("Vos pièces {de_moi}, d'octobre")
   })
 })

@@ -13,9 +13,14 @@ import {
   nomFichierExport,
   preparerExport,
   resumeExport,
+  resumeFormat,
   tableauExport,
+  texteDejaExportees,
+  texteExportReussi,
   texteNonValidees,
+  texteResumeApercu,
   texteTotauxExport,
+  totauxEquilibres,
   verifierColonnes,
   type ApercuExport,
   type ColonneExport,
@@ -255,6 +260,24 @@ describe('preparerExport', () => {
       ])
     })
 
+    it('donne la phrase du mois vide à part : l’écran montre un état vide, pas une erreur', () => {
+      const vide = preparerExport([ecriture({ valideePar: null })], clients, options())
+      expect(vide.vide).toBe('Aucune écriture validée pour Boutique Awa Mode SARL du 01/10/2026 au 31/10/2026 : rien à exporter.')
+      // La phrase reste un motif : l'export est bien bloqué.
+      expect(vide.motifs).toEqual([vide.vide])
+      expect(vide.bloque).toBe(true)
+      expect(preparerExport([ecriture()], clients, options()).vide).toBeNull()
+    })
+
+    it('ne parle pas de mois vide quand le vrai motif est la période ou le client', () => {
+      const inversee = preparerExport([ecriture()], clients, options({ periode: { debut: '2026-10-31', fin: '2026-10-01' } }))
+      expect(inversee.vide).toBeNull()
+      expect(inversee.motifs).toEqual(['Période invalide : le début (31/10/2026) est après la fin (01/10/2026).'])
+      const inconnu = preparerExport([ecriture()], clients, options({ clientId: 'client-inconnu' }))
+      expect(inconnu.vide).toBeNull()
+      expect(inconnu.motifs[0]).toBe('Client introuvable : « client-inconnu ».')
+    })
+
     it('formule le motif selon le journal et la période', () => {
       expect(preparerExport([], clients, options()).motifs).toEqual([
         'Aucune écriture validée pour Boutique Awa Mode SARL du 01/10/2026 au 31/10/2026 : rien à exporter.',
@@ -274,7 +297,7 @@ describe('preparerExport', () => {
       expect(apercu.totalDebit).toBe(118_000)
       expect(apercu.totalCredit).toBe(117_000)
       expect(apercu.motifs.map(nb)).toEqual([
-        'Total débit 118 000 ≠ total crédit 117 000 : écart 1 000 FCFA. Export bloqué.',
+        'Total débit 118 000 ≠ total crédit 117 000 : écart 1 000 FCFA.',
         "L'écriture de la pièce F-2026-1001 est déséquilibrée : débit 118 000, crédit 117 000, écart 1 000 FCFA.",
       ])
       // L'aperçu montre quand même les lignes.
@@ -392,6 +415,28 @@ describe('texteTotauxExport et texteNonValidees', () => {
     expect(nb(texteTotauxExport({ totalDebit: 118_000, totalCredit: 117_000 }))).toBe(
       'Total débit 118 000 ≠ total crédit 117 000 : écart 1 000 FCFA.',
     )
+  })
+
+  it('dit si les totaux sont équilibrés, en entiers FCFA seulement', () => {
+    expect(totauxEquilibres({ totalDebit: 118_000, totalCredit: 118_000 })).toBe(true)
+    expect(totauxEquilibres({ totalDebit: 0, totalCredit: 0 })).toBe(true)
+    expect(totauxEquilibres({ totalDebit: 118_000, totalCredit: 117_000 })).toBe(false)
+    expect(totauxEquilibres({ totalDebit: 0.5, totalCredit: 0.5 })).toBe(false)
+  })
+
+  it('résume l’aperçu en une phrase, avec les accords', () => {
+    const apercu = preparerExport([ecriture(), vente()], clients, options())
+    expect(nb(texteResumeApercu(apercu))).toBe('6 lignes, 2 écritures. Total débit 177 000 = total crédit 177 000 : totaux équilibrés.')
+    const une = { lignes: apercu.lignes.slice(0, 1), nombreEcritures: 1, totalDebit: 118_000, totalCredit: 117_000 }
+    expect(nb(texteResumeApercu(une))).toBe('1 ligne, 1 écriture. Total débit 118 000 ≠ total crédit 117 000 : écart 1 000 FCFA.')
+  })
+
+  it('confirme le fichier enregistré, avec les accords', () => {
+    const apercu = preparerExport([ecriture()], clients, options())
+    expect(nb(texteExportReussi('export_boutique-awa-mode_2026-10-01_2026-10-31.xlsx', apercu))).toBe(
+      'Fichier export_boutique-awa-mode_2026-10-01_2026-10-31.xlsx enregistré : 3 lignes, 1 écriture.',
+    )
+    expect(nb(texteExportReussi('f.csv', { lignes: apercu.lignes.slice(0, 1), nombreEcritures: 1 }))).toBe('Fichier f.csv enregistré : 1 ligne, 1 écriture.')
   })
 
   it('dit combien d’écritures non validées sont ignorées, avec l’accord', () => {
@@ -571,7 +616,9 @@ describe('genererCsv', () => {
     const r = genererCsv(bloque, { colonnes: COLONNES_PAR_DEFAUT, separateur: ';' })
     expect(r.ok).toBe(false)
     if (!r.ok) {
-      expect(nb(r.erreur)).toContain('Total débit 118 000 ≠ total crédit 117 000 : écart 1 000 FCFA. Export bloqué.')
+      expect(nb(r.erreur)).toContain('Total débit 118 000 ≠ total crédit 117 000 : écart 1 000 FCFA.')
+      // « Export bloqué » est le titre de l'encart : le motif ne le répète pas.
+      expect(r.erreur).not.toContain('Export bloqué')
       expect(nb(r.erreur)).toContain("L'écriture de la pièce F-2026-1001 est déséquilibrée")
     }
   })
@@ -635,6 +682,14 @@ describe('genererCsv', () => {
     const strict = lireCsv(csv.slice(1), ';')
     expect(strict).toHaveLength(10)
     expect(strict.every((l) => l.length === 8)).toBe(true)
+  })
+})
+
+describe('resumeFormat', () => {
+  it('résume les colonnes et le séparateur sur une ligne', () => {
+    expect(resumeFormat(COLONNES_PAR_DEFAUT, ';')).toBe('8 colonnes, séparateur CSV point-virgule')
+    expect(resumeFormat(['debit'], ',')).toBe('1 colonne, séparateur CSV virgule')
+    expect(resumeFormat([], '\t')).toBe('0 colonne, séparateur CSV tabulation')
   })
 })
 
@@ -753,5 +808,15 @@ describe('écritures déjà exportées', () => {
     const apercu = preparerExport([ecriture(), vente()], clients, options())
     expect(dejaExportees(apercu, [exporte()], [ecriture(), vente()])).toEqual({ nombre: 1, derniere: '2026-10-31T17:45:00.000Z' })
     expect(dejaExportees(apercu, [], [ecriture(), vente()])).toEqual({ nombre: 0, derniere: null })
+  })
+
+  it('le dit en une phrase, avec la date du dernier export et les accords', () => {
+    expect(texteDejaExportees({ nombre: 0, derniere: null })).toBeNull()
+    expect(texteDejaExportees({ nombre: 1, derniere: '2026-10-31T17:45:00.000Z' })).toBe(
+      '1 écriture de cet aperçu est déjà partie dans un export (dernier export le 31/10/2026 17:45). Vérifiez avant de la réimporter dans le logiciel comptable.',
+    )
+    expect(texteDejaExportees({ nombre: 2, derniere: '2026-10-31T17:45:00.000Z' })).toBe(
+      '2 écritures de cet aperçu sont déjà parties dans un export (dernier export le 31/10/2026 17:45). Vérifiez avant de les réimporter dans le logiciel comptable.',
+    )
   })
 })

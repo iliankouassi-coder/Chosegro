@@ -1,7 +1,7 @@
 // Export des écritures validées vers un CSV ou un Excel générique.
 // L'aperçu montre les lignes et vérifie l'équilibre : au moindre écart, l'export est bloqué
 // et le motif est affiché. Aucun montant n'est corrigé.
-import { comparerDates, estDansPeriode, estIsoDate, formatDate } from './dates'
+import { comparerDates, estDansPeriode, estIsoDate, formatDate, formatDateHeure } from './dates'
 import { motsDuNom } from './fournisseurs'
 import { estMontant, formatFcfa, formatMontant, somme } from './montants'
 import {
@@ -92,6 +92,12 @@ export interface ApercuExport {
   bloque: boolean
   /** Ce qui bloque l'export, en phrases lisibles. Vide si l'export est possible. */
   motifs: string[]
+  /**
+   * « Aucune écriture validée pour … : rien à exporter. » quand le client existe, que la période est valide
+   * et qu'aucune écriture n'est validée : un mois vide n'est pas une erreur, l'écran le montre en état vide.
+   * La phrase est aussi dans les motifs. Null sinon.
+   */
+  vide: string | null
 }
 
 const ENTETES: ReadonlyMap<ColonneExport, string> = new Map(COLONNES_EXPORT.map((c) => [c.cle, c.entete]))
@@ -210,13 +216,16 @@ export function preparerExport(
   const totalDebit = somme(lignes.map((l) => l.debit))
   const totalCredit = somme(lignes.map((l) => l.credit))
 
+  let vide: string | null = null
   if (periodeValide && validees.length === 0) {
     const pour = client === null ? '' : ` pour ${raisonSociale}`
     const dans = journal === 'tous' ? '' : ` dans le journal ${COMPLEMENT_JOURNAL[journal]}`
-    motifs.push(`Aucune écriture validée${pour}${dans} ${textePeriode(periode)} : rien à exporter.`)
+    const rien = `Aucune écriture validée${pour}${dans} ${textePeriode(periode)} : rien à exporter.`
+    motifs.push(rien)
+    if (client !== null) vide = rien
   }
   if (lignes.every((l) => estMontant(l.debit) && estMontant(l.credit)) && totalDebit !== totalCredit) {
-    motifs.push(`${texteEcart(totalDebit, totalCredit)} Export bloqué.`)
+    motifs.push(texteEcart(totalDebit, totalCredit))
   }
   for (const e of validees) motifs.push(...problemesEcriture(e))
 
@@ -228,7 +237,13 @@ export function preparerExport(
     totalCredit,
     bloque: motifs.length > 0,
     motifs,
+    vide,
   }
+}
+
+/** Total débit = total crédit, en entiers FCFA : le bandeau des totaux est vert, sinon rouge. */
+export function totauxEquilibres(apercu: Pick<ApercuExport, 'totalDebit' | 'totalCredit'>): boolean {
+  return estMontant(apercu.totalDebit) && estMontant(apercu.totalCredit) && apercu.totalDebit === apercu.totalCredit
 }
 
 /** « Total débit 118 000 = total crédit 118 000 : totaux équilibrés. », affiché sous l'aperçu. */
@@ -237,9 +252,25 @@ export function texteTotauxExport(apercu: Pick<ApercuExport, 'totalDebit' | 'tot
   if (!estMontant(debit) || !estMontant(credit)) {
     return "Totaux impossibles à calculer : un montant n'est pas un entier en FCFA."
   }
-  return debit === credit
+  return totauxEquilibres(apercu)
     ? `Total débit ${formatMontant(debit)} = total crédit ${formatMontant(credit)} : totaux équilibrés.`
     : texteEcart(debit, credit)
+}
+
+/** « 1 ligne », « 6 lignes » : 0 et 1 au singulier. */
+const nombreDe = (n: number, singulier: string, pluriel: string): string => `${n} ${n > 1 ? pluriel : singulier}`
+
+/**
+ * Bandeau sous l'aperçu : « 6 lignes, 2 écritures. Total débit 446 630 = total crédit 446 630 : totaux équilibrés. »,
+ * ou l'écart quand les totaux diffèrent.
+ */
+export function texteResumeApercu(apercu: Pick<ApercuExport, 'lignes' | 'nombreEcritures' | 'totalDebit' | 'totalCredit'>): string {
+  return `${nombreDe(apercu.lignes.length, 'ligne', 'lignes')}, ${nombreDe(apercu.nombreEcritures, 'écriture', 'écritures')}. ${texteTotauxExport(apercu)}`
+}
+
+/** Confirmation après le téléchargement : « Fichier export_….xlsx enregistré : 6 lignes, 2 écritures. » */
+export function texteExportReussi(nomFichier: string, apercu: Pick<ApercuExport, 'lignes' | 'nombreEcritures'>): string {
+  return `Fichier ${nomFichier} enregistré\u00A0: ${nombreDe(apercu.lignes.length, 'ligne', 'lignes')}, ${nombreDe(apercu.nombreEcritures, 'écriture', 'écritures')}.`
 }
 
 /** Information sur les écritures ignorées, ou null s'il n'y en a pas. */
@@ -263,6 +294,14 @@ export function verifierColonnes(colonnes: readonly ColonneExport[]): string[] {
     else if (n > 1) erreurs.push(`La colonne « ${entete} » est choisie ${n === 2 ? 'deux' : String(n)} fois.`)
   }
   return erreurs
+}
+
+/**
+ * Résumé du format, sur la ligne du bloc replié « Format du fichier » : « 8 colonnes, séparateur CSV point-virgule ».
+ */
+export function resumeFormat(colonnes: readonly ColonneExport[], separateur: Separateur): string {
+  const libelle = SEPARATEURS.find((s) => s.valeur === separateur)?.libelle.replace(/\s*\(.*\)$/, '').toLocaleLowerCase('fr') ?? 'inconnu'
+  return `${nombreDe(colonnes.length, 'colonne', 'colonnes')}, séparateur CSV ${libelle}`
 }
 
 /**
@@ -440,4 +479,17 @@ export function dejaExportees(
     if (derniere === null || plusRecent.date > derniere) derniere = plusRecent.date
   }
   return { nombre, derniere }
+}
+
+/**
+ * Avertissement de l'aperçu, ou null si aucune écriture n'est déjà partie : « 2 écritures de cet aperçu sont déjà
+ * parties dans un export (dernier export le 15/10/2026 14:20). Vérifiez avant de les réimporter dans le logiciel comptable. »
+ */
+export function texteDejaExportees(deja: { nombre: number; derniere: IsoDateHeure | null }): string | null {
+  const { nombre, derniere } = deja
+  if (nombre <= 0) return null
+  const quand = derniere === null ? '' : ` (dernier export le ${formatDateHeure(derniere)})`
+  return nombre === 1
+    ? `1 écriture de cet aperçu est déjà partie dans un export${quand}. Vérifiez avant de la réimporter dans le logiciel comptable.`
+    : `${nombre} écritures de cet aperçu sont déjà parties dans un export${quand}. Vérifiez avant de les réimporter dans le logiciel comptable.`
 }

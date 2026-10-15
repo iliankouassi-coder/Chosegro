@@ -16,8 +16,12 @@ import {
   SEPARATEURS,
   SEPARATEUR_DEFAUT,
   tableauExport,
+  texteDejaExportees,
+  texteExportReussi,
   texteNonValidees,
-  texteTotauxExport,
+  texteResumeApercu,
+  totauxEquilibres,
+  verifierColonnes,
   type ColonneExport,
   type Separateur,
 } from '../../domain/export'
@@ -58,23 +62,40 @@ export function Export() {
   const { etat, actions } = useApp()
   const { clients, ecritures } = etat.donnees
   const moisCourant = moisDe(dateAbidjan(maintenant()))
-  const [clientId, setClientId] = useState(clients[0]?.id ?? '')
-  const [periode, setPeriode] = useState(bornesMois(moisCourant))
-  const [journal, setJournal] = useState<Journal | 'tous'>('tous')
+  const [clientId, setClientIdBrut] = useState(clients[0]?.id ?? '')
+  const [periode, setPeriodeBrute] = useState(bornesMois(moisCourant))
+  const [journal, setJournalBrut] = useState<Journal | 'tous'>('tous')
   const [colonnes, setColonnes] = useState<ColonneExport[]>([...COLONNES_PAR_DEFAUT])
   const [separateur, setSeparateur] = useState<Separateur>(SEPARATEUR_DEFAUT)
   const [message, setMessage] = useState<string | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
+
+  // Un autre client, une autre période ou un autre journal : la confirmation du dernier fichier ne vaut plus.
+  const oublierResultat = (): void => {
+    setMessage(null)
+    setErreur(null)
+  }
+  const setClientId = (id: string): void => {
+    setClientIdBrut(id)
+    oublierResultat()
+  }
+  const setPeriode = (p: { debut: string; fin: string }): void => {
+    setPeriodeBrute(p)
+    oublierResultat()
+  }
+  const setJournal = (j: Journal | 'tous'): void => {
+    setJournalBrut(j)
+    oublierResultat()
+  }
 
   const client = clients.find((c) => c.id === clientId) ?? clients[0]
   if (!client) return <Vide>Aucun client.</Vide>
   const options = { clientId: client.id, periode, journal }
   const apercu = preparerExport(ecritures, clients, options)
   const problemes = controlerExport(apercu, { colonnes, separateur })
-  const dejaParties = dejaExportees(apercu, etat.exports, ecritures)
-  const tableau = problemes.some((p) => p.startsWith('Colonne') || p.startsWith('Choisissez') || p.startsWith('La colonne'))
-    ? null
-    : tableauExport(apercu, colonnes)
+  const dejaParties = texteDejaExportees(dejaExportees(apercu, etat.exports, ecritures))
+  const nonValidees = texteNonValidees(apercu)
+  const tableau = verifierColonnes(colonnes).length > 0 ? null : tableauExport(apercu, colonnes)
 
   const exporter = async (format: FormatExport): Promise<void> => {
     setMessage(null)
@@ -90,7 +111,7 @@ export function Export() {
       telecharger(classeurExport(tableauExport(apercu, colonnes)), nom)
     }
     await actions.enregistrerExport(apercu, options, format)
-    setMessage(`Fichier ${nom} enregistré : ${apercu.lignes.length} lignes.`)
+    setMessage(texteExportReussi(nom, apercu))
   }
 
   const deplacer = (i: number, sens: -1 | 1): void => {
@@ -232,73 +253,75 @@ export function Export() {
         }
       >
         <div className="grid gap-3">
-          {problemes.length > 0 && (
-            <Encart ton="critique">
-              <p className="font-semibold text-critique">Export bloqué :</p>
-              <ul className="list-disc pl-5">
-                {problemes.map((p) => (
-                  <li key={p}>{p}</li>
-                ))}
-              </ul>
-            </Encart>
-          )}
-          {texteNonValidees(apercu) && <Encart ton="attention">{texteNonValidees(apercu)}</Encart>}
-          {dejaParties.nombre > 0 && dejaParties.derniere && (
-            <Encart ton="attention">
-              {dejaParties.nombre === 1 ? '1 écriture de cet aperçu est déjà partie' : `${dejaParties.nombre} écritures de cet aperçu sont déjà parties`}{' '}
-              dans un export (le dernier le {formatDateHeure(dejaParties.derniere)}). Vérifiez avant de{' '}
-              {dejaParties.nombre === 1 ? 'la réimporter' : 'les réimporter'} dans le logiciel comptable.
-            </Encart>
-          )}
-          {tableau && apercu.lignes.length > 0 ? (
-            <div className="relative overflow-x-auto rounded-xl border border-bord">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className={ENTETE_TABLEAU}>
-                    {(tableau[0] ?? []).map((e, i) => (
-                      <th
-                        key={i}
-                        className={`py-2 pr-3 font-medium first:pl-3.5 last:pr-3.5 ${colonnes[i] === 'debit' || colonnes[i] === 'credit' ? 'text-right' : ''}`}
-                      >
-                        {e}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-bord">
-                  {tableau.slice(1).map((ligne, i) => (
-                    <tr key={i} className="hover:bg-surface-2">
-                      {ligne.map((v, j) => (
-                        <td
-                          key={j}
-                          className={`py-2 pr-3 align-top first:pl-3.5 last:pr-3.5 ${typeof v === 'number' ? 'chiffres text-right font-medium' : ''} ${
-                            colonnes[j] === 'libelle' || colonnes[j] === 'client' ? '' : 'whitespace-nowrap'
-                          } ${colonnes[j] === 'compte' ? 'chiffres font-semibold text-marque-fonce' : ''}`}
-                        >
-                          {typeof v === 'number' ? (v === 0 ? '' : formatMontant(v)) : v}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            tableau && <Vide icone={FileSpreadsheet}>Aucune écriture validée sur cette période pour ce client.</Vide>
-          )}
-          <Encart ton={apercu.totalDebit === apercu.totalCredit ? 'bon' : 'critique'}>
-            <span className="font-medium">
-              {apercu.lignes.length} ligne{apercu.lignes.length > 1 ? 's' : ''}, {apercu.nombreEcritures} écriture
-              {apercu.nombreEcritures > 1 ? 's' : ''} : {texteTotauxExport(apercu)}
-            </span>
-          </Encart>
+          {/* La réussite d'abord : c'est ce que le collaborateur attend après son clic. */}
           {message && (
-            <p className="inline-flex items-center gap-1.5 text-sm font-medium text-bon">
-              <CircleCheck className="h-4 w-4" aria-hidden />
-              {message}
-            </p>
+            <Encart ton="bon" icone={CircleCheck}>
+              <span className="font-medium">{message}</span>
+            </Encart>
           )}
           {erreur && <Erreur>{erreur}</Erreur>}
+          {apercu.vide !== null ? (
+            // Un mois sans écriture validée n'est pas une erreur : un état vide, sans encart rouge ni totaux à zéro.
+            <>
+              {nonValidees && <Encart ton="attention">{nonValidees}</Encart>}
+              <Vide icone={FileSpreadsheet}>{apercu.vide}</Vide>
+            </>
+          ) : (
+            <>
+              {problemes.length > 0 && (
+                <Encart ton="critique">
+                  <p className="font-semibold text-critique">{'Export bloqué\u00A0:'}</p>
+                  <ul className="list-disc pl-5">
+                    {problemes.map((p) => (
+                      <li key={p}>{p}</li>
+                    ))}
+                  </ul>
+                </Encart>
+              )}
+              {nonValidees && <Encart ton="attention">{nonValidees}</Encart>}
+              {/* Juste après un export, ses propres écritures sont « déjà parties » : l'avertissement attend un autre choix. */}
+              {!message && dejaParties && <Encart ton="attention">{dejaParties}</Encart>}
+              {tableau && apercu.lignes.length > 0 && (
+                <div className="relative overflow-x-auto rounded-xl border border-bord">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className={ENTETE_TABLEAU}>
+                        {(tableau[0] ?? []).map((e, i) => (
+                          <th
+                            key={i}
+                            className={`py-2 pr-3 font-medium first:pl-3.5 last:pr-3.5 ${colonnes[i] === 'debit' || colonnes[i] === 'credit' ? 'text-right' : ''}`}
+                          >
+                            {e}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-bord">
+                      {tableau.slice(1).map((ligne, i) => (
+                        <tr key={i} className="hover:bg-surface-2">
+                          {ligne.map((v, j) => (
+                            <td
+                              key={j}
+                              className={`py-2 pr-3 align-top first:pl-3.5 last:pr-3.5 ${typeof v === 'number' ? 'chiffres text-right font-medium' : ''} ${
+                                colonnes[j] === 'libelle' || colonnes[j] === 'client' ? '' : 'whitespace-nowrap'
+                              } ${colonnes[j] === 'compte' ? 'chiffres font-semibold text-marque-fonce' : ''}`}
+                            >
+                              {typeof v === 'number' ? (v === 0 ? '' : formatMontant(v)) : v}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {apercu.lignes.length > 0 && (
+                <Encart ton={totauxEquilibres(apercu) ? 'bon' : 'critique'}>
+                  <span className="font-medium">{texteResumeApercu(apercu)}</span>
+                </Encart>
+              )}
+            </>
+          )}
         </div>
       </Carte>
 

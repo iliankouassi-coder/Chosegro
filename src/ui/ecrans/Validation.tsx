@@ -50,7 +50,6 @@ import {
   Vide,
 } from '../composants'
 
-const LIBELLES_TYPE = { achat: 'Achat', vente: 'Vente', avoir: 'Avoir' } as const
 const LIBELLES_QR = { oui: 'Oui', non: 'Non', incertain: 'Incertain' } as const
 
 interface Saisie {
@@ -108,7 +107,7 @@ function versCorrections(s: Saisie): { corrections: Corrections; erreurs: string
 /** Titre d'une partie du panneau de saisie. */
 function TitrePartie({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
-    <div className="mb-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+    <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
       <h2 className="text-[14.5px] font-semibold tracking-[-0.01em] text-texte">{children}</h2>
       {action}
     </div>
@@ -121,21 +120,24 @@ function Champ<T extends string | number>({
   champ,
   affichage,
   className = '',
+  nonLu = 'non lu',
 }: {
   libelle: string
   champ: ChampLu<T>
   affichage?: (v: T) => ReactNode
   className?: string
+  /** « non lue » pour un nom féminin. */
+  nonLu?: string
 }) {
   const douteux = champ.valeur !== null && champ.confiance !== 'haut'
   return (
-    <div className={`min-w-0 rounded-lg px-2.5 py-1.5 ${douteux ? (champ.confiance === 'bas' ? 'bg-critique-pale/70' : 'bg-attention-pale/80') : ''} ${className}`}>
+    <div className={`min-w-0 rounded-lg px-2.5 py-1 ${douteux ? (champ.confiance === 'bas' ? 'bg-critique-pale/70' : 'bg-attention-pale/80') : ''} ${className}`}>
       <dt className="flex items-center gap-1.5 text-[12px] text-texte-2">
         {libelle}
         {champ.valeur !== null && <MarqueConfiance confiance={champ.confiance} />}
       </dt>
       <dd className="break-words text-[14.5px] font-medium leading-snug text-texte">
-        {champ.valeur === null ? <span className="font-normal text-texte-3">non lu</span> : affichage ? affichage(champ.valeur) : String(champ.valeur)}
+        {champ.valeur === null ? <span className="font-normal text-texte-3">{nonLu}</span> : affichage ? affichage(champ.valeur) : String(champ.valeur)}
       </dd>
     </div>
   )
@@ -152,12 +154,12 @@ function MontantLu({ libelle, champ, fort = false }: { libelle: string; champ: C
       ? 'border-marque/30 bg-marque-pale/70'
       : 'border-bord bg-surface-2'
   return (
-    <div className={`min-w-0 rounded-xl border px-3 py-2 ${fond}`}>
+    <div className={`min-w-0 rounded-xl border px-3 py-1.5 ${fond}`}>
       <dt className="flex items-center justify-between gap-2 text-[12px] font-medium text-texte-2">
         {libelle}
         {champ.valeur !== null && <MarqueConfiance confiance={champ.confiance} />}
       </dt>
-      <dd className="truncate text-[19px] font-semibold leading-tight tracking-[-0.01em] text-texte">
+      <dd className="truncate text-[18px] font-semibold leading-tight tracking-[-0.01em] text-texte">
         {champ.valeur === null ? <span className="text-base font-normal text-texte-3">non lu</span> : <span className="chiffres">{formatMontant(champ.valeur)}</span>}
       </dd>
     </div>
@@ -193,7 +195,7 @@ function FileValidation({ lignes, courante }: { lignes: LignePiece[]; courante: 
     refCourante.current?.scrollIntoView?.({ block: 'nearest' })
   }, [courante])
   return (
-    <nav aria-label="Pièces à valider" className="hidden min-h-0 flex-col border-r border-bord bg-surface xl:flex">
+    <nav aria-label="Pièces à valider" className="hidden min-h-0 flex-col border-r border-bord bg-surface min-[87.5rem]:flex">
       <div className="flex items-center justify-between px-5 pb-3 pt-5">
         <h2 className="text-[15px] font-semibold text-texte">À valider</h2>
         <span className="chiffres rounded-full bg-orange px-2 text-xs font-semibold leading-5 text-nuit">{lignes.length}</span>
@@ -210,6 +212,8 @@ function FileValidation({ lignes, courante }: { lignes: LignePiece[]; courante: 
                   ref={ici ? refCourante : undefined}
                   href={lienVers({ ecran: 'validation', pieceId: l.piece.id })}
                   aria-current={ici ? 'true' : undefined}
+                  // Un clic sur la pièce déjà ouverte ne doit pas garder le focus : Entrée valide, elle ne suit pas le lien.
+                  onClick={ici ? (e) => e.currentTarget.blur() : undefined}
                   className={`grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5 rounded-xl px-3 py-2.5 transition-colors ${
                     ici ? 'bg-marque-pale ring-1 ring-inset ring-marque/25' : 'hover:bg-surface-2'
                   }`}
@@ -463,7 +467,7 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
   const lectureDemoDisponible = piece.statut === 'a_lire' && lectureDemo(piece.fichier.nom, piece.fichier.pages) !== null
 
   return (
-    <div className="grid grid-cols-1 lg:h-screen lg:min-h-[640px] lg:grid-cols-[minmax(0,1fr)_minmax(460px,1.1fr)] lg:overflow-hidden xl:grid-cols-[248px_minmax(0,1fr)_minmax(540px,1.2fr)]">
+    <div className="grid grid-cols-1 lg:h-screen lg:min-h-[640px] lg:grid-cols-[minmax(0,1fr)_minmax(460px,1.1fr)] lg:overflow-hidden min-[87.5rem]:grid-cols-[248px_minmax(0,1fr)_minmax(540px,1.2fr)]">
       <FileValidation lignes={lignes} courante={piece.id} />
 
       <div className="h-[58vh] min-h-[380px] lg:h-auto lg:min-h-0">
@@ -473,7 +477,7 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
       <div className="flex min-h-0 flex-col border-l border-bord bg-surface lg:overflow-hidden">
         <div className="min-h-0 flex-1 px-5 sm:px-6 lg:overflow-y-auto">
           {/* En-tête de la pièce : le dossier, le canal, et la place dans la file */}
-          <header className="flex items-center gap-3 border-b border-bord py-3.5">
+          <header className="flex items-center gap-3 border-b border-bord py-2.5">
             <Avatar nom={client?.raisonSociale ?? '?'} />
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-[19px] font-semibold leading-tight tracking-[-0.015em] text-texte">{client?.raisonSociale}</h1>
@@ -540,41 +544,24 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
           {p && (
             <>
               {/* Ce qui a été lu sur la pièce */}
-              <section aria-labelledby="titre-lu" className="pt-4">
-                <TitrePartie
-                  action={
-                    <span className="flex items-center gap-1.5 text-[13px] text-texte-2">
-                      Type :<span className="font-semibold text-texte">{LIBELLES_TYPE[p.proposition.determination.type]}</span>
-                    </span>
-                  }
-                >
+              <section aria-labelledby="titre-lu" className="pt-3">
+                {/* Le type (achat, vente, avoir) et sa raison : « Pièce émise par … : achat. » */}
+                <TitrePartie action={<span className="text-[12.5px] leading-snug text-texte-2">{p.proposition.determination.raison}</span>}>
                   <span id="titre-lu">Ce que l’IA a lu</span>
                 </TitrePartie>
-                <dl className="-mx-2.5 grid grid-cols-2 gap-x-1 gap-y-0.5 sm:grid-cols-3">
-                  <Champ libelle="Fournisseur" champ={p.extraction.fournisseur} className="col-span-2 sm:col-span-1" />
+                {/* Les noms sur deux colonnes, les valeurs courtes (numéro, date, QR, devise) sur une. */}
+                <dl className="-mx-2.5 grid grid-cols-2 gap-x-1 gap-y-0.5 sm:grid-cols-4">
+                  <Champ libelle="Fournisseur" champ={p.extraction.fournisseur} className="col-span-2" />
                   <Champ libelle="N° de facture" champ={p.extraction.numeroFacture} affichage={(v) => <span className="chiffres">{v}</span>} />
-                  <Champ libelle="Date" champ={p.extraction.date} affichage={(v) => <span className="chiffres">{formatDate(v)}</span>} />
+                  <Champ libelle="Date" champ={p.extraction.date} nonLu="non lue" affichage={(v) => <span className="chiffres">{formatDate(v)}</span>} />
                   <Champ libelle="Destinataire" champ={p.extraction.destinataire} className="col-span-2" />
-                  <Champ libelle="QR facture électronique" champ={p.extraction.qrFne} affichage={(v) => LIBELLES_QR[v]} />
+                  <Champ libelle="QR code FNE" champ={p.extraction.qrFne} affichage={(v) => LIBELLES_QR[v]} />
+                  <Champ libelle="Devise" champ={p.extraction.devise} nonLu="non lue" affichage={(v) => (v === 'XOF' ? 'FCFA' : v)} />
                 </dl>
-                <p className="mt-1 text-[12.5px] leading-snug text-texte-2">{p.proposition.determination.raison}</p>
               </section>
 
-              {/* Les montants et leur contrôle */}
-              <section aria-labelledby="titre-montants" className="mt-4">
-                <TitrePartie
-                  action={
-                    <span className="flex items-center gap-1.5 text-[13px] text-texte-2">
-                      Devise :
-                      <span className="font-semibold text-texte">
-                        {p.extraction.devise.valeur === null ? 'non lue' : p.extraction.devise.valeur === 'XOF' ? 'FCFA' : p.extraction.devise.valeur}
-                      </span>
-                      {p.extraction.devise.valeur !== null && <MarqueConfiance confiance={p.extraction.devise.confiance} />}
-                    </span>
-                  }
-                >
-                  <span id="titre-montants">Montants</span>
-                </TitrePartie>
+              {/* Les montants et leur contrôle : les tuiles HT, TVA, TTC se lisent sans titre. */}
+              <section aria-label="Montants" className="mt-2.5">
                 <dl className="grid grid-cols-3 gap-2">
                   <MontantLu libelle="HT" champ={p.extraction.ht} />
                   <MontantLu libelle="TVA" champ={p.extraction.tva} />
@@ -595,12 +582,12 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                       >
                         Voir la pièce d’origine
                       </a>
-                      <div className="mt-2">
+                      <span className="ml-2 inline-flex align-middle">
                         <Bouton variante="danger" taille="petit" disabled={occupe} onClick={() => void executer(() => actions.marquerDoublon(piece.id))}>
                           <Copy className="h-4 w-4" aria-hidden />
                           Marquer comme doublon
                         </Bouton>
-                      </div>
+                      </span>
                     </Encart>
                   )}
                 </div>
@@ -614,7 +601,7 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
 
               {/* L'écriture : proposée, ou celle enregistrée à la validation */}
               {ecriture && (
-                <section aria-labelledby="titre-ecriture" className="mt-5 pb-5">
+                <section aria-labelledby="titre-ecriture" className="mt-3 pb-5">
                   <TitrePartie
                     action={
                       <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-texte-2 ring-1 ring-inset ring-bord">
@@ -628,7 +615,6 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                     <p>
                       <span className="font-semibold">Pourquoi : </span>
                       {ecriture.raison}
-                      {parIa ? ' (source : IA)' : ' (source : règle apprise)'}
                     </p>
                   </Encart>
                   {libelleUnique && <p className="mb-1.5 truncate text-[12.5px] text-texte-2">Libellé : {libelleUnique}</p>}
@@ -647,28 +633,28 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                           const libelle = l.compte === '' ? null : ((plan && libelleCompletCompte(plan, l.compte)) ?? 'absent du plan')
                           return (
                             <tr key={i} className="border-t border-bord">
-                              <td className="py-2 pl-3 pr-2">
+                              <td className="py-1.5 pl-3 pr-2">
                                 {l.compte === '' ? (
                                   <span className="inline-flex items-center gap-1 font-semibold text-critique">
                                     <TriangleAlert className="h-4 w-4" aria-hidden />à choisir
                                   </span>
                                 ) : (
                                   <span className="flex min-w-0 items-baseline gap-2" title={`${l.compte} ${libelle}`}>
-                                    <span className="chiffres shrink-0 rounded-md bg-marque-pale px-1.5 py-0.5 font-semibold text-marque-fonce">{l.compte}</span>
+                                    <span className="chiffres shrink-0 rounded-md bg-marque-pale px-1.5 py-px font-semibold text-marque-fonce">{l.compte}</span>
                                     <span className="truncate text-[12.5px] text-texte-2">{libelle}</span>
                                   </span>
                                 )}
                               </td>
-                              {!libelleUnique && <td className="truncate py-2 pr-2 text-[13px]" title={l.libelle}>{l.libelle}</td>}
-                              <td className="chiffres py-2 pr-3 text-right font-medium">{l.debit ? formatMontant(l.debit) : ''}</td>
-                              <td className="chiffres py-2 pr-3 text-right font-medium">{l.credit ? formatMontant(l.credit) : ''}</td>
+                              {!libelleUnique && <td className="truncate py-1.5 pr-2 text-[13px]" title={l.libelle}>{l.libelle}</td>}
+                              <td className="chiffres py-1.5 pr-3 text-right font-medium">{l.debit ? formatMontant(l.debit) : ''}</td>
+                              <td className="chiffres py-1.5 pr-3 text-right font-medium">{l.credit ? formatMontant(l.credit) : ''}</td>
                             </tr>
                           )
                         })}
                       </tbody>
                       <tfoot>
                         <tr className="border-t border-bord-fort bg-surface-2 font-semibold">
-                          <td className="py-2 pl-3" colSpan={libelleUnique ? 1 : 2}>
+                          <td className="py-1.5 pl-3" colSpan={libelleUnique ? 1 : 2}>
                             <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                               Totaux
                               {etatTotaux === 'incomplete' ? (
@@ -690,8 +676,8 @@ function ValidationPiece({ piece, file, lignes }: { piece: Piece; file: Piece[];
                               )}
                             </span>
                           </td>
-                          <td className="chiffres py-2 pr-3 text-right">{formatMontant(t.debit)}</td>
-                          <td className="chiffres py-2 pr-3 text-right">{formatMontant(t.credit)}</td>
+                          <td className="chiffres py-1.5 pr-3 text-right">{formatMontant(t.debit)}</td>
+                          <td className="chiffres py-1.5 pr-3 text-right">{formatMontant(t.credit)}</td>
                         </tr>
                       </tfoot>
                     </table>

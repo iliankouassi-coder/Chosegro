@@ -1,11 +1,17 @@
 // Image de la pièce, avec zoom. Un PDF est rendu page par page avec pdf.js.
 // La pièce est posée sur la table ; le tampon (« Saisi », « Rejetée »…) s'applique sur la première page.
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type MouseEvent, type ReactNode } from 'react'
 import { Maximize2, Minus, Plus } from 'lucide-react'
 import { useApp } from '../app/store'
 import { ouvrirPdf, pageEnImage } from '../infra/pdf'
 
 const BOUTON_ZOOM = 'grid h-8 w-8 place-items-center rounded-full text-texte-2 hover:bg-surface-2 hover:text-texte'
+
+/**
+ * Un clic de souris ne donne pas le focus aux boutons du zoom : Entrée, qui valide la pièce dans l'écran de
+ * validation, ne doit pas zoomer une fois de plus. Au clavier (Tab), ils le prennent comme tout bouton.
+ */
+const garderLeFocus = (e: MouseEvent<HTMLButtonElement>): void => e.preventDefault()
 
 export function ApercuPiece({ pieceId, tampon }: { pieceId: string; tampon?: ReactNode }) {
   const { actions } = useApp()
@@ -46,17 +52,18 @@ export function ApercuPiece({ pieceId, tampon }: { pieceId: string; tampon?: Rea
       {/* Barre de zoom flottante */}
       <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center">
         <div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-bord bg-surface/95 p-1 text-sm shadow-flottant backdrop-blur">
-          <button type="button" className={BOUTON_ZOOM} onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} aria-label="Dézoomer">
+          <button type="button" className={BOUTON_ZOOM} onMouseDown={garderLeFocus} onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} aria-label="Dézoomer">
             <Minus className="h-4 w-4" aria-hidden />
           </button>
           <span className="chiffres w-12 text-center text-[13px] font-semibold text-texte">{Math.round(zoom * 100)} %</span>
-          <button type="button" className={BOUTON_ZOOM} onClick={() => setZoom((z) => Math.min(4, z + 0.25))} aria-label="Zoomer">
+          <button type="button" className={BOUTON_ZOOM} onMouseDown={garderLeFocus} onClick={() => setZoom((z) => Math.min(4, z + 0.25))} aria-label="Zoomer">
             <Plus className="h-4 w-4" aria-hidden />
           </button>
           <span className="mx-1 h-5 w-px bg-bord" aria-hidden />
           <button
             type="button"
             className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-texte-2 hover:bg-surface-2 hover:text-texte"
+            onMouseDown={garderLeFocus}
             onClick={() => setZoom(1)}
           >
             <Maximize2 className="h-3.5 w-3.5" aria-hidden />

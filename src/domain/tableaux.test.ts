@@ -9,6 +9,7 @@ import {
   nombreRelancesAEnvoyer,
   regrouperParClient,
   relancesAPreparer,
+  resumeRelances,
   tableauAccueil,
   type Donnees,
 } from './tableaux'
@@ -267,6 +268,17 @@ describe('relancesAPreparer', () => {
     expect(nombreRelancesAEnvoyer([])).toBe(0)
   })
 
+  it('résume en une phrase ce qui reste à envoyer, avec les accords', () => {
+    const avec = (...statuts: Relance['statut'][]): { statut: Relance['statut'] }[] => statuts.map((statut) => ({ statut }))
+    expect(resumeRelances([])).toBeNull()
+    expect(resumeRelances(avec('a_faire'))).toBe('1 relance à envoyer. Chaque message est déjà rédigé.')
+    expect(resumeRelances(avec('a_faire', 'preparee'))).toBe('2 relances à envoyer. Chaque message est déjà rédigé.')
+    expect(resumeRelances(avec('envoyee_main', 'a_faire'))).toBe('1 relance à envoyer sur 2. Chaque message est déjà rédigé.')
+    expect(resumeRelances(avec('envoyee_main', 'a_faire', 'preparee'))).toBe('2 relances à envoyer sur 3. Chaque message est déjà rédigé.')
+    expect(resumeRelances(avec('envoyee_main', 'envoyee_main'))).toBe('Toutes les relances sont envoyées.')
+    expect(resumeRelances(avec('envoyee_main'))).toBe('La relance est envoyée.')
+  })
+
   it('prépare « Pouvez-vous renvoyer la photo de… » pour une pièce rejetée comme illisible', () => {
     const floue = piece('f', {
       statut: 'rejetee',
@@ -348,10 +360,36 @@ describe('factures sans QR code FNE', () => {
     expect(r).toHaveLength(1)
     expect(r[0]?.client.id).toBe('awa')
     expect(r[0]?.pieces.map((p) => p.id)).toEqual(['a', 'b'])
-    expect(r[0]?.raison.replace(/\u00A0/g, ' ')).toBe('2 pièces d’achat sans QR code FNE ce mois : 18 000 FCFA de TVA non déductible.')
+    expect(r[0]?.raison.replace(/\u00A0/g, ' ')).toBe('2 pièces d’achat reçues ce mois sans QR code FNE : 18 000 FCFA de TVA non déductible.')
     expect(r[0]?.texte).toContain('la facture Bureau Plus Cocody du 05/10/2026')
     expect(r[0]?.lien.ok).toBe(true)
     expect(r[0]?.statut).toBe('a_faire')
+  })
+
+  it('accorde la raison au singulier', () => {
+    const r = relancesAPreparer(donnees([sansFne('a')]), MAINTENANT).find((x) => x.motif === 'fne')
+    expect(r?.raison.replace(/\u00A0/g, ' ')).toBe('1 pièce d’achat reçue ce mois sans QR code FNE : 9 000 FCFA de TVA non déductible.')
+  })
+
+  it('cite les pièces par date de facture, puis par numéro, quel que soit leur ordre en base', () => {
+    const facture = (id: string, date: string | null, numeroFacture: string, fournisseur: string): Piece =>
+      piece(id, { extraction: fabriquerExtraction({ qrFne: 'non', tva: 9_000, ht: 50_000, ttc: 59_000, fournisseur, date, numeroFacture }) })
+    const pieces = [
+      facture('z-sans-date', null, 'X-1', 'Sans Date'),
+      facture('a-carbu', '2026-10-12', 'C-9', 'CARBU LAGUNE CI'),
+      facture('m-f10', '2026-09-28', 'F-10', 'Bureau Plus Cocody'),
+      facture('b-f2', '2026-09-28', 'F-2', 'Imprimerie Express'),
+    ]
+    const ordre = (liste: Piece[]): string[] | undefined =>
+      relancesAPreparer(donnees(liste), MAINTENANT)
+        .find((x) => x.motif === 'fne')
+        ?.pieces.map((p) => p.id)
+    const attendu = ['b-f2', 'm-f10', 'a-carbu', 'z-sans-date']
+    expect(ordre(pieces)).toEqual(attendu)
+    expect(ordre([...pieces].reverse())).toEqual(attendu)
+    const texte = relancesAPreparer(donnees(pieces), MAINTENANT).find((x) => x.motif === 'fne')?.texte ?? ''
+    expect(texte.indexOf('Imprimerie Express')).toBeLessThan(texte.indexOf('Bureau Plus Cocody'))
+    expect(texte.indexOf('Bureau Plus Cocody')).toBeLessThan(texte.indexOf('CARBU LAGUNE CI'))
   })
 
   it('reprend le texte et l’état d’une relance FNE déjà envoyée', () => {

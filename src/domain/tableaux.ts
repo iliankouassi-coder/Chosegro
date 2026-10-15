@@ -300,6 +300,39 @@ export function nombreRelancesAEnvoyer(relances: readonly Pick<RelanceAPreparer,
 }
 
 /**
+ * Phrase d'en-tête de l'écran Relances : « 2 relances à envoyer. », « 1 relance à envoyer sur 2. »
+ * quand une partie est déjà envoyée, « Toutes les relances sont envoyées. » à la fin. Null sans relance.
+ */
+export function resumeRelances(relances: readonly Pick<RelanceAPreparer, 'statut'>[]): string | null {
+  const total = relances.length
+  if (total === 0) return null
+  const restantes = nombreRelancesAEnvoyer(relances)
+  if (restantes === 0) return total === 1 ? 'La relance est envoyée.' : 'Toutes les relances sont envoyées.'
+  const sur = restantes === total ? '' : ` sur ${total}`
+  return `${restantes} ${restantes > 1 ? 'relances' : 'relance'} à envoyer${sur}. Chaque message est déjà rédigé.`
+}
+
+/** Tri naturel des numéros de facture : F-2 avant F-10. */
+const collateurNumeros = new Intl.Collator('fr', { numeric: true })
+
+/**
+ * Ordre des pièces citées dans une relance FNE : par date de facture lue (les pièces sans date à la fin),
+ * puis par numéro, puis par identifiant. Le message est ainsi le même d'une session à l'autre.
+ */
+function comparerPiecesCitees(a: Piece, b: Piece): number {
+  const da = a.extraction?.date.valeur ?? null
+  const db = b.extraction?.date.valeur ?? null
+  if (da !== db) {
+    if (da === null) return 1
+    if (db === null) return -1
+    return da < db ? -1 : 1
+  }
+  const na = a.extraction?.numeroFacture.valeur?.trim() ?? ''
+  const nb = b.extraction?.numeroFacture.valeur?.trim() ?? ''
+  return collateurNumeros.compare(na, nb) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+}
+
+/**
  * Écran Relances : un message prêt pour chaque client en retard, et pour chaque pièce rejetée
  * comme illisible. Rien n'est envoyé : seuls un lien wa.me et le texte à copier sont préparés.
  * Un texte déjà enregistré (préparé ou envoyé) est repris tel quel.
@@ -359,7 +392,7 @@ export function relancesAPreparer(d: Donnees, maintenant: IsoDateHeure): Relance
   const sansFneParClient: RelanceAPreparer[] = d.clients.flatMap((client) => {
     const concernes = sansFne.filter((x) => x.piece.clientId === client.id)
     if (concernes.length === 0) return []
-    const pieces = concernes.map((x) => x.piece)
+    const pieces = concernes.map((x) => x.piece).sort(comparerPiecesCitees)
     const tva = somme(concernes.map((x) => x.tva))
     const relance = relanceDuMois(d.relances, client.id, mois, 'fne')
     const texte = relance?.texte ?? redigerRelanceFne({ modele: p.modeleRelanceFne, nomCabinet: p.nomCabinet, client, pieces, tva })
@@ -371,7 +404,8 @@ export function relancesAPreparer(d: Donnees, maintenant: IsoDateHeure): Relance
         mois,
         piece: null,
         pieces,
-        raison: `${n} ${n > 1 ? 'pièces' : 'pièce'} d’achat sans QR code FNE ce mois : ${formatFcfa(tva)} de TVA non déductible.`,
+        // « reçues ce mois » : c'est la date de réception qui compte, une facture du mois précédent peut être citée.
+        raison: `${n} ${n > 1 ? 'pièces' : 'pièce'} d’achat ${n > 1 ? 'reçues' : 'reçue'} ce mois sans QR code FNE : ${formatFcfa(tva)} de TVA non déductible.`,
         texte,
         lien: lienWhatsApp(client.telephoneWhatsapp, texte),
         relance,

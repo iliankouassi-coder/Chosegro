@@ -5,6 +5,7 @@ import {
   bornesMois,
   dateAbidjan,
   deMois,
+  deMoisAnnee,
   ecartJours,
   estDansPeriode,
   estIsoDate,
@@ -131,5 +132,12 @@ describe('noms de mois', () => {
     expect(deMois('2026-08')).toBe("d'août")
     expect(deMois('2026-09')).toBe('de septembre')
     expect(deMois('2026-01')).toBe('de janvier')
+  })
+
+  it('ajoute l’année au complément : « Retard d’octobre 2026 », pas « de octobre »', () => {
+    expect(deMoisAnnee('2026-10')).toBe("d'octobre 2026")
+    expect(deMoisAnnee('2026-08')).toBe("d'août 2026")
+    expect(deMoisAnnee('2026-09')).toBe('de septembre 2026')
+    expect(() => deMoisAnnee('2026-13')).toThrow()
   })
 })

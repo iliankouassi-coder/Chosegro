@@ -6,8 +6,8 @@ import { BellRing, Check, Copy, ImageOff, Phone, QrCode, ShieldCheck } from 'luc
 import { lienVers } from '../../app/routeur'
 import { maintenant } from '../../app/horloge'
 import { useApp } from '../../app/store'
-import { formatDateHeure, nomMois } from '../../domain/dates'
-import { nombreRelancesAEnvoyer, relancesAPreparer, type RelanceAPreparer } from '../../domain/tableaux'
+import { dateAbidjan, deMoisAnnee, formatJourMois } from '../../domain/dates'
+import { relancesAPreparer, resumeRelances, type RelanceAPreparer } from '../../domain/tableaux'
 import { Avatar, Bouton, classesBouton, Encart, EnTetePage, Erreur, IconeCanal, Pastille, PastilleRelance, Raison, Vide } from '../composants'
 
 function CarteRelance({ r }: { r: RelanceAPreparer }) {
@@ -34,38 +34,46 @@ function CarteRelance({ r }: { r: RelanceAPreparer }) {
     <li
       className={`flex flex-col rounded-2xl border bg-surface shadow-carte transition ${envoyee ? 'border-bon/30' : 'border-bord'}`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 px-5 pb-3 pt-4">
-        <div className="flex min-w-0 items-center gap-3">
+      {/*
+        En-tête en grille : la pastille d’état reste en haut à droite, sans jamais passer à la ligne ; le nom se tronque
+        à côté d’elle, et la ligne du motif et du téléphone prend toute la largeur sous les deux.
+      */}
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-5 pb-3 pt-4">
+        <span className="row-span-2">
           <Avatar nom={r.client.raisonSociale} />
-          <div className="min-w-0">
-            <a
-              href={lienVers({ ecran: 'client', clientId: r.client.id })}
-              className="block truncate font-semibold text-texte hover:text-marque hover:underline"
-            >
-              {r.client.raisonSociale}
-            </a>
-            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-texte-2">
-              {r.motif === 'retard' ? (
-                <Pastille ton="critique" icone={BellRing}>
-                  Retard de {nomMois(r.mois)}
-                </Pastille>
-              ) : r.motif === 'fne' ? (
-                <Pastille ton="attention" icone={QrCode}>
-                  Factures sans FNE
-                </Pastille>
-              ) : (
-                <Pastille ton="attention" icone={ImageOff}>
-                  Photo illisible
-                </Pastille>
-              )}
-              <span className="chiffres inline-flex items-center gap-1">
-                <Phone className="h-3.5 w-3.5" aria-hidden />
-                {r.client.telephoneWhatsapp}
-              </span>
-            </div>
-          </div>
+        </span>
+        <a
+          href={lienVers({ ecran: 'client', clientId: r.client.id })}
+          title={r.client.raisonSociale}
+          className="block truncate font-semibold text-texte hover:text-marque hover:underline"
+        >
+          {r.client.raisonSociale}
+        </a>
+        <span className="shrink-0 justify-self-end">
+          <PastilleRelance
+            statut={r.statut}
+            suffixe={r.relance?.date && r.statut !== 'a_faire' ? ` le ${formatJourMois(dateAbidjan(r.relance.date))}` : ''}
+          />
+        </span>
+        <div className="col-span-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-texte-2">
+          {r.motif === 'retard' ? (
+            <Pastille ton="critique" icone={BellRing}>
+              Retard {deMoisAnnee(r.mois)}
+            </Pastille>
+          ) : r.motif === 'fne' ? (
+            <Pastille ton="attention" icone={QrCode}>
+              Factures sans FNE
+            </Pastille>
+          ) : (
+            <Pastille ton="attention" icone={ImageOff}>
+              Photo illisible
+            </Pastille>
+          )}
+          <span className="chiffres inline-flex items-center gap-1">
+            <Phone className="h-3.5 w-3.5" aria-hidden />
+            {r.client.telephoneWhatsapp}
+          </span>
         </div>
-        <PastilleRelance statut={r.statut} suffixe={r.relance?.date && r.statut !== 'a_faire' ? ` le ${formatDateHeure(r.relance.date)}` : ''} />
       </div>
       <div className="flex-1 px-5 pb-4">
         <Raison>{r.raison}</Raison>
@@ -125,19 +133,11 @@ function CarteRelance({ r }: { r: RelanceAPreparer }) {
 export function Relances() {
   const { etat } = useApp()
   const relances = relancesAPreparer(etat.donnees, maintenant())
-  const restantes = nombreRelancesAEnvoyer(relances)
   return (
     <section aria-labelledby="titre-relances">
       <EnTetePage
         titre={<span id="titre-relances">Relances à envoyer</span>}
-        description={
-          relances.length > 0 ? (
-            <>
-              <span className="chiffres font-semibold text-texte">{restantes}</span> sur <span className="chiffres">{relances.length}</span> pas encore
-              envoyées. Chaque message est déjà rédigé.
-            </>
-          ) : undefined
-        }
+        description={resumeRelances(relances) ?? undefined}
       />
       <div className="mb-6">
         <Encart ton="info" icone={ShieldCheck}>

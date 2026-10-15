@@ -209,6 +209,11 @@ export function deMois(mois: IsoMois): string {
   return /^[aeiouyéèê]/.test(nom) ? `d'${nom}` : `de ${nom}`
 }
 
+/** « d'octobre 2026 », « de septembre 2026 » : « Retard d'octobre 2026 ». */
+export function deMoisAnnee(mois: IsoMois): string {
+  return `${deMois(mois)} ${mois.slice(0, 4)}`
+}
+
 export function estDansPeriode(iso: IsoDate, periode: Periode): boolean {
   return iso >= periode.debut && iso <= periode.fin
 }

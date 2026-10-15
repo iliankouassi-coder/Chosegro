@@ -193,6 +193,36 @@ describe('ficheClient', () => {
     const f = ficheClient(donnees([p], { fusions: [{ clientId: 'awa', alias: 'total energies', cible: 'total' }] }), 'awa')
     expect(f?.fournisseurs[0]).toMatchObject({ normalise: 'total energies', canonique: 'total' })
   })
+
+  it('affiche le nom tel qu’il est lu sur les pièces, le plus fréquent, et non le nom normalisé', () => {
+    const lu = (id: string, fournisseur: string, recueLe: string): Piece =>
+      piece(id, { recueLe, extraction: fabriquerExtraction({ fournisseur }) })
+    const f = ficheClient(
+      donnees([
+        lu('e1', 'ENERGIE DES LAGUNES', '2026-10-13T09:00:00.000Z'),
+        lu('e2', 'Énergie des Lagunes', '2026-10-12T09:00:00.000Z'),
+        lu('e3', 'Énergie des Lagunes', '2026-10-11T09:00:00.000Z'),
+        lu('t1', 'Télécom Lagunes', '2026-10-10T09:00:00.000Z'),
+        lu('t2', 'TELECOM LAGUNES', '2026-10-09T09:00:00.000Z'),
+      ]),
+      'awa',
+    )
+    expect(f?.nomsAffiches.get('energie lagunes')).toBe('Énergie des Lagunes')
+    // À égalité, la lecture la plus récente l'emporte.
+    expect(f?.nomsAffiches.get('telecom lagunes')).toBe('Télécom Lagunes')
+    expect(f?.nomsAffiches.get('inconnu')).toBeUndefined()
+  })
+
+  it('donne aussi un nom au fournisseur de rattachement, celui des règles après une fusion', () => {
+    const lu = (id: string, fournisseur: string): Piece => piece(id, { extraction: fabriquerExtraction({ fournisseur }) })
+    const fusions = [{ clientId: 'awa', alias: 'total energies', cible: 'total' }]
+    // La cible n'a pas de pièce à son nom : elle prend le nom lu de ce qui lui est rattaché.
+    expect(ficheClient(donnees([lu('a', 'Total Energies')], { fusions }), 'awa')?.nomsAffiches.get('total')).toBe('Total Energies')
+    // Sinon, son propre nom lu l'emporte.
+    const avecCible = ficheClient(donnees([lu('a', 'Total Energies'), lu('b', 'Total Energies'), lu('c', 'TOTAL CI')], { fusions }), 'awa')
+    expect(avecCible?.nomsAffiches.get('total')).toBe('TOTAL CI')
+    expect(avecCible?.nomsAffiches.get('total energies')).toBe('Total Energies')
+  })
 })
 
 describe('relancesAPreparer', () => {

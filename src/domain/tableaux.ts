@@ -207,6 +207,26 @@ export interface FicheClient {
   regles: RegleFournisseur[]
   fournisseurs: FournisseurDuClient[]
   fusions: FusionFournisseur[]
+  /**
+   * Nom à afficher pour un nom normalisé ou canonique (celui des règles) : le nom le plus souvent lu sur les pièces,
+   * tel que le collaborateur l'a vu (« Énergie des Lagunes » pour « energie lagunes »). Pour un nom canonique, l'écriture
+   * propre au fournisseur de rattachement l'emporte ; à défaut, celle des noms qui lui sont rattachés.
+   */
+  nomsAffiches: ReadonlyMap<string, string>
+}
+
+/** Ajoute une lecture du nom `nom` sous la clé `cle`. */
+const compterNom = (comptes: Map<string, Map<string, number>>, cle: string, nom: string): void => {
+  const parNom = comptes.get(cle) ?? new Map<string, number>()
+  parNom.set(nom, (parNom.get(nom) ?? 0) + 1)
+  comptes.set(cle, parNom)
+}
+
+/** Le nom lu le plus souvent ; à égalité, le premier rencontré (la pièce la plus récente). */
+const nomLePlusLu = (parNom: ReadonlyMap<string, number>): string | null => {
+  let retenu: [string, number] | null = null
+  for (const [nom, n] of parNom) if (retenu === null || n > retenu[1]) retenu = [nom, n]
+  return retenu?.[0] ?? null
 }
 
 /** Fiche client : pièces, écritures validées, règles apprises et noms de fournisseurs à fusionner. */
@@ -217,6 +237,8 @@ export function ficheClient(d: Donnees, clientId: string): FicheClient | null {
   const pieces = d.pieces.filter((p) => p.clientId === clientId).sort((a, b) => (a.recueLe < b.recueLe ? 1 : a.recueLe > b.recueLe ? -1 : 0))
 
   const parNom = new Map<string, FournisseurDuClient>()
+  const lusParNormalise = new Map<string, Map<string, number>>()
+  const lusParCanonique = new Map<string, Map<string, number>>()
   for (const piece of pieces) {
     // Le tiers de la pièce : le fournisseur pour un achat, l'acheteur pour une vente du client.
     const e = piece.extraction
@@ -235,7 +257,13 @@ export function ficheClient(d: Donnees, clientId: string): FicheClient | null {
     if (!existant.nomsLus.includes(nom)) existant.nomsLus.push(nom)
     existant.nombrePieces += 1
     parNom.set(normalise, existant)
+    compterNom(lusParNormalise, normalise, nom)
+    compterNom(lusParCanonique, existant.canonique, nom)
   }
+
+  const nomsAffiches = new Map<string, string>()
+  for (const [normalise, lus] of lusParNormalise) nomsAffiches.set(normalise, nomLePlusLu(lus) ?? normalise)
+  for (const [canonique, lus] of lusParCanonique) if (!nomsAffiches.has(canonique)) nomsAffiches.set(canonique, nomLePlusLu(lus) ?? canonique)
 
   return {
     client,
@@ -246,6 +274,7 @@ export function ficheClient(d: Donnees, clientId: string): FicheClient | null {
     regles: reglesDuClient(d.regles, clientId),
     fournisseurs: [...parNom.values()].sort((a, b) => a.normalise.localeCompare(b.normalise, 'fr')),
     fusions: d.fusions.filter((f) => f.clientId === clientId),
+    nomsAffiches,
   }
 }
 

@@ -8,7 +8,7 @@ import { formatDate, formatDateHeure } from '../../domain/dates'
 import { raisonRegle, totaux } from '../../domain/ecritures'
 import { LIBELLES_JOURNAL } from '../../domain/export'
 import { LIBELLES_CANAL } from '../../domain/pieces'
-import { libelleCompletCompte } from '../../domain/plan'
+import { libelleCompletCompte, rechercherComptes } from '../../domain/plan'
 import { tonJauge } from '../../domain/retards'
 import { formatMontant } from '../../domain/montants'
 import { ficheClient, listeClients } from '../../domain/tableaux'
@@ -167,19 +167,25 @@ function FormulaireClient({ client }: { client: Client }) {
   )
 }
 
-function LigneRegle({ regle }: { regle: RegleFournisseur }) {
+/** Une règle apprise. `nom` : le nom du fournisseur tel qu'il est lu sur ses pièces. */
+function LigneRegle({ regle, nom }: { regle: RegleFournisseur; nom: string }) {
   const { etat, actions } = useApp()
   const [edition, setEdition] = useState(false)
+  const [confirmerSuppression, setConfirmerSuppression] = useState(false)
   const [compte, setCompte] = useState(regle.compteChargeOuProduit)
   const [tiers, setTiers] = useState(regle.compteTiers)
   const [taux, setTaux] = useState(String(regle.tauxTva))
   const [erreurs, setErreurs] = useState<string[]>([])
   const libelle = (code: string): string => (etat.plan && libelleCompletCompte(etat.plan, code)) ?? 'absent du plan'
+  // Comme sur l'écran Validation : par début de numéro ou par mots du libellé, tant qu'un numéro complet n'est pas tapé.
+  const saisie = compte.trim()
+  const suggestions = etat.plan && saisie.length >= 2 && !/^\d{4,}$/.test(saisie) ? rechercherComptes(etat.plan, saisie, { limite: 6 }) : []
+  const nature = regle.sens === 'achat' ? 'de charge' : 'de produit'
   return (
     <li className="px-5 py-4 text-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="font-semibold text-texte">{regle.fournisseurNormalise}</div>
+          <div className="font-semibold text-texte">{nom}</div>
           <dl className="mt-1.5 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[13px]">
             <div className="flex items-center gap-1.5">
               <dt className="text-texte-2">{regle.sens === 'achat' ? 'Achat, compte' : 'Vente, compte'}</dt>
@@ -202,20 +208,47 @@ function LigneRegle({ regle }: { regle: RegleFournisseur }) {
           </dl>
           <p className="mt-1.5 text-xs text-texte-3">{raisonRegle(regle)}</p>
         </div>
-        <div className="flex shrink-0 gap-1.5">
-          <Bouton taille="petit" aria-expanded={edition} onClick={() => setEdition((e) => !e)}>
-            <Pencil className="h-3.5 w-3.5" aria-hidden />
-            Modifier
-          </Bouton>
-          <Bouton variante="danger" taille="petit" onClick={() => void actions.supprimerRegle(regle.id)}>
-            <Trash2 className="h-3.5 w-3.5" aria-hidden />
-            Supprimer
-          </Bouton>
-        </div>
+        {!confirmerSuppression && (
+          <div className="flex shrink-0 gap-1.5">
+            <Bouton taille="petit" aria-expanded={edition} onClick={() => setEdition((e) => !e)}>
+              <Pencil className="h-3.5 w-3.5" aria-hidden />
+              Modifier
+            </Bouton>
+            <Bouton
+              variante="danger"
+              taille="petit"
+              onClick={() => {
+                setEdition(false)
+                setConfirmerSuppression(true)
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" aria-hidden />
+              Supprimer
+            </Bouton>
+          </div>
+        )}
       </div>
+      {confirmerSuppression && (
+        // Une suppression se confirme : la règle sert aux pièces suivantes de ce fournisseur.
+        <div role="group" aria-label="Confirmer la suppression" className="mt-3 flex flex-wrap items-center gap-2.5 rounded-xl border border-critique/20 bg-critique-pale/60 p-3">
+          <p className="min-w-0 flex-1 basis-64 text-[13px] text-texte">
+            <span className="font-semibold">Supprimer cette règle{' '}?</span> Les prochaines pièces de{' '}
+            {regle.sens === 'vente' ? 'ce client' : 'ce fournisseur'} seront proposées par l’IA.
+          </p>
+          <div className="flex shrink-0 gap-1.5">
+            <Bouton variante="danger" taille="petit" onClick={() => void actions.supprimerRegle(regle.id)}>
+              <Trash2 className="h-3.5 w-3.5" aria-hidden />
+              Supprimer
+            </Bouton>
+            <Bouton taille="petit" autoFocus onClick={() => setConfirmerSuppression(false)}>
+              Garder
+            </Bouton>
+          </div>
+        </div>
+      )}
       {edition && (
         <form
-          className="mt-3 flex flex-wrap items-end gap-2.5 rounded-xl bg-surface-2 p-3"
+          className="mt-3 grid grid-cols-1 gap-2.5 rounded-xl bg-surface-2 p-3"
           onSubmit={(e) => {
             e.preventDefault()
             void actions
@@ -228,26 +261,59 @@ function LigneRegle({ regle }: { regle: RegleFournisseur }) {
               })
           }}
         >
-          <label className="grid grid-cols-1 gap-1">
-            <span className="text-xs font-medium text-texte-2">Compte</span>
-            <input className={`${CHAMP_COMPACT} chiffres w-28`} value={compte} onChange={(e) => setCompte(e.target.value)} />
-          </label>
-          <label className="grid grid-cols-1 gap-1">
-            <span className="text-xs font-medium text-texte-2">Compte tiers</span>
-            <input className={`${CHAMP_COMPACT} chiffres w-28`} value={tiers} onChange={(e) => setTiers(e.target.value)} />
-          </label>
-          <label className="grid grid-cols-1 gap-1">
-            <span className="text-xs font-medium text-texte-2">TVA %</span>
-            <input className={`${CHAMP_COMPACT} chiffres w-20`} value={taux} onChange={(e) => setTaux(e.target.value)} />
-          </label>
-          <Bouton variante="principal" taille="petit" type="submit" className="!py-2">
-            Enregistrer
-          </Bouton>
-          {erreurs.length > 0 && (
-            <div className="w-full">
-              <Erreur>{erreurs.join(' ')}</Erreur>
-            </div>
+          <div className="flex flex-wrap items-end gap-2.5">
+            <label className="grid grid-cols-1 gap-1">
+              <span className="text-xs font-medium text-texte-2">Compte {nature} (numéro ou mots du libellé)</span>
+              <input
+                className={`${CHAMP_COMPACT} chiffres w-64 max-w-full`}
+                value={compte}
+                placeholder="ex. 6052 ou « électricité »"
+                onChange={(e) => setCompte(e.target.value)}
+              />
+            </label>
+            <label className="grid grid-cols-1 gap-1">
+              <span className="text-xs font-medium text-texte-2">Compte tiers</span>
+              <input className={`${CHAMP_COMPACT} chiffres w-28`} value={tiers} onChange={(e) => setTiers(e.target.value)} />
+            </label>
+            <label className="grid grid-cols-1 gap-1">
+              <span className="text-xs font-medium text-texte-2">TVA %</span>
+              <input className={`${CHAMP_COMPACT} chiffres w-20`} value={taux} onChange={(e) => setTaux(e.target.value)} />
+            </label>
+            <Bouton variante="principal" taille="petit" type="submit" className="!py-2">
+              Enregistrer
+            </Bouton>
+          </div>
+          {/* Retour sur le compte tapé : les comptes du plan qui correspondent, ou le libellé du numéro saisi. */}
+          {suggestions.length > 0 ? (
+            <ul className="max-h-52 overflow-y-auto rounded-xl border border-bord bg-surface p-1 text-sm shadow-flottant" aria-label="Comptes du plan">
+              {suggestions.map((c) => (
+                <li key={c.code}>
+                  <button
+                    type="button"
+                    className="flex w-full items-baseline gap-3 rounded-lg px-2.5 py-2 text-left hover:bg-marque-pale"
+                    onClick={() => setCompte(c.code)}
+                  >
+                    <span className="chiffres font-semibold text-marque-fonce">{c.code}</span>
+                    <span className="text-texte">{libelle(c.code)}</span>
+                    {c.aVerifier && <span className="text-attention">(à vérifier)</span>}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : /^\d+$/.test(saisie) ? (
+            <p className="text-xs text-texte-2">
+              <span className="chiffres font-semibold text-texte">{saisie}</span> {libelle(saisie)}
+            </p>
+          ) : (
+            saisie.length >= 2 && (
+              <p className="text-xs text-texte-2">
+                Aucun compte du plan ne correspond à «{' '}
+                {saisie}
+                {' '}».
+              </p>
+            )
           )}
+          {erreurs.length > 0 && <Erreur>{erreurs.join(' ')}</Erreur>}
         </form>
       )}
     </li>
@@ -261,7 +327,7 @@ export function FicheClient({ clientId }: { clientId: string }) {
   const [cible, setCible] = useState('')
   const [erreurFusion, setErreurFusion] = useState<string | null>(null)
   if (!fiche) return <Vide>Client introuvable.</Vide>
-  const { client, pieces, ecrituresValidees, regles, fournisseurs, fusions } = fiche
+  const { client, pieces, ecrituresValidees, regles, fournisseurs, fusions, nomsAffiches } = fiche
   // Retard et raison, les mêmes que dans la liste des clients et sur l'Accueil.
   const retard = listeClients(etat.donnees, maintenant()).find((l) => l.client.id === clientId)?.retard ?? null
 
@@ -317,7 +383,7 @@ export function FicheClient({ clientId }: { clientId: string }) {
         ) : (
           <ul className="divide-y divide-bord border-t border-bord">
             {regles.map((r) => (
-              <LigneRegle key={r.id} regle={r} />
+              <LigneRegle key={r.id} regle={r} nom={nomsAffiches.get(r.fournisseurNormalise) ?? r.fournisseurNormalise} />
             ))}
           </ul>
         )}
@@ -416,7 +482,7 @@ export function FicheClient({ clientId }: { clientId: string }) {
           <table className="w-full min-w-[620px] text-sm">
             <thead>
               <tr className={ENTETE_TABLEAU}>
-                <th className="py-2 pl-4 font-medium">Nom normalisé</th>
+                <th className="py-2 pl-4 font-medium">Nom rapproché</th>
                 <th className="font-medium">Rôle</th>
                 <th className="font-medium">Noms lus</th>
                 <th className="text-right font-medium">Pièces</th>
@@ -462,7 +528,7 @@ export function FicheClient({ clientId }: { clientId: string }) {
                 <option value="">Choisir</option>
                 {fournisseurs.map((f) => (
                   <option key={f.normalise} value={f.normalise}>
-                    {f.normalise}
+                    {f.nomsLus.join(' / ')}
                   </option>
                 ))}
               </select>
@@ -475,7 +541,7 @@ export function FicheClient({ clientId }: { clientId: string }) {
                   .filter((f) => f.normalise !== alias)
                   .map((f) => (
                     <option key={f.normalise} value={f.normalise}>
-                      {f.normalise}
+                      {f.nomsLus.join(' / ')}
                     </option>
                   ))}
               </select>

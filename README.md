@@ -63,7 +63,7 @@ claude -p "<prompts/extraction.md rempli>" --output-format json --json-schema <s
 - La lecture consomme le quota de l'abonnement. Un vrai produit demandera une clé d'API facturée à l'usage : c'est hors périmètre de cette version.
 - Les pièces de la boîte de réception démo sont pré-lues (`data/demo_extractions.json`) et ne passent pas par Claude Code. Si une lecture en direct échoue sur `D01` ou `D02`, le bouton « Utiliser la lecture enregistrée (DÉMO) » permet de continuer la démo.
 
-### Vérification JPG et PDF (à refaire au premier lancement sur le Mac)
+### Vérification JPG et PDF
 
 La vérification a été faite le 13/10/2026 dans l'environnement de développement (Linux, Claude Code 2.1.296), avec le serveur local de la démo :
 
@@ -72,7 +72,14 @@ La vérification a été faite le 13/10/2026 dans l'environnement de développem
 | `D01_imprimerie_express.jpg` (photo) | Tous les champs lus avec une confiance haute ; compte proposé 6272 « Catalogues, imprimés publicitaires » | 12 s |
 | `D02_clim_service.pdf` (PDF) | Tous les champs lus, QR code FNE détecté ; compte proposé 6242 « Entretien et réparations des biens mobiliers » | 10 s |
 
-**Sur le Mac**, refaites le test d'acceptation 1 avec ces deux fichiers. Si Claude Code ne lit pas l'un des deux formats, notez-le ici plutôt que de contourner le problème.
+**Sur le Mac d'Adam**, le 16/10/2026 (MacBook Air M1, 8 Go, macOS, Claude Code 2.1.301), les deux formats sont lus :
+
+| Fichier | Résultat | Durée |
+|---|---|---|
+| `D01_imprimerie_express.jpg` (photo) | Tous les champs lus avec une confiance haute, absence de QR code FNE vue ; compte proposé 6272 « Catalogues, imprimés publicitaires » ; TVA de 13 500 FCFA ajoutée à la charge (pas de FNE) ; écriture équilibrée | 14 s |
+| `D02_clim_service.pdf` (PDF) | Tous les champs lus avec une confiance haute, QR code FNE détecté ; compte proposé 6242 « Entretien et réparations des biens mobiliers » ; TVA en 4452 ; écriture équilibrée | 15 s |
+
+Le même jour, `npm run recette` complète (lecture en direct de D01 comprise) est verte sur le Mac, sans erreur de console. Si une version future de Claude Code ne lit plus l'un des deux formats, notez-le ici plutôt que de contourner le problème.
 
 ## Lecture locale (Ollama) et banc d'essai
 

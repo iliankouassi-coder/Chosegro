@@ -2,7 +2,7 @@
 
 Ce fichier sert à reprendre le projet dans une nouvelle session de Claude Code, sans l'historique de la précédente. Il complète CLAUDE.md (les règles), SPEC.md (la référence), PLAN.md (les étapes et les choix à valider) et README.md (le lancement).
 
-## État au 15/10/2026
+## État au 16/10/2026
 
 - La version démo décrite dans SPEC.md est **entièrement construite** : `src/domain` et ses tests, données de démo, serveur local de lecture, les 7 écrans.
 - Branche de travail : **`claude/plan-demo-etapes-s3iu27`** (la branche par défaut du dépôt). Elle contient tout `claude/refonte-ui`, puis la seconde refonte de l'interface du 15/10 (plus bas). Sur le Mac : `git fetch`, `git checkout claude/plan-demo-etapes-s3iu27`, `git pull`.
@@ -16,26 +16,25 @@ Ce fichier sert à reprendre le projet dans une nouvelle session de Claude Code,
   - Validation : à 1440 × 790 (fenêtre Chrome d'un MacBook Air), le contrôle des montants, le « Pourquoi » et toute l'écriture tiennent sans défiler ; une pièce validée montre l'écriture **enregistrée** (« Écriture validée ») ; la recherche d'un compte met les comptes de charge (ou de produit) en tête et un mot tapé n'est plus pris pour un compte ; « Marquer comme doublon » est dans l'encart du doublon probable. Sous 1 400 px de large, la file de gauche est masquée (« Suivante » et la flèche restent).
   - Audit de tous les écrans à trois tailles par plusieurs agents : 93 défauts signalés, 75 confirmés par contre-vérification et corrigés, 18 écartés. Entre autres : contrastes à 4,5:1 au moins, chaque écran s'ouvre en haut, libellés de compte lisibles seuls (« ACHATS DE MARCHANDISES — dans la Région »), état de la lecture en une phrase claire, boîte de réception démo proposée dès le premier lancement, « pas nécessaire » au lieu de « Relance : À faire » pour un client à jour, fiche client qui dit si le client est en retard, suppression d'une règle confirmée, export avec réglages du format repliés, Paramètres avec une barre « Modifications non enregistrées ».
 - Vérifié le 15/10 (environnement de développement Linux) : 939 tests verts (`npm test`, 28 fichiers), aussi sous `TZ=Europe/Paris` et `TZ=America/Los_Angeles` ; `npm run typecheck` et `npm run build` propres ; **`npm run recette` complète verte**, lecture en direct de D01 par Claude Code en 11 s comprise, aucune erreur de console.
-- Sur le Mac d'Adam : seule la recette du 14/10 (`--sans-claude`) a été faite. **La lecture en direct de D01 et D02 par Claude Code sur le Mac n'est pas encore faite.**
+- Sur le Mac d'Adam, le 16/10 : 940 tests verts (le test de conversion PDF en image ne tourne que sur Mac), `npm run recette` complète verte (D01 lu par Claude Code en 14 s), D02 (PDF) lu en 15 s, QR code FNE détecté (README, « Vérification JPG et PDF »).
 - Le banc d'essai est prêt mais **pas encore lancé** : Ollama n'est pas installé sur le Mac (MacBook Air M1, 8 Go, Homebrew absent).
 - Revue adversariale du domaine : 48 défauts signalés, 32 confirmés et corrigés avec leur test, 16 écartés (détail dans PLAN.md).
 
 ## Ce qui reste à faire, dans l'ordre
 
-1. **Lecture en direct sur le Mac d'Adam** : `npm run dev`, test d'acceptation 1 avec `D01_imprimerie_express.jpg` puis `D02_clim_service.pdf` (README, « Vérification JPG et PDF »), puis `npm run recette` sans `--sans-claude`. Noter le résultat dans le README. Si Claude Code ne lit pas un format, le dire, sans contournement.
-2. **Réponses d'Adam aux 17 interprétations** de PLAN.md. Chacune se change en un seul endroit de `src/domain/`, avec son test. La 15 (TVA sans FNE) est à faire confirmer par un expert-comptable.
-3. **Comptes par défaut** (4011, 4111, 4452, 4431, et 4451, 4812 pour les immobilisations) : à faire confirmer par un expert-comptable. Ils sont dans `src/domain/parametres.ts` et modifiables dans l'écran Paramètres.
-4. **Banc d'essai de la lecture locale** : installer Ollama (application depuis ollama.com), `ollama pull qwen3-vl:2b` (1,9 Go), puis `npm run banc`. Le rapport s'enregistre dans `.banc/`. Sur une machine de 16 Go ou plus, comparer avec `--modele qwen3-vl:4b`.
-5. **Fichiers créés à la place d'Adam**, parce qu'ils manquaient : `data/echeances.json` (échéances fictives, badge DÉMO), `prompts/extraction.md` et `prompts/extraction_locale.md`. CLAUDE.md réserve les deux premiers à Adam : ne pas les modifier sans sa demande.
-6. **Avant une démo** : mettre un vrai numéro dans les fiches clients (ceux de la démo sont fictifs). Avant le 10 du mois, cliquer sur « Caler la démo au 14 » dans l'accueil, et revenir au jour réel ensuite (Paramètres, carte Démo).
-7. **Choix d'interface laissés à Adam** (refonte du 15/10) :
+1. **Réponses d'Adam aux 17 interprétations** de PLAN.md. Chacune se change en un seul endroit de `src/domain/`, avec son test. La 15 (TVA sans FNE) est à faire confirmer par un expert-comptable.
+2. **Comptes par défaut** (4011, 4111, 4452, 4431, et 4451, 4812 pour les immobilisations) : à faire confirmer par un expert-comptable. Ils sont dans `src/domain/parametres.ts` et modifiables dans l'écran Paramètres.
+3. **Banc d'essai de la lecture locale** : installer Ollama (application depuis ollama.com), `ollama pull qwen3-vl:2b` (1,9 Go), puis `npm run banc`. Le rapport s'enregistre dans `.banc/`. Sur une machine de 16 Go ou plus, comparer avec `--modele qwen3-vl:4b`.
+4. **Fichiers créés à la place d'Adam**, parce qu'ils manquaient : `data/echeances.json` (échéances fictives, badge DÉMO), `prompts/extraction.md` et `prompts/extraction_locale.md`. CLAUDE.md réserve les deux premiers à Adam : ne pas les modifier sans sa demande.
+5. **Avant une démo** : mettre un vrai numéro dans les fiches clients (ceux de la démo sont fictifs). Avant le 10 du mois, cliquer sur « Caler la démo au 14 » dans l'accueil, et revenir au jour réel ensuite (Paramètres, carte Démo).
+6. **Choix d'interface laissés à Adam** (refonte du 15/10) :
    - Validation : « QR code FNE » remplace « QR facture électronique » ; la devise est dans la grille des champs lus ; le type se lit dans la phrase « Pièce émise par … : achat. » en tête des champs.
    - Pièce floue : la consigne « rejetez-la » apparaît deux fois (alerte « Bloquant » et pied « Validation impossible ») ; à 1440 × 790, il faut défiler pour voir ses lignes d'écriture.
    - À 1280 × 720, les totaux d'un doublon, d'une pièce sans FNE ou d'un avoir passent sous la barre d'action (10 à 23 px) ; les lignes restent visibles.
    - « mois-ci » contient un caractère invisible (U+2060) qui empêche « mois- / ci » en fin de ligne ; une recherche Ctrl+F sur « mois-ci » peut ne pas le trouver.
    - Aperçu des relances dans Paramètres : client et fournisseurs fictifs (« Boutique Exemple SARL », « Imprimerie Exemple »…).
-8. **Libellés de `data/plan_syscohada.xlsx` à corriger par Adam** (l'interface les affiche tels quels, en retirant seulement les renvois « (1) ») : majuscules sans accents (613 « TRANSPORTS POUR LE COMPTE DE TIERS », 601, 602, 445…) ; tiret mal espacé (6052 « Fournitures non stockables- Electricité », 6053, 172, 173, 479, 551 à 553, 2446, 4717) ; environ 90 libellés qui commencent par une minuscule et n'ont de sens qu'avec leur parent (« dans la Région »…) ; libellés erronés de 54, 6791 et 60 ; 4812 « Immobilisations corporelles », qui se lit comme un compte de classe 2.
-9. **Plus tard**, selon les entretiens (voir l'audit du 14/10/2026 : import d'une discussion WhatsApp exportée, export au format du logiciel du cabinet, taxes autres que la TVA, sauvegarde). Le format Neos, seulement quand le fichier exemple sera fourni. Tout ce qui est dans « Hors périmètre » de SPEC.md reste exclu.
+7. **Libellés de `data/plan_syscohada.xlsx` à corriger par Adam** (l'interface les affiche tels quels, en retirant seulement les renvois « (1) ») : majuscules sans accents (613 « TRANSPORTS POUR LE COMPTE DE TIERS », 601, 602, 445…) ; tiret mal espacé (6052 « Fournitures non stockables- Electricité », 6053, 172, 173, 479, 551 à 553, 2446, 4717) ; environ 90 libellés qui commencent par une minuscule et n'ont de sens qu'avec leur parent (« dans la Région »…) ; libellés erronés de 54, 6791 et 60 ; 4812 « Immobilisations corporelles », qui se lit comme un compte de classe 2.
+8. **Plus tard**, selon les entretiens (voir l'audit du 14/10/2026 : import d'une discussion WhatsApp exportée, export au format du logiciel du cabinet, taxes autres que la TVA, sauvegarde). Le format Neos, seulement quand le fichier exemple sera fourni. Tout ce qui est dans « Hors périmètre » de SPEC.md reste exclu.
 
 ## Où changer quoi
 

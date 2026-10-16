@@ -34,7 +34,7 @@ export type ResultatMoteur = { ok: true; brut: unknown } | { ok: false; erreur: 
 
 /** Un moteur de lecture : Claude Code (par défaut) ou un modèle local servi par Ollama. */
 export interface Moteur {
-  /** Nom affiché : « Claude Code », « Ollama · qwen3-vl:2b ». */
+  /** Nom affiché : « Claude Code », « Ollama · qwen3-vl:2b-instruct ». */
   nom: string
   /** Lit une pièce dans un dossier de travail qui lui est réservé (effacé ensuite) ; rend le JSON brut. */
   lire(demande: DemandeLecture, contexte: { dossier: string; delaiMs: number }): Promise<ResultatMoteur>

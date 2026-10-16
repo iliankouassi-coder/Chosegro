@@ -8,8 +8,14 @@ import type { DemandeLecture, FichierALire, Moteur, ResultatMoteur } from './fil
 import { pdfEnImages } from './pdfEnImages'
 
 export const URL_OLLAMA_DEFAUT = 'http://127.0.0.1:11434'
-/** Petit modèle de vision (1,9 Go) : il tient sur un Mac de 8 Go. Les plus gros lisent mieux. */
-export const MODELE_OLLAMA_DEFAUT = 'qwen3-vl:2b'
+/**
+ * Petit modèle de vision (1,9 Go) : il tient sur un Mac de 8 Go ; les plus gros lisent mieux. Variante « instruct » :
+ * le nom court « qwen3-vl:2b » désigne la variante « thinking », qui ignore think: false et épuise le contexte à réfléchir.
+ */
+export const MODELE_OLLAMA_DEFAUT = 'qwen3-vl:2b-instruct'
+
+/** Contexte du modèle : une photo et le prompt prennent déjà environ 2 500 jetons sur les 4 096 par défaut. */
+const CONTEXTE_JETONS = 8192
 
 export type FetchOllama = (url: string, init: RequestInit & { body: string; signal?: AbortSignal }) => Promise<Response>
 
@@ -31,7 +37,7 @@ export function requeteOllama(modele: string, prompt: string, images: readonly s
     stream: false,
     think: false,
     format: SCHEMA_EXTRACTION,
-    options: { temperature: 0 },
+    options: { temperature: 0, num_ctx: CONTEXTE_JETONS },
     messages: [{ role: 'user', content: prompt, images: [...images] }],
   }
 }

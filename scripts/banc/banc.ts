@@ -1,4 +1,4 @@
-// npm run banc [-- --moteur ollama|claude] [--modele qwen3-vl:2b] [--pieces I01,I02] [--limite 5] [--delai 300]
+// npm run banc [-- --moteur ollama|claude] [--modele qwen3-vl:2b-instruct] [--pieces I01,I02] [--limite 5] [--delai 300]
 // Banc d'essai de la lecture : chaque pièce de démo est lue par le moteur choisi, puis comparée champ par champ
 // à sa lecture de référence (data/demo_extractions.json). Le rapport est affiché et enregistré dans .banc/.
 // Par défaut, le moteur est le modèle local (Ollama) : rien ne part sur Internet.

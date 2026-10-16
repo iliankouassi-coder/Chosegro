@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SCHEMA_EXTRACTION } from '../src/domain/extraction'
-import { lireReponseOllama, moteurOllama, requeteOllama, type FetchOllama } from './moteurOllama'
+import { lireReponseOllama, MODELE_OLLAMA_DEFAUT, moteurOllama, requeteOllama, type FetchOllama } from './moteurOllama'
 
 const brut = {
   lisible: true,
@@ -25,14 +25,19 @@ const reponse = (corps: unknown, statut = 200): Response =>
 
 describe('requeteOllama', () => {
   it('demande une réponse au schéma imposé, sans flux ni hasard, avec les images', () => {
-    expect(requeteOllama('qwen3-vl:2b', 'Lis la pièce', ['aW1hZ2U='])).toEqual({
-      model: 'qwen3-vl:2b',
+    expect(requeteOllama('qwen3-vl:2b-instruct', 'Lis la pièce', ['aW1hZ2U='])).toEqual({
+      model: 'qwen3-vl:2b-instruct',
       stream: false,
       think: false,
       format: SCHEMA_EXTRACTION,
-      options: { temperature: 0 },
+      // 4 096 jetons par défaut : une photo et le prompt en prennent déjà 2 500, la réponse ne tiendrait pas.
+      options: { temperature: 0, num_ctx: 8192 },
       messages: [{ role: 'user', content: 'Lis la pièce', images: ['aW1hZ2U='] }],
     })
+  })
+
+  it('prend par défaut la variante « instruct » : la variante « thinking » épuise le contexte à réfléchir', () => {
+    expect(MODELE_OLLAMA_DEFAUT).toBe('qwen3-vl:2b-instruct')
   })
 })
 

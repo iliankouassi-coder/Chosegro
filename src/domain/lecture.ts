@@ -4,7 +4,7 @@
 /** Ce que le serveur local dit de son moteur de lecture (GET /api/sante). */
 export interface MoteurLecture {
   moteur: 'claude' | 'ollama'
-  /** « Claude Code », « Ollama · qwen3-vl:2b ». */
+  /** « Claude Code », « Ollama · qwen3-vl:2b-instruct ». */
   nom: string
   disponible: boolean
   /** Détail technique rédigé par le serveur : version, ou ce qu'il faut installer. */

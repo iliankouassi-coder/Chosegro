@@ -24,7 +24,7 @@ Ce fichier sert à reprendre le projet dans une nouvelle session de Claude Code,
 
 1. **Réponses d'Adam aux 17 interprétations** de PLAN.md. Chacune se change en un seul endroit de `src/domain/`, avec son test. La 15 (TVA sans FNE) est à faire confirmer par un expert-comptable.
 2. **Comptes par défaut** (4011, 4111, 4452, 4431, et 4451, 4812 pour les immobilisations) : à faire confirmer par un expert-comptable. Ils sont dans `src/domain/parametres.ts` et modifiables dans l'écran Paramètres.
-3. **Banc d'essai de la lecture locale** : installer Ollama (application depuis ollama.com), `ollama pull qwen3-vl:2b` (1,9 Go), puis `npm run banc`. Le rapport s'enregistre dans `.banc/`. Sur une machine de 16 Go ou plus, comparer avec `--modele qwen3-vl:4b`.
+3. **Banc d'essai de la lecture locale** : installer Ollama (application depuis ollama.com), `ollama pull qwen3-vl:2b-instruct` (1,9 Go), puis `npm run banc`. Le rapport s'enregistre dans `.banc/`. Sur une machine de 16 Go ou plus, comparer avec `--modele qwen3-vl:4b-instruct`.
 4. **Fichiers créés à la place d'Adam**, parce qu'ils manquaient : `data/echeances.json` (échéances fictives, badge DÉMO), `prompts/extraction.md` et `prompts/extraction_locale.md`. CLAUDE.md réserve les deux premiers à Adam : ne pas les modifier sans sa demande.
 5. **Avant une démo** : mettre un vrai numéro dans les fiches clients (ceux de la démo sont fictifs). Avant le 10 du mois, cliquer sur « Caler la démo au 14 » dans l'accueil, et revenir au jour réel ensuite (Paramètres, carte Démo).
 6. **Choix d'interface laissés à Adam** (refonte du 15/10) :
